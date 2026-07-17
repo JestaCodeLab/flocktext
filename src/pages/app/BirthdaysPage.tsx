@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Cake, Bell } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Cake, Bell, SendIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { BirthdayAutomationDialog } from '@/components/contacts/BirthdayAutomationDialog';
@@ -24,6 +25,7 @@ function formatDay(dateOfBirth: string) {
 }
 
 export function BirthdaysPage() {
+  const navigate = useNavigate();
   const birthdays = useQuery({ queryKey: ['contacts', 'birthdays'], queryFn: fetchBirthdays });
   const automation = useQuery({ queryKey: ['birthday-automation'], queryFn: fetchBirthdayAutomation });
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
@@ -115,7 +117,21 @@ export function BirthdaysPage() {
                 </div>
                 <div className="text-sm font-semibold">{c.name}</div>
               </div>
-              <div className="text-sm text-muted-foreground">{c.phone}</div>
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-muted-foreground">{c.phone}</div>
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  title={`Send SMS to ${c.name}`}
+                  onClick={() =>
+                    navigate('/app/compose', {
+                      state: { recipientMode: 'single', phone: c.phone, recipientName: c.name },
+                    })
+                  }
+                >
+                  <SendIcon className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>

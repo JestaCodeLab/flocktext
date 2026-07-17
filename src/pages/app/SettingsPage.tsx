@@ -17,6 +17,8 @@ import {
   Monitor,
   PaintBucket,
   Info,
+  KeyRound,
+  Copy,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,11 +30,13 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
 import { InviteTeamMemberDialog } from '@/components/organization/InviteTeamMemberDialog';
 import { updateOrganizationProfile, updateNotifPrefs, setPrimarySenderId, deleteSenderId } from '@/api/organization';
 import { updateMe, changePassword } from '@/api/auth';
 import { fetchTeam, updateTeamMemberRole, removeTeamMember } from '@/api/team';
+import { fetchApiKeys, createApiKey, revokeApiKey } from '@/api/developer';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore, type ThemeMode } from '@/store/themeStore';
@@ -57,7 +61,7 @@ const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: LucideIcon }[] = [
   { mode: 'system', label: 'System', icon: Monitor },
 ];
 
-type SectionKey = 'account' | 'appearance' | 'sender-ids' | 'notifications' | 'team' | 'security';
+type SectionKey = 'account' | 'appearance' | 'sender-ids' | 'notifications' | 'team' | 'developer' | 'security';
 
 const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon; tint: Tint }[] = [
   { key: 'account', label: 'Account', icon: Building2, tint: 'primary' },
@@ -65,6 +69,7 @@ const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon; tint: Tint }
   { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck, tint: 'gold' },
   { key: 'notifications', label: 'Notifications', icon: Bell, tint: 'teal' },
   { key: 'team', label: 'Team', icon: Users, tint: 'green' },
+  { key: 'developer', label: 'Developer', icon: KeyRound, tint: 'blue' },
   { key: 'security', label: 'Security', icon: ShieldCheck, tint: 'neutral' },
 ];
 
@@ -443,6 +448,181 @@ function TeamSection() {
   );
 }
 
+const API_ENDPOINTS: { method: string; path: string; description: string }[] = [
+  { method: 'GET', path: '/v1/wallet/balance', description: 'Check the current SMS credit balance.' },
+  { method: 'POST', path: '/v1/wallet/topup', description: 'Start a credit purchase - returns a checkout URL to present to your user.' },
+  { method: 'GET', path: '/v1/sender-ids', description: 'List registered sender IDs and their approval status.' },
+  { method: 'POST', path: '/v1/sender-ids', description: 'Register a new sender ID for review.' },
+  { method: 'POST', path: '/v1/messages/send', description: 'Send an SMS to a phone number, group, or your full contact list.' },
+];
+
+function DeveloperSection() {
+  const queryClient = useQueryClient();
+  const [showCreate, setShowCreate] = useState(false);
+  const [label, setLabel] = useState('');
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+
+  const keys = useQuery({ queryKey: ['api-keys'], queryFn: fetchApiKeys });
+
+  const create = useMutation({
+    mutationFn: () => createApiKey(label),
+    onSuccess: (data) => {
+      setShowCreate(false);
+      setLabel('');
+      setRevealedKey(data.key);
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const revoke = useMutation({
+    mutationFn: revokeApiKey,
+    onSuccess: () => {
+      toast.success('API key revoked.');
+      queryClient.invalidateQueries({ queryKey: ['api-keys'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  function copyKey() {
+    if (!revealedKey) return;
+    navigator.clipboard.writeText(revealedKey);
+    toast.success('Copied to clipboard.');
+  }
+
+  return (
+    <>
+      <SettingsCard
+        icon={KeyRound}
+        title="API keys"
+        description="Let your own systems call FlockText directly - check balance, manage sender IDs, and send SMS."
+        tint="blue"
+        action={
+          <Button size="sm" onClick={() => setShowCreate(true)}>
+            <Plus className="h-[15px] w-[15px]" /> Generate new key
+          </Button>
+        }
+      >
+        {keys.isLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        )}
+        {keys.data?.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            No API keys yet.
+          </div>
+        )}
+        {!!keys.data?.length && (
+          <div className="divide-y divide-border">
+            {keys.data.map((k) => (
+              <div key={k.id} className="flex items-center justify-between gap-3 py-3.5 first:pt-0 last:pb-0">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className="truncate text-sm font-semibold">{k.label}</div>
+                    {k.revoked && (
+                      <Badge variant="secondary" className="capitalize">
+                        Revoked
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-0.5 font-mono text-xs text-muted-foreground">{k.keyPrefix}••••••••</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    Created {new Date(k.createdAt).toLocaleDateString()} · Last used{' '}
+                    {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : 'never'}
+                  </div>
+                </div>
+                {!k.revoked && (
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    className="shrink-0 text-destructive"
+                    disabled={revoke.isPending}
+                    onClick={() => revoke.mutate(k.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </SettingsCard>
+
+      <div className="mt-5 rounded-2xl border border-border bg-card p-6">
+        <div className="mb-3 text-[13px] font-bold text-foreground/80">Reference</div>
+        <div className="mb-4 space-y-1 text-sm">
+          <div className="text-muted-foreground">
+            Base URL: <span className="font-mono text-foreground">{window.location.origin.replace(/:\d+$/, '')}/api</span>
+          </div>
+          <div className="text-muted-foreground">
+            Auth header: <span className="font-mono text-foreground">Authorization: Bearer &lt;your key&gt;</span>
+          </div>
+        </div>
+        <div className="divide-y divide-border overflow-hidden rounded-lg border border-border">
+          {API_ENDPOINTS.map((e) => (
+            <div key={e.path} className="flex items-start gap-3 p-3 text-sm">
+              <Badge variant="outline" className="mt-0.5 shrink-0 font-mono">
+                {e.method}
+              </Badge>
+              <div className="min-w-0">
+                <div className="font-mono text-foreground">{e.path}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{e.description}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Generate API key</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="api-key-label">Label</Label>
+            <Input
+              id="api-key-label"
+              placeholder="e.g. Production integration"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button disabled={create.isPending || !label.trim()} onClick={() => create.mutate()}>
+              {create.isPending ? 'Generating…' : 'Generate key'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!revealedKey} onOpenChange={(open) => !open && setRevealedKey(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Your new API key</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center gap-2 rounded-lg border border-border bg-background p-3">
+            <code className="flex-1 overflow-x-auto text-sm">{revealedKey}</code>
+            <Button size="icon-sm" variant="ghost" onClick={copyKey}>
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
+            <Info className="h-4 w-4 shrink-0" />
+            <div>Copy this key now - you won't be able to see it again. Store it somewhere safe.</div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRevealedKey(null)}>
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
 function SecuritySection() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -500,6 +680,7 @@ const SECTION_CONTENT: Record<SectionKey, React.ComponentType> = {
   'sender-ids': SenderIdsSection,
   notifications: NotificationsSection,
   team: TeamSection,
+  developer: DeveloperSection,
   security: SecuritySection,
 };
 
@@ -513,7 +694,7 @@ export function SettingsPage() {
         <div className="text-sm text-muted-foreground">Manage your account settings and preferences</div>
       </div>
 
-      <Tabs defaultValue="organization">
+      <Tabs defaultValue="account">
         <div className="mb-7 overflow-x-auto border-b">
           <TabsList variant="line" className="group-data-[orientation=horizontal]/tabs:h-auto min-w-0 justify-start gap-6 p-0">
             {SECTIONS.map((section) => (

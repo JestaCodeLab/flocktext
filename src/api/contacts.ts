@@ -23,7 +23,13 @@ export async function fetchContactsCount() {
   return data.count;
 }
 
-export async function createContact(payload: { name: string; phone: string; dateOfBirth?: string; groupIds?: string[] }) {
+export async function createContact(payload: {
+  firstName: string;
+  lastName?: string;
+  phone: string;
+  dateOfBirth?: string;
+  groupIds?: string[];
+}) {
   const { data } = await api.post<Contact>('/contacts', payload);
   return data;
 }
@@ -33,7 +39,7 @@ export async function fetchBirthdays() {
   return data;
 }
 
-export async function updateContact(id: string, payload: { name: string; phone: string; dateOfBirth?: string }) {
+export async function updateContact(id: string, payload: { firstName: string; lastName?: string; phone: string; dateOfBirth?: string }) {
   const { data } = await api.patch<Contact>(`/contacts/${id}`, payload);
   return data;
 }

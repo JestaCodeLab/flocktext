@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { updateContact, type Contact } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput } from '@/lib/phone';
+import { splitName } from '@/lib/name';
 
 export function EditContactDialog({
   contact,
@@ -18,20 +19,26 @@ export function EditContactDialog({
   onOpenChange: (open: boolean) => void;
   onUpdated?: (contact: Contact) => void;
 }) {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
 
   useEffect(() => {
     if (contact) {
-      setName(contact.name);
+      // Contacts added before firstName/lastName were captured only have `name` -
+      // fall back to splitting it so the fields aren't blank when editing them.
+      const fallback = splitName(contact.name);
+      setFirstName(contact.firstName || fallback.firstName);
+      setLastName(contact.lastName || fallback.lastName);
       setPhone(contact.phone);
       setDateOfBirth(contact.dateOfBirth ? contact.dateOfBirth.slice(0, 10) : '');
     }
   }, [contact]);
 
   const saveContact = useMutation({
-    mutationFn: (payload: { name: string; phone: string; dateOfBirth?: string }) => updateContact(contact!.id, payload),
+    mutationFn: (payload: { firstName: string; lastName?: string; phone: string; dateOfBirth?: string }) =>
+      updateContact(contact!.id, payload),
     onSuccess: (updated) => {
       onOpenChange(false);
       onUpdated?.(updated);
@@ -41,11 +48,11 @@ export function EditContactDialog({
   });
 
   function handleSubmit() {
-    if (!name || !phone) {
-      toast.error('Name and phone are required.');
+    if (!firstName || !phone) {
+      toast.error('First name and phone are required.');
       return;
     }
-    saveContact.mutate({ name, phone, dateOfBirth: dateOfBirth || undefined });
+    saveContact.mutate({ firstName, lastName: lastName || undefined, phone, dateOfBirth: dateOfBirth || undefined });
   }
 
   return (
@@ -55,9 +62,15 @@ export function EditContactDialog({
           <DialogTitle>Edit contact</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="edit-contact-name">Name</Label>
-            <Input id="edit-contact-name" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="edit-contact-first-name">First name</Label>
+              <Input id="edit-contact-first-name" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-contact-last-name">Last name</Label>
+              <Input id="edit-contact-last-name" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-contact-phone">Phone</Label>

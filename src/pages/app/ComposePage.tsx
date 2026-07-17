@@ -44,15 +44,21 @@ function ordinal(n: number) {
 export function ComposePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const preset = location.state as { templateId?: string; body?: string } | null;
+  const preset = location.state as {
+    templateId?: string;
+    body?: string;
+    recipientMode?: 'single';
+    phone?: string;
+    recipientName?: string;
+  } | null;
   const queryClient = useQueryClient();
   const session = useAuthStore((s) => s.session);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
 
-  const [recipientMode, setRecipientMode] = useState<'single' | 'groups' | 'selection'>('groups');
+  const [recipientMode, setRecipientMode] = useState<'single' | 'groups' | 'selection'>(preset?.recipientMode ?? 'groups');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [singlePhone, setSinglePhone] = useState('');
-  const [singleName, setSingleName] = useState('');
+  const [singlePhone, setSinglePhone] = useState(preset?.phone ?? '');
+  const [singleName, setSingleName] = useState(preset?.recipientName ?? '');
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
   const [scheduleMode, setScheduleMode] = useState<'now' | 'once' | 'recurring'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
@@ -349,7 +355,7 @@ export function ComposePage() {
                   <Label htmlFor="single-name">Name (optional)</Label>
                   <Input
                     id="single-name"
-                    placeholder="Used for {name} personalization"
+                    placeholder="Used for {firstName}/{lastName} personalization"
                     value={singleName}
                     onChange={(e) => setSingleName(e.target.value)}
                   />
@@ -490,14 +496,15 @@ export function ComposePage() {
           <div className="mb-5 rounded-xl border border-border bg-card p-5">
             <div className="mb-2.5 text-[13px] font-bold text-foreground/80">Message</div>
             <Textarea
-              placeholder="Type your message… use {name} to personalize"
+              placeholder="Type your message… use {firstName}, {lastName} or {churchName} to personalize"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               className="min-h-[140px] resize-y border-none p-0 shadow-none focus-visible:ring-0"
             />
             <div className="mt-2 border-t border-border pt-2.5 text-xs text-muted-foreground">
-              {body.length}/160 characters — {segments} SMS segment(s) · <b className="font-semibold text-foreground/80">{'{name}'}</b> personalizes with
-              each contact's saved name.
+              {body.length}/160 characters — {segments} SMS segment(s) · <b className="font-semibold text-foreground/80">{'{firstName}'}</b>,{' '}
+              <b className="font-semibold text-foreground/80">{'{lastName}'}</b> and <b className="font-semibold text-foreground/80">{'{churchName}'}</b>{' '}
+              personalize per recipient.
             </div>
           </div>
         </div>

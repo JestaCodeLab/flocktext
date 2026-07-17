@@ -18,6 +18,11 @@ export async function createTemplate(payload: { name: string; body: string }) {
   return data;
 }
 
+export async function updateTemplate({ id, ...payload }: { id: string; name: string; body: string }) {
+  const { data } = await api.patch<Template>(`/templates/${id}`, payload);
+  return data;
+}
+
 export async function deleteTemplate(id: string) {
   await api.delete(`/templates/${id}`);
 }

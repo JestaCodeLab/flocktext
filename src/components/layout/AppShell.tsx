@@ -15,19 +15,15 @@ import {
   SendIcon,
   Sun,
   Moon,
-  Monitor,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
-import { useThemeStore, type ThemeMode } from '@/store/themeStore';
+import { useThemeStore } from '@/store/themeStore';
 import { senderIdStatusLabel } from '@/lib/senderIdStatus';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -65,18 +61,11 @@ function navLinkClass(isActive: boolean) {
   );
 }
 
-const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: LucideIcon }[] = [
-  { mode: 'light', label: 'Light', icon: Sun },
-  { mode: 'dark', label: 'Dark', icon: Moon },
-  { mode: 'system', label: 'System', icon: Monitor },
-];
-
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
   const session = useAuthStore((s) => s.session);
   const clear = useAuthStore((s) => s.clear);
-  const themeMode = useThemeStore((s) => s.mode);
   const themeResolved = useThemeStore((s) => s.resolved);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const [contactsManualOpen, setContactsManualOpen] = useState<boolean | null>(null);
@@ -186,21 +175,13 @@ export function AppShell() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground">
-                {themeResolved === 'dark' ? <Moon className="h-[15px] w-[15px]" /> : <Sun className="h-[15px] w-[15px]" />}
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuRadioGroup value={themeMode} onValueChange={(value) => setThemeMode(value as ThemeMode)}>
-                  <DropdownMenuLabel>Appearance</DropdownMenuLabel>
-                  {THEME_OPTIONS.map((option) => (
-                    <DropdownMenuRadioItem key={option.mode} value={option.mode}>
-                      <option.icon className="h-4 w-4" /> {option.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <button
+              type="button"
+              onClick={() => setThemeMode(themeResolved === 'dark' ? 'light' : 'dark')}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
+            >
+              {themeResolved === 'dark' ? <Moon className="h-[15px] w-[15px]" /> : <Sun className="h-[15px] w-[15px]" />}
+            </button>
 
             <NotificationsSheet />
 

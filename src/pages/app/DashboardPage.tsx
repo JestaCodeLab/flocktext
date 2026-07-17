@@ -109,7 +109,7 @@ function ActivityChartCard() {
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <div className="text-[16px] font-bold">SMS sent &amp; credits used</div>
+          <div className="text-[16px] font-bold">SMS Usage</div>
           <div className="text-[13px] text-muted-foreground">{range === 'week' ? 'Last 7 days' : 'Last 30 days'}</div>
         </div>
         <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">

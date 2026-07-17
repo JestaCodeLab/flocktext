@@ -18,12 +18,14 @@ export function AddContactDialog({
   onOpenChange: (open: boolean) => void;
   onCreated?: (contact: Contact) => void;
 }) {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
   const [dateOfBirth, setDateOfBirth] = useState('');
 
   function reset() {
-    setName('');
+    setFirstName('');
+    setLastName('');
     setPhone('');
     setDateOfBirth('');
   }
@@ -40,11 +42,11 @@ export function AddContactDialog({
   });
 
   function handleSubmit() {
-    if (!name || !phone) {
-      toast.error('Name and phone are required.');
+    if (!firstName || !phone) {
+      toast.error('First name and phone are required.');
       return;
     }
-    addContact.mutate({ name, phone, dateOfBirth: dateOfBirth || undefined });
+    addContact.mutate({ firstName, lastName: lastName || undefined, phone, dateOfBirth: dateOfBirth || undefined });
   }
 
   return (
@@ -60,9 +62,15 @@ export function AddContactDialog({
           <DialogTitle>Add contact</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="contact-name">Name</Label>
-            <Input id="contact-name" placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="contact-first-name">First name</Label>
+              <Input id="contact-first-name" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contact-last-name">Last name</Label>
+              <Input id="contact-last-name" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="contact-phone">Phone</Label>
