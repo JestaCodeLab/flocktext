@@ -32,6 +32,7 @@ import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import { cn } from '@/lib/utils';
+import { useEntityLabels } from '@/lib/terminology';
 
 type Accent = 'blue' | 'violet' | 'green' | 'gold';
 
@@ -341,6 +342,7 @@ function ScheduledSmsCard() {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const entity = useEntityLabels();
   const summary = useQuery({ queryKey: ['dashboard-summary'], queryFn: fetchDashboardSummary });
   const activity = useQuery({ queryKey: ['recent-activity'], queryFn: () => fetchRecentActivity() });
 
@@ -356,7 +358,7 @@ export function DashboardPage() {
             <SendIcon className="h-[15px] w-[15px]" /> Send SMS
           </Button>
           <Button variant="outline" onClick={() => navigate('/app/contacts')}>
-            <Users className="h-[15px] w-[15px]" /> Add contacts
+            <Users className="h-[15px] w-[15px]" /> Add {entity.plural}
           </Button>
           <Button className={"bg-white"} variant="outline" onClick={() => navigate('/app/wallet')}>
             <Wallet className="h-[15px] w-[15px]" /> Buy credit
@@ -378,7 +380,7 @@ export function DashboardPage() {
             value={<>{(summary.data?.walletBalanceCredits ?? 0).toLocaleString()} <span className="text-sm font-semibold text-stat-highlight-foreground/75">credits</span></>}
             highlight
           />
-          <StatCard icon={Users} label="Total contacts" value={summary.data?.contactsCount ?? 0} accent="blue" />
+          <StatCard icon={Users} label={`Total ${entity.plural}`} value={summary.data?.contactsCount ?? 0} accent="blue" />
           <StatCard icon={Send} label="Messages sent this month" value={summary.data?.sentThisMonth ?? 0} accent="violet" />
           <StatCard
             icon={TrendingUp}

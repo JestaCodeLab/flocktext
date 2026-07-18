@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { EditContactDialog } from '@/components/contacts/EditContactDialog';
 import { deleteContact, type Contact } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
+import { useEntityLabels } from '@/lib/terminology';
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -21,15 +22,17 @@ function getInitials(name: string) {
 export function ContactsTable({
   contacts,
   isLoading,
-  emptyMessage = 'No contacts yet.',
+  emptyMessage,
 }: {
   contacts: Contact[] | undefined;
   isLoading: boolean;
   emptyMessage?: string;
 }) {
   const queryClient = useQueryClient();
+  const entity = useEntityLabels();
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<Contact | null>(null);
+  const resolvedEmptyMessage = emptyMessage ?? `No ${entity.plural} yet.`;
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['contacts'] });
@@ -42,7 +45,7 @@ export function ContactsTable({
     onSuccess: () => {
       setConfirmingDelete(null);
       invalidate();
-      toast.success('Contact deleted.');
+      toast.success(`${entity.singularCap} deleted.`);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -102,7 +105,7 @@ export function ContactsTable({
                   <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
                     <Users className="h-5 w-5" />
                   </div>
-                  <div className="text-sm text-muted-foreground">{emptyMessage}</div>
+                  <div className="text-sm text-muted-foreground">{resolvedEmptyMessage}</div>
                 </div>
               </TableCell>
             </TableRow>
@@ -124,7 +127,7 @@ export function ContactsTable({
           <DialogHeader>
             <DialogTitle>Delete "{confirmingDelete?.name}"?</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground">This permanently removes the contact and cannot be undone.</div>
+          <div className="text-sm text-muted-foreground">This permanently removes the {entity.singular} and cannot be undone.</div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmingDelete(null)}>
               Cancel
@@ -134,7 +137,7 @@ export function ContactsTable({
               disabled={removeContact.isPending}
               onClick={() => confirmingDelete && removeContact.mutate(confirmingDelete.id)}
             >
-              Delete contact
+              Delete {entity.singular}
             </Button>
           </DialogFooter>
         </DialogContent>

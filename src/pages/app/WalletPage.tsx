@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreditCard, Wallet as WalletIcon, Receipt, RefreshCw, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -9,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CreditPackageGrid } from '@/components/wallet/CreditPackageGrid';
 import { fetchWallet, initializeTopup, verifyTopup } from '@/api/wallet';
 import { apiErrorMessage } from '@/api/client';
+import { openPaystackPopup } from '@/lib/paystack';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
@@ -16,46 +16,47 @@ export function WalletPage() {
   const queryClient = useQueryClient();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: fetchWallet });
-  const [searchParams, setSearchParams] = useSearchParams();
-  const reference = searchParams.get('reference');
   const [activeTab, setActiveTab] = useState<'packages' | 'transactions'>('packages');
 
-  function applyTopupResult(data: { walletBalanceCredits: number; walletBalanceGHS: number }) {
-    updateOrganization({ walletBalanceCredits: data.walletBalanceCredits, walletBalanceGHS: data.walletBalanceGHS });
+  function applyTopupResult(data: { walletBalanceCredits: number }) {
+    updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
     queryClient.invalidateQueries({ queryKey: ['wallet'] });
     queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
   }
 
-  // Paystack redirects back here with ?reference=... after checkout. The webhook
-  // is the authoritative confirmation, but this gives immediate feedback - both
-  // paths call the same idempotent credit logic, so whichever lands first wins.
+  // The webhook is the authoritative confirmation, but this gives immediate
+  // feedback - both paths call the same idempotent credit logic, so whichever
+  // lands first wins.
   const verify = useMutation({
     mutationFn: verifyTopup,
     onSuccess: (data) => {
       applyTopupResult(data);
       toast.success('Payment confirmed — credits added to your wallet.');
-      setSearchParams({}, { replace: true });
     },
-    onError: (err) => {
-      toast.error(apiErrorMessage(err));
-      setSearchParams({}, { replace: true });
-    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
   });
-
-  useEffect(() => {
-    if (reference) verify.mutate(reference);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reference]);
 
   const topup = useMutation({
     mutationFn: initializeTopup,
-    onSuccess: (data) => {
-      if (data.mode === 'redirect') {
-        window.location.href = data.authorizationUrl;
+    onSuccess: async (data) => {
+      if (data.mode === 'stub') {
+        applyTopupResult(data);
+        toast.success('Credits added to your wallet.');
         return;
       }
-      applyTopupResult(data);
-      toast.success('Credits added to your wallet.');
+      try {
+        await openPaystackPopup({
+          email: data.email,
+          amountGHS: data.amountGHS,
+          reference: data.reference,
+          subaccountCode: data.subaccountCode,
+          metadata: { organizationId: data.organizationId, packageGhs: data.packageGhs },
+          onSuccess: (reference) => verify.mutate(reference),
+          onClose: () => toast('Payment cancelled.'),
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not open checkout.');
+      }
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });

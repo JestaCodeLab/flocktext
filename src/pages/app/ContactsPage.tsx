@@ -10,10 +10,12 @@ import { AddContactDialog } from '@/components/contacts/AddContactDialog';
 import { ContactsTable } from '@/components/contacts/ContactsTable';
 import { fetchContacts } from '@/api/contacts';
 import { useAuthStore } from '@/store/authStore';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function ContactsPage() {
   const queryClient = useQueryClient();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
+  const entity = useEntityLabels();
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -25,15 +27,17 @@ export function ContactsPage() {
     <div>
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <div className="text-[26px] font-bold">Contacts</div>
-          <div className="mt-0.5 text-sm text-muted-foreground">Showing {contacts.data?.length ?? 0} contacts</div>
+          <div className="text-[26px] font-bold">{entity.pluralCap}</div>
+          <div className="mt-0.5 text-sm text-muted-foreground">
+            Showing {contacts.data?.length ?? 0} {entity.plural}
+          </div>
         </div>
         <div className="flex items-center gap-2.5">
           <Button variant={"outline"} onClick={() => setShowImport(true)}>
             <Upload className="h-[15px] w-[15px]" /> Import
           </Button>
           <Button onClick={() => setShowAdd((v) => !v)}>
-            <UserPlus className="h-[15px] w-[15px]" /> Add contact
+            <UserPlus className="h-[15px] w-[15px]" /> Add {entity.singular}
           </Button>
         </div>
       </div>
@@ -76,12 +80,16 @@ export function ContactsPage() {
         )}
       </div>
 
-      <ContactsTable contacts={contacts.data} isLoading={contacts.isLoading} emptyMessage="No contacts yet. Add your first one above." />
+      <ContactsTable
+        contacts={contacts.data}
+        isLoading={contacts.isLoading}
+        emptyMessage={`No ${entity.plural} yet. Add your first one above.`}
+      />
 
       <Dialog open={showImport} onOpenChange={setShowImport}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Import contacts</DialogTitle>
+            <DialogTitle>Import {entity.plural}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <CsvImportPanel

@@ -21,7 +21,7 @@ export function WalletStep() {
         window.location.href = data.authorizationUrl;
         return;
       }
-      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits, walletBalanceGHS: data.walletBalanceGHS });
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       toast.success('Credit added to your wallet.');
       navigate('/app/dashboard');
     },

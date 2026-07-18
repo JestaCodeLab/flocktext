@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { createContact, type Contact } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput } from '@/lib/phone';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function AddContactDialog({
   open,
@@ -18,6 +19,7 @@ export function AddContactDialog({
   onOpenChange: (open: boolean) => void;
   onCreated?: (contact: Contact) => void;
 }) {
+  const entity = useEntityLabels();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -59,7 +61,7 @@ export function AddContactDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add contact</DialogTitle>
+          <DialogTitle>Add {entity.singular}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
@@ -92,7 +94,7 @@ export function AddContactDialog({
             Cancel
           </Button>
           <Button disabled={addContact.isPending} onClick={handleSubmit}>
-            {addContact.isPending ? 'Saving…' : 'Save contact'}
+            {addContact.isPending ? 'Saving…' : `Save ${entity.singular}`}
           </Button>
         </DialogFooter>
       </DialogContent>

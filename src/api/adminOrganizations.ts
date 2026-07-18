@@ -37,7 +37,7 @@ export async function reactivateOrganization(id: string) {
 }
 
 export async function adjustOrganizationWallet(id: string, payload: { credits: number; reason: string }) {
-  const { data } = await adminApi.post<{ walletBalanceCredits: number; walletBalanceGHS: number }>(
+  const { data } = await adminApi.post<{ walletBalanceCredits: number }>(
     `/admin/organizations/${id}/wallet/adjust`,
     payload
   );

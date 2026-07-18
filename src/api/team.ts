@@ -7,6 +7,7 @@ export interface TeamMember {
   email: string;
   phone: string;
   role: Role;
+  isFounder: boolean;
   isVerified: boolean;
   lastLoginAt: string | null;
   createdAt: string;
@@ -17,12 +18,12 @@ export async function fetchTeam() {
   return data;
 }
 
-export async function inviteTeamMember(payload: { name: string; email: string; phone: string; role: 'admin' | 'viewer' }) {
+export async function inviteTeamMember(payload: { name: string; email: string; phone: string; role: 'admin' | 'user' }) {
   const { data } = await api.post<TeamMember>('/team/invite', payload);
   return data;
 }
 
-export async function updateTeamMemberRole(id: string, role: 'admin' | 'viewer') {
+export async function updateTeamMemberRole(id: string, role: 'admin' | 'user') {
   const { data } = await api.patch<TeamMember>(`/team/${id}/role`, { role });
   return data;
 }

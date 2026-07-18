@@ -8,10 +8,12 @@ import { skipOnboardingStep } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingBackLink } from '@/pages/onboarding/OnboardingBackLink';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function ContactsStep() {
   const navigate = useNavigate();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
+  const entity = useEntityLabels();
 
   const skip = useMutation({
     mutationFn: () => skipOnboardingStep('contacts'),
@@ -29,10 +31,10 @@ export function ContactsStep() {
   return (
     <div>
       <OnboardingBackLink to="/onboarding/sender-id" />
-      <div className="mb-1.5 text-[26px] font-bold">Add your contacts</div>
+      <div className="mb-1.5 text-[26px] font-bold">Add your {entity.plural}</div>
       <div className="mb-7 text-sm leading-relaxed text-muted-foreground">
-        Bring your member list in now, or share a link and let people add themselves. You can always do this later
-        from Contacts.
+        Bring your {entity.singular} list in now, or share a link and let people add themselves. You can always do
+        this later from {entity.pluralCap}.
       </div>
 
       <div className="mb-4 space-y-3.5">

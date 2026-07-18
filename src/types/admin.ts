@@ -23,7 +23,7 @@ export interface AdminOrgUser {
   name: string;
   phone: string;
   email: string;
-  role: 'owner' | 'admin' | 'viewer';
+  role: 'admin' | 'user';
   isVerified: boolean;
   lastLoginAt: string | null;
 }
@@ -46,7 +46,6 @@ export interface AdminOrgDetail {
   contactEmail: string;
   status: 'active' | 'suspended';
   walletBalanceCredits: number;
-  walletBalanceGHS: number;
   senderIds: AdminSenderId[];
   createdAt: string;
   users: AdminOrgUser[];
@@ -80,6 +79,15 @@ export interface AdminSenderIdRow extends AdminSenderIdPendingEntry {
   rejectionReason: string;
   bmsStatus: string;
   isPrimary: boolean;
+}
+
+export interface AdminAddon {
+  id: string;
+  key: string;
+  name: string;
+  description: string;
+  ghs: number;
+  active: boolean;
 }
 
 export interface AdminDashboardSummary {

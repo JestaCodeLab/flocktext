@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { importContactsCsv, type ImportResult } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { useEntityLabels } from '@/lib/terminology';
 
 const HEADER_ALIASES: Record<string, string[]> = {
   name: ['name', 'full name'],
@@ -47,6 +48,7 @@ export function CsvImportPanel({
   onImported?: (result: ImportResult) => void;
   groupId?: string;
 }) {
+  const entity = useEntityLabels();
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<PreviewRow[] | null>(null);
@@ -60,9 +62,9 @@ export function CsvImportPanel({
       setResult(data);
       onImported?.(data);
       if (data.imported > 0) {
-        toast.success(`Imported ${data.imported} contact${data.imported === 1 ? '' : 's'}.`);
+        toast.success(`Imported ${data.imported} ${data.imported === 1 ? entity.singular : entity.plural}.`);
       } else {
-        toast.error('No contacts were imported — check the file and try again.');
+        toast.error(`No ${entity.plural} were imported — check the file and try again.`);
       }
     },
     onError: (err) => toast.error(apiErrorMessage(err, 'Could not import that file.')),
@@ -180,7 +182,7 @@ export function CsvImportPanel({
               Choose a different file
             </Button>
             <Button className="flex-1" disabled={upload.isPending || totalRows === 0} onClick={() => file && upload.mutate(file)}>
-              {upload.isPending ? 'Importing…' : `Import ${totalRows} contact${totalRows === 1 ? '' : 's'}`}
+              {upload.isPending ? 'Importing…' : `Import ${totalRows} ${totalRows === 1 ? entity.singular : entity.plural}`}
             </Button>
           </div>
         </div>

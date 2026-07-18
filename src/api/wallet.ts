@@ -21,7 +21,6 @@ export interface WalletTransaction {
 
 export interface WalletOverview {
   walletBalanceCredits: number;
-  walletBalanceGHS: number;
   creditsUsed: number;
   packages: CreditPackage[];
   transactions: WalletTransaction[];
@@ -34,12 +33,21 @@ export async function fetchWallet() {
 
 export interface TopupResult {
   walletBalanceCredits: number;
-  walletBalanceGHS: number;
   walletStatus: 'pending' | 'done' | 'skipped';
   onboardingCompletedAt: string | null;
 }
 
-export type InitializeTopupResult = ({ mode: 'stub' } & TopupResult) | { mode: 'redirect'; authorizationUrl: string; reference: string };
+export type InitializeTopupResult =
+  | ({ mode: 'stub' } & TopupResult)
+  | {
+      mode: 'checkout';
+      reference: string;
+      amountGHS: number;
+      email: string;
+      organizationId: string;
+      packageGhs: number;
+      subaccountCode?: string;
+    };
 
 export async function initializeTopup(ghs: number) {
   const { data } = await api.post<InitializeTopupResult>('/wallet/topup/initialize', { ghs });

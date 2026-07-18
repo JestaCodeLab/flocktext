@@ -27,6 +27,7 @@ import { useAuthStore } from '@/store/authStore';
 import { senderIdStatusLabel } from '@/lib/senderIdStatus';
 import { formatPhoneInput } from '@/lib/phone';
 import { cn } from '@/lib/utils';
+import { useEntityLabels } from '@/lib/terminology';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const ALL_CONTACTS_ID = '__all__';
@@ -52,6 +53,7 @@ export function ComposePage() {
     recipientName?: string;
   } | null;
   const queryClient = useQueryClient();
+  const entity = useEntityLabels();
   const session = useAuthStore((s) => s.session);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
 
@@ -122,7 +124,7 @@ export function ComposePage() {
       setShowConfirm(false);
       toast.success(`Sent — ${data.stats.delivered}/${data.stats.total} delivered.`);
       resetForm();
-      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits, walletBalanceGHS: Number((data.walletBalanceCredits * 0.5).toFixed(2)) });
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
       navigate('/app/reports', { state: { messageId: data.id } });
@@ -168,7 +170,7 @@ export function ComposePage() {
       return;
     }
     if (recipientMode === 'selection' && selectedContactIds.size === 0) {
-      toast.error('Choose at least one contact to send to.');
+      toast.error(`Choose at least one ${entity.singular} to send to.`);
       return;
     }
     if (scheduleMode === 'once') {
@@ -222,7 +224,7 @@ export function ComposePage() {
     <div>
       <div className="mb-6">
         <div className="mb-1 text-[26px] font-bold">Send SMS</div>
-        <div className="text-sm text-muted-foreground">Compose and deliver messages to your contacts.</div>
+        <div className="text-sm text-muted-foreground">Compose and deliver messages to your {entity.plural}.</div>
       </div>
 
       <div className="mb-6 flex gap-2">
@@ -307,8 +309,8 @@ export function ComposePage() {
                       )}
                       <Users className={cn('h-5 w-5 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} />
                       <div className="min-w-0">
-                        <div className="truncate text-[13px] font-semibold leading-tight">All Contacts</div>
-                        <div className="text-[11px] text-muted-foreground">{contactsCount.data ?? 0} contacts</div>
+                        <div className="truncate text-[13px] font-semibold leading-tight">All {entity.pluralCap}</div>
+                        <div className="text-[11px] text-muted-foreground">{contactsCount.data ?? 0} {entity.plural}</div>
                       </div>
                     </button>
                   );
@@ -333,7 +335,7 @@ export function ComposePage() {
                       <Users className={cn('h-5 w-5 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} />
                       <div className="min-w-0">
                         <div className="truncate text-[13px] font-semibold leading-tight">{g.name}</div>
-                        <div className="text-[11px] text-muted-foreground">{g.count} contacts</div>
+                        <div className="text-[11px] text-muted-foreground">{g.count} {entity.plural}</div>
                       </div>
                     </button>
                   );
@@ -551,7 +553,7 @@ export function ComposePage() {
           <div className="space-y-2 text-sm text-muted-foreground">
             <div>
               Recipients:{' '}
-              <b className="text-foreground">{recipientMode === 'single' ? singlePhone || '—' : `${recipientCount} contacts`}</b>
+              <b className="text-foreground">{recipientMode === 'single' ? singlePhone || '—' : `${recipientCount} ${entity.plural}`}</b>
             </div>
             <div>
               Credit cost: <b className="text-foreground">{estimatedCost} credits</b>

@@ -9,6 +9,7 @@ import { updateContact, type Contact } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput } from '@/lib/phone';
 import { splitName } from '@/lib/name';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function EditContactDialog({
   contact,
@@ -19,6 +20,7 @@ export function EditContactDialog({
   onOpenChange: (open: boolean) => void;
   onUpdated?: (contact: Contact) => void;
 }) {
+  const entity = useEntityLabels();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
@@ -42,7 +44,7 @@ export function EditContactDialog({
     onSuccess: (updated) => {
       onOpenChange(false);
       onUpdated?.(updated);
-      toast.success('Contact updated.');
+      toast.success(`${entity.singularCap} updated.`);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -59,7 +61,7 @@ export function EditContactDialog({
     <Dialog open={!!contact} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit contact</DialogTitle>
+          <DialogTitle>Edit {entity.singular}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">

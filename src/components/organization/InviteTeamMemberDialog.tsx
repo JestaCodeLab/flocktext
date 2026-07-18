@@ -9,19 +9,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { inviteTeamMember } from '@/api/team';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function InviteTeamMemberDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const queryClient = useQueryClient();
+  const entity = useEntityLabels();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [role, setRole] = useState<'admin' | 'viewer'>('viewer');
+  const [role, setRole] = useState<'admin' | 'user'>('user');
 
   function reset() {
     setName('');
     setEmail('');
     setPhone('');
-    setRole('viewer');
+    setRole('user');
   }
 
   const invite = useMutation({
@@ -76,13 +78,13 @@ export function InviteTeamMemberDialog({ open, onOpenChange }: { open: boolean; 
           </div>
           <div className="space-y-2">
             <Label>Role</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'viewer')}>
+            <Select value={role} onValueChange={(v) => setRole(v as 'admin' | 'user')}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin — can manage contacts, sends, and settings</SelectItem>
-                <SelectItem value="viewer">Viewer — can view only</SelectItem>
+                <SelectItem value="admin">Admin — full access, including billing and team management</SelectItem>
+                <SelectItem value="user">User — can manage {entity.plural}, sends, and settings</SelectItem>
               </SelectContent>
             </Select>
           </div>

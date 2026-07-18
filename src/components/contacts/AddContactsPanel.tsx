@@ -10,6 +10,7 @@ import { CsvImportPanel } from '@/components/contacts/CsvImportPanel';
 import { addContactsToGroup, fetchContacts } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function AddContactsPanel({
   groupId,
@@ -24,6 +25,7 @@ export function AddContactsPanel({
   onFinish: () => void;
   finishLabel?: string;
 }) {
+  const entity = useEntityLabels();
   const [mode, setMode] = useState<'select' | 'import'>('select');
   const [search, setSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -42,7 +44,7 @@ export function AddContactsPanel({
   const addStep = useMutation({
     mutationFn: () => addContactsToGroup(groupId, Array.from(selectedIds)),
     onSuccess: (result) => {
-      if (result.added > 0) toast.success(`Added ${result.added} contact${result.added === 1 ? '' : 's'}.`);
+      if (result.added > 0) toast.success(`Added ${result.added} ${result.added === 1 ? entity.singular : entity.plural}.`);
       onAdded?.();
       onFinish();
     },
@@ -87,12 +89,17 @@ export function AddContactsPanel({
         <>
           <div className="relative">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search contacts…" className="pl-10" value={search} onChange={(e) => setSearch(e.target.value)} />
+            <Input
+              placeholder={`Search ${entity.plural}…`}
+              className="pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
           <div className="max-h-[280px] overflow-auto rounded-lg border border-border">
-            {contacts.isLoading && <div className="p-4 text-sm text-muted-foreground">Loading contacts…</div>}
+            {contacts.isLoading && <div className="p-4 text-sm text-muted-foreground">Loading {entity.plural}…</div>}
             {!contacts.isLoading && availableContacts.length === 0 && (
-              <div className="p-4 text-sm text-muted-foreground">No contacts found.</div>
+              <div className="p-4 text-sm text-muted-foreground">No {entity.plural} found.</div>
             )}
             {availableContacts.map((c) => (
               <label
@@ -112,7 +119,9 @@ export function AddContactsPanel({
               {finishLabel}
             </Button>
             <Button disabled={addStep.isPending || selectedIds.size === 0} onClick={() => addStep.mutate()}>
-              {addStep.isPending ? 'Adding…' : `Add ${selectedIds.size} contact${selectedIds.size === 1 ? '' : 's'}`}
+              {addStep.isPending
+                ? 'Adding…'
+                : `Add ${selectedIds.size} ${selectedIds.size === 1 ? entity.singular : entity.plural}`}
             </Button>
           </DialogFooter>
         </>

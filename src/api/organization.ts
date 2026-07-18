@@ -1,7 +1,12 @@
 import { api } from '@/api/client';
 import type { NotifPrefs, SessionOrganization } from '@/types';
 
-export async function updateOrganizationProfile(payload: { churchName: string; address: string; contactEmail?: string }) {
+export async function updateOrganizationProfile(payload: {
+  churchName: string;
+  address: string;
+  contactEmail?: string;
+  organizationType: 'church' | 'business' | 'institution';
+}) {
   const { data } = await api.patch<SessionOrganization>('/organization', payload);
   return data;
 }

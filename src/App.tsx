@@ -18,6 +18,7 @@ import { AdminOrganizationsPage } from '@/pages/admin/AdminOrganizationsPage';
 import { AdminOrganizationDetailPage } from '@/pages/admin/AdminOrganizationDetailPage';
 import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
 import { AdminSenderIdsPage } from '@/pages/admin/AdminSenderIdsPage';
+import { AdminAddonsPage } from '@/pages/admin/AdminAddonsPage';
 import { OnboardingLayout } from '@/pages/onboarding/OnboardingLayout';
 import { WelcomeStep } from '@/pages/onboarding/WelcomeStep';
 import { OrganizationStep } from '@/pages/onboarding/OrganizationStep';
@@ -34,6 +35,7 @@ import { TemplatesPage } from '@/pages/app/TemplatesPage';
 import { WalletPage } from '@/pages/app/WalletPage';
 import { ReportsPage } from '@/pages/app/ReportsPage';
 import { SettingsPage } from '@/pages/app/SettingsPage';
+import { ActivityLogPage } from '@/pages/app/ActivityLogPage';
 
 function App() {
   const location = useLocation();
@@ -66,6 +68,7 @@ function App() {
           <Route path="organizations/:id" element={<AdminOrganizationDetailPage />} />
           <Route path="packages" element={<AdminPackagesPage />} />
           <Route path="sender-ids" element={<AdminSenderIdsPage />} />
+          <Route path="addons" element={<AdminAddonsPage />} />
         </Route>
       </Route>
 
@@ -95,6 +98,7 @@ function App() {
             <Route path="scheduled" element={<Navigate to="/app/reports" replace />} />
             <Route path="sender-id" element={<Navigate to="/app/settings" replace />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="activity-log" element={<ActivityLogPage />} />
           </Route>
         </Route>
       </Route>

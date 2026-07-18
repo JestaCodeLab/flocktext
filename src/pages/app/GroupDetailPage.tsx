@@ -10,11 +10,13 @@ import { ContactsTable } from '@/components/contacts/ContactsTable';
 import { AddContactsToGroupDialog } from '@/components/contacts/AddContactsToGroupDialog';
 import { fetchGroupDetail, updateGroup, deleteGroup } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const entity = useEntityLabels();
   const [editing, setEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -104,7 +106,7 @@ export function GroupDetailPage() {
         </div>
         <div className="flex items-center gap-2.5">
           <Button onClick={() => setShowAddContacts(true)}>
-            <UserPlus className="h-[15px] w-[15px]" /> Add contact
+            <UserPlus className="h-[15px] w-[15px]" /> Add {entity.singular}
           </Button>
           <Button variant="destructive" onClick={() => setConfirmingDelete(true)}>
             <Trash2 className="h-[15px] w-[15px]" /> Delete
@@ -112,10 +114,14 @@ export function GroupDetailPage() {
         </div>
       </div>
       <div className="mb-4.5 text-sm text-muted-foreground">
-        {detail.data?.count ?? 0} contact{detail.data?.count === 1 ? '' : 's'}
+        {detail.data?.count ?? 0} {detail.data?.count === 1 ? entity.singular : entity.plural}
       </div>
 
-      <ContactsTable contacts={detail.data?.members} isLoading={detail.isLoading} emptyMessage="No contacts in this group yet." />
+      <ContactsTable
+        contacts={detail.data?.members}
+        isLoading={detail.isLoading}
+        emptyMessage={`No ${entity.plural} in this group yet.`}
+      />
 
       {id && (
         <AddContactsToGroupDialog
@@ -134,7 +140,7 @@ export function GroupDetailPage() {
             <DialogTitle>Delete "{detail.data?.name}"?</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            This removes the group. Its contacts will stay in your contacts list, just no longer grouped here.
+            This removes the group. Its {entity.plural} will stay in your {entity.plural} list, just no longer grouped here.
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmingDelete(false)}>

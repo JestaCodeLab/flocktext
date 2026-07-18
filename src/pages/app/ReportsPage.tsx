@@ -251,7 +251,7 @@ function MessageDetailDialog({ messageId, onOpenChange }: { messageId: string | 
     mutationFn: () => resendFailedMessage(messageId!),
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
-      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits, walletBalanceGHS: Number((data.walletBalanceCredits * 0.5).toFixed(2)) });
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['messages'] });
       onOpenChange(false);
     },
@@ -456,7 +456,7 @@ export function ReportsPage() {
     mutationFn: resendFailedMessage,
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
-      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits, walletBalanceGHS: Number((data.walletBalanceCredits * 0.5).toFixed(2)) });
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['recipients'] });
     },
     onError: (err) => toast.error(apiErrorMessage(err)),

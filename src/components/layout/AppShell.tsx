@@ -11,6 +11,8 @@ import {
   Wallet,
   BadgeCheck,
   Settings,
+  History,
+  KeyRound,
   ChevronDown,
   SendIcon,
   Sun,
@@ -19,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
+import { useEntityLabels, type EntityLabels } from '@/lib/terminology';
 import { senderIdStatusLabel } from '@/lib/senderIdStatus';
 import {
   DropdownMenu,
@@ -28,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Badge } from '@/components/ui/badge';
 import { NotificationsSheet } from '@/components/layout/NotificationsSheet';
 import type { LucideIcon } from 'lucide-react';
 
@@ -35,24 +39,31 @@ type NavItem =
   | { to: string; label: string; icon: LucideIcon }
   | { label: string; icon: LucideIcon; children: { to: string; label: string; icon: LucideIcon }[] };
 
-const mainNavItems: NavItem[] = [
-  { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  {
-    label: 'Contacts',
-    icon: Users,
-    children: [
-      { to: '/app/contacts', label: 'All Contacts', icon: Contact },
-      { to: '/app/contacts/groups', label: 'Groups', icon: FolderKanban },
-      { to: '/app/contacts/birthdays', label: 'Birthdays', icon: Cake },
-    ],
-  },
-  { to: '/app/compose', label: 'Send SMS', icon: SendIcon },
-  { to: '/app/templates', label: 'Templates', icon: LayoutTemplate },
-  { to: '/app/wallet', label: 'SMS Credit', icon: Wallet },
-  { to: '/app/reports', label: 'Delivery Reports', icon: BarChart3 },
-];
+function getMainNavItems(entity: EntityLabels): NavItem[] {
+  return [
+    { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    {
+      label: entity.pluralCap,
+      icon: Users,
+      children: [
+        { to: '/app/contacts', label: `All ${entity.pluralCap}`, icon: Contact },
+        { to: '/app/contacts/groups', label: 'Groups', icon: FolderKanban },
+        { to: '/app/contacts/birthdays', label: 'Birthdays', icon: Cake },
+      ],
+    },
+    { to: '/app/compose', label: 'Send SMS', icon: SendIcon },
+    { to: '/app/templates', label: 'Templates', icon: LayoutTemplate },
+    { to: '/app/wallet', label: 'SMS Credit', icon: Wallet },
+    { to: '/app/reports', label: 'Delivery Reports', icon: BarChart3 },
+  ];
+}
 
-const bottomNavItems = [{ to: '/app/settings', label: 'Settings', icon: Settings }];
+function getBottomNavItems(role: string | undefined): { to: string; label: string; icon: LucideIcon }[] {
+  const items: { to: string; label: string; icon: LucideIcon }[] = [];
+  if (role === 'admin') items.push({ to: '/app/activity-log', label: 'Activity Log', icon: History });
+  items.push({ to: '/app/settings', label: 'Settings', icon: Settings });
+  return items;
+}
 
 function navLinkClass(isActive: boolean) {
   return cn(
@@ -69,6 +80,7 @@ export function AppShell() {
   const themeResolved = useThemeStore((s) => s.resolved);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const [contactsManualOpen, setContactsManualOpen] = useState<boolean | null>(null);
+  const entity = useEntityLabels();
 
   useEffect(() => {
     setContactsManualOpen(null);
@@ -76,7 +88,9 @@ export function AppShell() {
 
   if (!session) return null;
 
+  const mainNavItems = getMainNavItems(entity);
   const { user, organization } = session;
+  const bottomNavItems = getBottomNavItems(user.role);
   const senderId = organization.senderIds.find((s) => s.isPrimary) ?? organization.senderIds[0];
   const senderStatusColor: Record<string, string> = {
     approved: 'bg-success/15 text-success',
@@ -199,16 +213,24 @@ export function AppShell() {
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <div className="truncate text-sm font-medium">{user.name}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="truncate text-sm font-medium">{user.name}</div>
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 capitalize">
+                        {user.role}
+                      </Badge>
+                    </div>
                     <div className="mt-0.5 truncate text-xs text-muted-foreground">{organization.churchName}</div>
                   </div>
                 </div>
                 <DropdownMenuSeparator className="my-1.5" />
                 <DropdownMenuItem className="gap-2.5 px-2.5 py-2.5 text-[13px]" onClick={() => navigate('/app/settings')}>
-                  <Settings className="h-4 w-4" /> Settings
+                  <Settings className="h-4 w-4" /> Account
                 </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2.5 px-2.5 py-2.5 text-[13px]" onClick={() => navigate('/app/wallet')}>
-                  <Wallet className="h-4 w-4" /> Billing
+                <DropdownMenuItem
+                  className="gap-2.5 px-2.5 py-2.5 text-[13px]"
+                  onClick={() => navigate('/app/settings', { state: { tab: 'security' } })}
+                >
+                  <KeyRound className="h-4 w-4" /> Change Password
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1.5" />
                 <DropdownMenuItem className="gap-2.5 px-2.5 py-2.5 text-[13px]" variant="destructive" onClick={handleLogout}>

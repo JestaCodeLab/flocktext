@@ -10,8 +10,9 @@ import { AddContactsPanel } from '@/components/contacts/AddContactsPanel';
 import { createGroup, type Group } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { useEntityLabels } from '@/lib/terminology';
 
-function Stepper({ step }: { step: 1 | 2 }) {
+function Stepper({ step, addStepLabel }: { step: 1 | 2; addStepLabel: string }) {
   return (
     <div className="mb-1 flex items-center gap-2">
       <div className="flex items-center gap-1.5">
@@ -35,7 +36,7 @@ function Stepper({ step }: { step: 1 | 2 }) {
         >
           2
         </div>
-        <span className={cn('text-xs font-semibold', step === 2 ? 'text-foreground' : 'text-muted-foreground')}>Add contacts</span>
+        <span className={cn('text-xs font-semibold', step === 2 ? 'text-foreground' : 'text-muted-foreground')}>{addStepLabel}</span>
       </div>
     </div>
   );
@@ -51,6 +52,7 @@ export function CreateGroupDialog({
   onDone?: () => void;
 }) {
   const queryClient = useQueryClient();
+  const entity = useEntityLabels();
   const [name, setName] = useState('');
   const [createdGroup, setCreatedGroup] = useState<Group | null>(null);
 
@@ -88,7 +90,7 @@ export function CreateGroupDialog({
       }}
     >
       <DialogContent className={createdGroup ? 'sm:max-w-lg' : undefined}>
-        <Stepper step={createdGroup ? 2 : 1} />
+        <Stepper step={createdGroup ? 2 : 1} addStepLabel={`Add ${entity.plural}`} />
 
         {!createdGroup ? (
           <>
@@ -120,7 +122,9 @@ export function CreateGroupDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Add contacts to "{createdGroup.name}"</DialogTitle>
+              <DialogTitle>
+                Add {entity.plural} to "{createdGroup.name}"
+              </DialogTitle>
             </DialogHeader>
             <AddContactsPanel groupId={createdGroup.id} onAdded={invalidateGroup} onFinish={finish} finishLabel="Skip" />
           </>

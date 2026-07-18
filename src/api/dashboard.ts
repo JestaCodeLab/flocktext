@@ -3,7 +3,6 @@ import { api } from '@/api/client';
 export interface DashboardSummary {
   churchName: string;
   walletBalanceCredits: number;
-  walletBalanceGHS: number;
   contactsCount: number;
   sentThisMonth: number;
   deliveryRate: number;

@@ -1,5 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AddContactsPanel } from '@/components/contacts/AddContactsPanel';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function AddContactsToGroupDialog({
   open,
@@ -16,11 +17,14 @@ export function AddContactsToGroupDialog({
   existingMemberIds?: Set<string>;
   onAdded?: () => void;
 }) {
+  const entity = useEntityLabels();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add contacts to "{groupName}"</DialogTitle>
+          <DialogTitle>
+            Add {entity.plural} to "{groupName}"
+          </DialogTitle>
         </DialogHeader>
         <AddContactsPanel
           groupId={groupId}

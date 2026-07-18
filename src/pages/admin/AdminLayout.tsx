@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, CreditCard, BadgeCheck, ChevronDown, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Building2, CreditCard, BadgeCheck, ChevronDown, ShieldCheck, Puzzle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import {
@@ -15,6 +15,7 @@ const navItems = [
   { to: '/admin/organizations', label: 'Organizations', icon: Building2 },
   { to: '/admin/packages', label: 'Packages', icon: CreditCard },
   { to: '/admin/sender-ids', label: 'Sender IDs', icon: BadgeCheck },
+  { to: '/admin/addons', label: 'Addons', icon: Puzzle },
 ];
 
 function navLinkClass(isActive: boolean) {

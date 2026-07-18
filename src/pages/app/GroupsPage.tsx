@@ -10,9 +10,11 @@ import { CreateGroupDialog } from '@/components/contacts/CreateGroupDialog';
 import { fetchGroups, updateGroup, deleteGroup, type Group } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { useEntityLabels } from '@/lib/terminology';
 
 export function GroupsPage() {
   const queryClient = useQueryClient();
+  const entity = useEntityLabels();
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -221,8 +223,9 @@ export function GroupsPage() {
             <DialogTitle>Delete "{confirmingDelete?.name}"?</DialogTitle>
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
-            This removes the group. Its {confirmingDelete?.count ?? 0} contact{confirmingDelete?.count === 1 ? '' : 's'} will stay in your
-            contacts list, just no longer grouped here.
+            This removes the group. Its {confirmingDelete?.count ?? 0}{' '}
+            {confirmingDelete?.count === 1 ? entity.singular : entity.plural} will stay in your {entity.plural} list, just no
+            longer grouped here.
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmingDelete(null)}>

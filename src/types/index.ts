@@ -1,4 +1,4 @@
-export type Role = 'owner' | 'admin' | 'viewer';
+export type Role = 'admin' | 'user';
 
 export interface SessionUser {
   id: string;
@@ -28,10 +28,10 @@ export interface SessionOrganization {
   id: string;
   churchName: string;
   address: string;
+  organizationType: 'church' | 'business' | 'institution';
   contactEmail: string;
   notifPrefs: NotifPrefs;
   walletBalanceCredits: number;
-  walletBalanceGHS: number;
   senderIds: SenderIdRequest[];
   onboardingStep: number;
   contactsStatus: 'pending' | 'done' | 'skipped';

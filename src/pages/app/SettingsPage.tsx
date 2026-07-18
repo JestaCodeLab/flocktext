@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Building2,
@@ -19,6 +20,9 @@ import {
   Info,
   KeyRound,
   Copy,
+  Church,
+  Briefcase,
+  Landmark,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,11 +41,15 @@ import { updateOrganizationProfile, updateNotifPrefs, setPrimarySenderId, delete
 import { updateMe, changePassword } from '@/api/auth';
 import { fetchTeam, updateTeamMemberRole, removeTeamMember } from '@/api/team';
 import { fetchApiKeys, createApiKey, revokeApiKey } from '@/api/developer';
+import { initializeAddonPurchase, verifyAddonPurchase } from '@/api/addons';
 import { apiErrorMessage } from '@/api/client';
+import { openPaystackPopup } from '@/lib/paystack';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore, type ThemeMode } from '@/store/themeStore';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import { cn } from '@/lib/utils';
+import { useEntityLabels, type OrganizationType } from '@/lib/terminology';
+import { useAddonEntitlements } from '@/lib/addons';
 
 type Tint = 'primary' | 'blue' | 'violet' | 'gold' | 'teal' | 'green' | 'neutral';
 
@@ -61,11 +69,11 @@ const THEME_OPTIONS: { mode: ThemeMode; label: string; icon: LucideIcon }[] = [
   { mode: 'system', label: 'System', icon: Monitor },
 ];
 
-type SectionKey = 'account' | 'appearance' | 'sender-ids' | 'notifications' | 'team' | 'developer' | 'security';
+type SectionKey = 'account' | 'preferences' | 'sender-ids' | 'notifications' | 'team' | 'developer' | 'security';
 
 const SECTIONS: { key: SectionKey; label: string; icon: LucideIcon; tint: Tint }[] = [
   { key: 'account', label: 'Account', icon: Building2, tint: 'primary' },
-  { key: 'appearance', label: 'Appearance', icon: PaintBucket, tint: 'violet' },
+  { key: 'preferences', label: 'Preferences', icon: PaintBucket, tint: 'violet' },
   { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck, tint: 'gold' },
   { key: 'notifications', label: 'Notifications', icon: Bell, tint: 'teal' },
   { key: 'team', label: 'Team', icon: Users, tint: 'green' },
@@ -79,6 +87,7 @@ function SettingsCard({
   description,
   action,
   tint = 'primary',
+  className,
   children,
 }: {
   icon: LucideIcon;
@@ -86,10 +95,11 @@ function SettingsCard({
   description: string;
   action?: React.ReactNode;
   tint?: Tint;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <div className={cn('rounded-2xl border border-border bg-card p-6', className)}>
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="flex items-start gap-3.5">
           <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', TINT_CLASS[tint])}>
@@ -97,7 +107,7 @@ function SettingsCard({
           </div>
           <div>
             <div className="text-[16px] font-bold">{title}</div>
-            <div className="mt-0.5 text-sm text-muted-foreground">{description}</div>
+            <div className="mt-0.5 text-[13px] text-muted-foreground">{description}</div>
           </div>
         </div>
         {action}
@@ -112,16 +122,23 @@ function AccountSection() {
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const user = useAuthStore((s) => s.session?.user);
   const updateUser = useAuthStore((s) => s.updateUser);
+  const entity = useEntityLabels();
 
   const [churchName, setChurchName] = useState(organization?.churchName ?? '');
   const [address, setAddress] = useState(organization?.address ?? '');
   const [contactEmail, setContactEmail] = useState(organization?.contactEmail ?? '');
 
   const saveOrg = useMutation({
-    mutationFn: () => updateOrganizationProfile({ churchName, address, contactEmail }),
+    mutationFn: () =>
+      updateOrganizationProfile({
+        churchName,
+        address,
+        contactEmail,
+        organizationType: organization?.organizationType ?? 'institution',
+      }),
     onSuccess: (data) => {
       updateOrganization(data);
-      toast.success('Church profile updated.');
+      toast.success('Organization profile updated.');
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -140,11 +157,16 @@ function AccountSection() {
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <SettingsCard icon={Building2} title="Church profile" description="Shown across FlockText and to your contacts." tint="primary">
+      <SettingsCard
+        icon={Building2}
+        title="Organization profile"
+        description={`Shown across FlockText and to your ${entity.plural}.`}
+        tint="primary"
+      >
         <div className="space-y-3.5">
           <div className="grid grid-cols-2 gap-3.5">
             <div className="space-y-1.5">
-              <Label htmlFor="settings-church-name">Church name</Label>
+              <Label htmlFor="settings-church-name">Organization name</Label>
               <Input id="settings-church-name" value={churchName} onChange={(e) => setChurchName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
@@ -183,31 +205,91 @@ function AccountSection() {
   );
 }
 
-function AppearanceSection() {
+const CATEGORY_OPTIONS: { value: OrganizationType; label: string; description: string; icon: LucideIcon }[] = [
+  { value: 'church', label: 'Church', description: 'Contacts are called members', icon: Church },
+  { value: 'business', label: 'Business', description: 'Contacts are called customers', icon: Briefcase },
+  { value: 'institution', label: 'Institution', description: 'Contacts are called contacts', icon: Landmark },
+];
+
+function PreferencesSection() {
   const themeMode = useThemeStore((s) => s.mode);
   const setThemeMode = useThemeStore((s) => s.setMode);
+  const organization = useAuthStore((s) => s.session?.organization);
+  const updateOrganization = useAuthStore((s) => s.updateOrganization);
+
+  const saveCategory = useMutation({
+    mutationFn: (organizationType: OrganizationType) =>
+      updateOrganizationProfile({
+        churchName: organization?.churchName ?? '',
+        address: organization?.address ?? '',
+        contactEmail: organization?.contactEmail,
+        organizationType,
+      }),
+    onSuccess: (data) => {
+      updateOrganization(data);
+      toast.success('Organization category updated.');
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
 
   return (
-    <SettingsCard icon={PaintBucket} title="Appearance" description="Choose how FlockText looks on this device." tint="violet">
-      <div className="grid max-w-sm grid-cols-3 gap-2">
-        {THEME_OPTIONS.map((option) => (
-          <button
-            key={option.mode}
-            type="button"
-            onClick={() => setThemeMode(option.mode)}
-            className={cn(
-              'flex flex-col items-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors',
-              themeMode === option.mode
-                ? 'border-primary bg-accent/40 text-foreground'
-                : 'border-border text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <option.icon className="h-4 w-4" />
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </SettingsCard>
+    <div className="flex flex-col gap-5 lg:flex-row">
+      <SettingsCard
+        icon={PaintBucket}
+        title="Appearance"
+        description="Choose how FlockText looks on this device."
+        tint="violet"
+        className="lg:flex-1"
+      >
+        <div className="grid grid-cols-3 gap-2">
+          {THEME_OPTIONS.map((option) => (
+            <button
+              key={option.mode}
+              type="button"
+              onClick={() => setThemeMode(option.mode)}
+              className={cn(
+                'flex flex-col items-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors',
+                themeMode === option.mode
+                  ? 'border-primary bg-accent/40 text-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <option.icon className="h-4 w-4" />
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+
+      <SettingsCard
+        icon={Landmark}
+        title="Organization category"
+        description="Configure how FlockText refers to your contacts and members."
+        tint="gold"
+        className="lg:flex-1"
+      >
+        <div className="grid grid-cols-3 gap-2.5">
+          {CATEGORY_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              disabled={saveCategory.isPending}
+              onClick={() => saveCategory.mutate(option.value)}
+              className={cn(
+                'flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3.5 text-center transition-colors',
+                organization?.organizationType === option.value
+                  ? 'border-primary bg-accent/40 text-foreground'
+                  : 'border-border text-muted-foreground hover:text-foreground'
+              )}
+            >
+              <option.icon className="h-5 w-5" />
+              <span className="text-sm font-semibold">{option.label}</span>
+              {/* <span className="text-xs leading-snug">{option.description}</span> */}
+            </button>
+          ))}
+        </div>
+      </SettingsCard>
+    </div>
   );
 }
 
@@ -355,16 +437,59 @@ function getInitials(name: string) {
 function TeamSection() {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((s) => s.session?.user);
-  const isOwner = currentUser?.role === 'owner';
+  const isAdmin = currentUser?.role === 'admin';
   const [showInvite, setShowInvite] = useState(false);
   const team = useQuery({ queryKey: ['team'], queryFn: fetchTeam });
+  const entitlements = useAddonEntitlements();
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['team'] });
   }
 
+  // The webhook is the authoritative confirmation, but this gives immediate
+  // feedback - both paths call the same idempotent credit logic, so whichever
+  // lands first wins.
+  const verify = useMutation({
+    mutationFn: verifyAddonPurchase,
+    onSuccess: () => {
+      toast.success('Payment confirmed — seat added.');
+      queryClient.invalidateQueries({ queryKey: ['addons'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const buySeat = useMutation({
+    mutationFn: () => initializeAddonPurchase('extra_team_seat'),
+    onSuccess: async (data) => {
+      if (data.mode === 'stub') {
+        toast.success('Seat added.');
+        queryClient.invalidateQueries({ queryKey: ['addons'] });
+        return;
+      }
+      try {
+        await openPaystackPopup({
+          email: data.email,
+          amountGHS: data.amountGHS,
+          reference: data.reference,
+          subaccountCode: data.subaccountCode,
+          metadata: { organizationId: data.organizationId, addonKey: data.addonKey, kind: 'addon' },
+          onSuccess: (reference) => verify.mutate(reference),
+          onClose: () => toast('Payment cancelled.'),
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not open checkout.');
+      }
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const additionalMemberCount = team.data?.filter((m) => !m.isFounder).length ?? 0;
+  const purchasedSeats = entitlements.data?.purchasedSeats ?? 0;
+  const remainingSeats = purchasedSeats - additionalMemberCount;
+  const seatAddonGhs = entitlements.data?.addons.find((a) => a.key === 'extra_team_seat')?.ghs ?? 0;
+
   const changeRole = useMutation({
-    mutationFn: ({ id, role }: { id: string; role: 'admin' | 'viewer' }) => updateTeamMemberRole(id, role),
+    mutationFn: ({ id, role }: { id: string; role: 'admin' | 'user' }) => updateTeamMemberRole(id, role),
     onSuccess: () => {
       toast.success('Role updated.');
       invalidate();
@@ -386,16 +511,28 @@ function TeamSection() {
       <SettingsCard
         icon={Users}
         title="Team"
-        description={isOwner ? 'Invite teammates and manage their access.' : 'Everyone with access to this account.'}
+        description={isAdmin ? 'Invite teammates and manage their access.' : 'Everyone with access to this account.'}
         tint="green"
         action={
-          isOwner && (
+          isAdmin &&
+          (remainingSeats > 0 ? (
             <Button size="sm" onClick={() => setShowInvite(true)}>
               <UserPlus className="h-[15px] w-[15px]" /> Invite
             </Button>
-          )
+          ) : (
+            <Button size="sm" disabled={buySeat.isPending} onClick={() => buySeat.mutate()}>
+              <UserPlus className="h-[15px] w-[15px]" /> {buySeat.isPending ? 'Starting checkout…' : `Buy seat — GHS ${seatAddonGhs}`}
+            </Button>
+          ))
         }
       >
+        {isAdmin && (
+          <div className="mb-4 text-xs font-semibold text-muted-foreground">
+            {remainingSeats > 0
+              ? `${remainingSeats} additional seat${remainingSeats === 1 ? '' : 's'} available.`
+              : 'No additional seats available — purchase a seat to invite another member.'}
+          </div>
+        )}
         {team.isLoading && (
           <div className="space-y-2">
             <Skeleton className="h-12 w-full" />
@@ -416,22 +553,22 @@ function TeamSection() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {isOwner && member.role !== 'owner' ? (
-                    <Select value={member.role} onValueChange={(v) => changeRole.mutate({ id: member.id, role: v as 'admin' | 'viewer' })}>
+                  {isAdmin && member.id !== currentUser?.id ? (
+                    <Select value={member.role} onValueChange={(v) => changeRole.mutate({ id: member.id, role: v as 'admin' | 'user' })}>
                       <SelectTrigger size="sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="viewer">Viewer</SelectItem>
+                        <SelectItem value="user">User</SelectItem>
                       </SelectContent>
                     </Select>
                   ) : (
-                    <Badge variant={member.role === 'owner' ? 'default' : 'secondary'} className="capitalize">
+                    <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
                       {member.role}
                     </Badge>
                   )}
-                  {isOwner && member.role !== 'owner' && member.id !== currentUser?.id && (
+                  {isAdmin && member.id !== currentUser?.id && (
                     <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(member.id)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -676,7 +813,7 @@ function SecuritySection() {
 
 const SECTION_CONTENT: Record<SectionKey, React.ComponentType> = {
   account: AccountSection,
-  appearance: AppearanceSection,
+  preferences: PreferencesSection,
   'sender-ids': SenderIdsSection,
   notifications: NotificationsSection,
   team: TeamSection,
@@ -687,6 +824,9 @@ const SECTION_CONTENT: Record<SectionKey, React.ComponentType> = {
 const TRIGGER_CLASS = 'rounded-none border-b-2 border-transparent data-active:border-b-primary data-active:text-primary data-active:font-bold';
 
 export function SettingsPage() {
+  const location = useLocation();
+  const initialTab: SectionKey = (location.state as { tab?: SectionKey } | null)?.tab ?? 'account';
+
   return (
     <div>
       <div className="mb-4">
@@ -694,7 +834,7 @@ export function SettingsPage() {
         <div className="text-sm text-muted-foreground">Manage your account settings and preferences</div>
       </div>
 
-      <Tabs defaultValue="account">
+      <Tabs defaultValue={initialTab}>
         <div className="mb-7 overflow-x-auto border-b">
           <TabsList variant="line" className="group-data-[orientation=horizontal]/tabs:h-auto min-w-0 justify-start gap-6 p-0">
             {SECTIONS.map((section) => (
