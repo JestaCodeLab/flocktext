@@ -24,7 +24,8 @@ import { sendMessage, scheduleMessage, type RecurringFreq } from '@/api/messages
 import { fetchEffectiveSenderId } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
-import { senderIdStatusLabel } from '@/lib/senderIdStatus';
+import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
+import { Badge } from '@/components/ui/badge';
 import { formatPhoneInput } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
@@ -371,14 +372,15 @@ export function ComposePage() {
             <div className="flex gap-2">
               <div className="flex-1">
                 <Select value={selectedSenderId || ''} onValueChange={setSelectedSenderId}>
-                  <SelectTrigger>
+                  <SelectTrigger size="sm" className="w-full">
                     <SelectValue placeholder="Use default sender ID" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Use default sender ID</SelectItem>
+                    <SelectItem className={'cursor-pointer'} value="">Use system default sender ID</SelectItem>
                     {senderIds.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.senderId} — {senderIdStatusLabel[s.status]}
+                      <SelectItem className={'cursor-pointer'} key={s.id} value={s.id} disabled={s.status !== 'approved'}>
+                        <span className="flex-1 truncate">{s.senderId}</span>
+                        <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
                       </SelectItem>
                     ))}
                   </SelectContent>

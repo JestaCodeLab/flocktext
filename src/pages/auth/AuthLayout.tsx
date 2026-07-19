@@ -1,19 +1,23 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const logo = '/logo/flocktext-logo.png';
+const logoWhite = '/logo/flocktext-logo-white.png';
+
 const slides = [
   {
-    title: 'Reach your whole congregation in seconds',
-    body: 'Send reminders, announcements, and invitations to every member group with one message.',
+    title: 'Reach your whole audience in seconds',
+    body: 'Send reminders, announcements, and invitations to every contact group with one message.',
   },
   {
     title: 'Pay-as-you-go, credit never expires',
     body: 'Top up whenever you like via card or mobile money. No subscriptions, no surprise renewals.',
   },
   {
-    title: 'Your church name on every message',
-    body: "We handle sender ID approval for you, so texts arrive from your church's name, not a random number.",
+    title: 'Your name on every message',
+    body: "We handle sender ID approval for you, so texts arrive from your organization's name, not a random number.",
   },
 ];
 
@@ -34,12 +38,9 @@ export function AuthLayout({ children, contentClassName }: { children: React.Rea
       <div className="flex min-h-[680px] w-full max-w-[1040px] overflow-hidden rounded-[28px] bg-card shadow-xl ring-1 ring-foreground/5">
         <div className="relative hidden w-[46%] min-w-[360px] overflow-hidden bg-foreground lg:block">
           <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/5 to-foreground" />
-          <div className="absolute left-8 top-8 z-10 flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-extrabold text-white">
-              F
-            </div>
-            <div className="text-lg font-extrabold text-white">FlockText</div>
-          </div>
+          <Link to="/" className="absolute left-8 top-8 z-10">
+            <img src={logoWhite} alt="FlockText" className="h-9 w-auto" />
+          </Link>
 
           <div className="absolute inset-x-6 bottom-6 z-10 rounded-2xl bg-white/10 p-6 ring-1 ring-white/15 backdrop-blur-md">
             <div key={slideIndex} className="animate-in fade-in duration-500">
@@ -76,12 +77,9 @@ export function AuthLayout({ children, contentClassName }: { children: React.Rea
 
         <div className={cn('flex flex-1 items-center justify-center overflow-y-auto p-8 sm:p-12', contentClassName)}>
           <div className="w-full max-w-[380px]">
-            <div className="mb-8 flex items-center gap-2.5 lg:hidden">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-extrabold text-primary-foreground">
-                F
-              </div>
-              <div className="text-lg font-extrabold">FlockText</div>
-            </div>
+            <Link to="/" className="mb-8 block w-fit lg:hidden">
+              <img src={logo} alt="FlockText" className="h-9 w-auto" />
+            </Link>
             {children}
           </div>
         </div>

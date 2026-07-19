@@ -1,6 +1,9 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useThemeStore } from '@/store/themeStore';
+import { MarketingLayout } from '@/pages/marketing/MarketingLayout';
+import { HomePage } from '@/pages/marketing/HomePage';
+import { PricingPage } from '@/pages/marketing/PricingPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { OtpPage } from '@/pages/auth/OtpPage';
@@ -48,7 +51,10 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route element={<MarketingLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+      </Route>
 
       <Route element={<GuestRoute />}>
         <Route path="/login" element={<LoginPage />} />
