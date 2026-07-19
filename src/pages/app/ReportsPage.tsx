@@ -1,7 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, Download, RotateCcw, Eye, Send, CheckCircle2, XCircle, Clock, RefreshCw, CalendarClock, Repeat, X } from 'lucide-react';
+import {
+  BarChart3,
+  Download,
+  RotateCcw,
+  Eye,
+  Send,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  RefreshCw,
+  CalendarClock,
+  Repeat,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -9,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import {
   fetchMessageRecipients,
   fetchRecipientsByStatus,
@@ -21,6 +37,7 @@ import {
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
+import type { DateRangeParams } from '@/lib/dateRange';
 
 function statusBadgeVariant(status: 'pending' | 'delivered' | 'failed') {
   if (status === 'delivered') return 'success' as const;
@@ -213,8 +230,6 @@ function downloadCsv(filename: string, rows: string[][]) {
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
-  // Firefox (and some other browsers) won't fire the download unless the
-  // anchor is actually attached to the document when .click() runs.
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -423,14 +438,65 @@ function RecipientsTable({
   );
 }
 
+const PAGE_SIZE = 20;
+
+function PaginationControls({
+  page,
+  pageSize,
+  total,
+  onPageChange,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  onPageChange: (page: number) => void;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (totalPages <= 1) return null;
+
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
+
+  return (
+    <div className="mt-3 flex items-center justify-between">
+      <div className="text-xs text-muted-foreground">
+        Showing {start}–{end} of {total}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <Button size="icon-sm" variant="outline" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </Button>
+        <div className="px-1 text-xs font-semibold text-muted-foreground">
+          Page {page} of {totalPages}
+        </div>
+        <Button size="icon-sm" variant="outline" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>
+          <ChevronRight className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function ReportsPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedScheduledId, setSelectedScheduledId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'scheduled' | 'delivered' | 'failed'>('delivered');
+  const [range, setRange] = useState<DateRangeParams>({ preset: 'all_time' });
+  const [scheduledPage, setScheduledPage] = useState(1);
+  const [deliveredPage, setDeliveredPage] = useState(1);
+  const [failedPage, setFailedPage] = useState(1);
   const queryClient = useQueryClient();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
+
+  // A new filter changes the result set, so a page number from the old one may no
+  // longer exist - snap every tab back to page 1 whenever the range changes.
+  useEffect(() => {
+    setScheduledPage(1);
+    setDeliveredPage(1);
+    setFailedPage(1);
+  }, [range]);
 
   // Land here right after a send with the just-sent message's breakdown open automatically,
   // or jump straight to the Scheduled tab (e.g. from the Dashboard's "View all" link).
@@ -442,14 +508,17 @@ export function ReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const scheduled = useQuery({ queryKey: ['scheduled-messages'], queryFn: fetchScheduledMessages });
+  const scheduled = useQuery({
+    queryKey: ['scheduled-messages', range, scheduledPage],
+    queryFn: () => fetchScheduledMessages(range, { page: scheduledPage, pageSize: PAGE_SIZE }),
+  });
   const delivered = useQuery({
-    queryKey: ['recipients', 'delivered'],
-    queryFn: () => fetchRecipientsByStatus('delivered'),
+    queryKey: ['recipients', 'delivered', range, deliveredPage],
+    queryFn: () => fetchRecipientsByStatus('delivered', range, { page: deliveredPage, pageSize: PAGE_SIZE }),
   });
   const failed = useQuery({
-    queryKey: ['recipients', 'failed'],
-    queryFn: () => fetchRecipientsByStatus('failed'),
+    queryKey: ['recipients', 'failed', range, failedPage],
+    queryFn: () => fetchRecipientsByStatus('failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
   });
 
   const resend = useMutation({
@@ -502,7 +571,7 @@ export function ReportsPage() {
                   activeTab === 'delivered' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                Delivered ({delivered.data?.length ?? 0})
+                Delivered ({delivered.data?.total ?? 0})
               </button>
               <button
                 type="button"
@@ -512,7 +581,7 @@ export function ReportsPage() {
                   activeTab === 'scheduled' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                Scheduled ({scheduled.data?.length ?? 0})
+                Scheduled ({scheduled.data?.total ?? 0})
               </button>
               <button
                 type="button"
@@ -522,33 +591,39 @@ export function ReportsPage() {
                   activeTab === 'failed' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
                 )}
               >
-                Failed ({failed.data?.length ?? 0})
+                Failed ({failed.data?.total ?? 0})
               </button>
             </div>
 
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={isFetching}
-              onClick={() => {
-                scheduled.refetch();
-                delivered.refetch();
-                failed.refetch();
-              }}
-            >
-              <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2.5">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isFetching}
+                onClick={() => {
+                  scheduled.refetch();
+                  delivered.refetch();
+                  failed.refetch();
+                }}
+              >
+                <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
+                Refresh
+              </Button>
+              <DateRangeFilter range={range} onChange={setRange} includeAllTime size="sm" />
+            </div>
           </div>
 
           {activeTab === 'scheduled' &&
-            (scheduled.data?.length ? (
-              <ScheduledTable
-                messages={scheduled.data}
-                onView={(m) => setSelectedScheduledId(m.id)}
-                onCancel={(id) => cancelScheduled.mutate(id)}
-                cancelingId={cancelScheduled.isPending ? (cancelScheduled.variables ?? null) : null}
-              />
+            (scheduled.data?.rows.length ? (
+              <>
+                <ScheduledTable
+                  messages={scheduled.data.rows}
+                  onView={(m) => setSelectedScheduledId(m.id)}
+                  onCancel={(id) => cancelScheduled.mutate(id)}
+                  cancelingId={cancelScheduled.isPending ? (cancelScheduled.variables ?? null) : null}
+                />
+                <PaginationControls page={scheduledPage} pageSize={PAGE_SIZE} total={scheduled.data.total} onPageChange={setScheduledPage} />
+              </>
             ) : (
               <EmptyState
                 message={
@@ -564,21 +639,27 @@ export function ReportsPage() {
             ))}
 
           {activeTab === 'delivered' &&
-            (delivered.data?.length ? (
-              <RecipientsTable rows={delivered.data} showReason={false} onView={setSelectedId} />
+            (delivered.data?.rows.length ? (
+              <>
+                <RecipientsTable rows={delivered.data.rows} showReason={false} onView={setSelectedId} />
+                <PaginationControls page={deliveredPage} pageSize={PAGE_SIZE} total={delivered.data.total} onPageChange={setDeliveredPage} />
+              </>
             ) : (
               <EmptyState message="No delivered messages yet." />
             ))}
 
           {activeTab === 'failed' &&
-            (failed.data?.length ? (
-              <RecipientsTable
-                rows={failed.data}
-                showReason
-                onView={setSelectedId}
-                onResend={(messageId) => resend.mutate(messageId)}
-                resendingMessageId={resend.isPending ? (resend.variables ?? null) : null}
-              />
+            (failed.data?.rows.length ? (
+              <>
+                <RecipientsTable
+                  rows={failed.data.rows}
+                  showReason
+                  onView={setSelectedId}
+                  onResend={(messageId) => resend.mutate(messageId)}
+                  resendingMessageId={resend.isPending ? (resend.variables ?? null) : null}
+                />
+                <PaginationControls page={failedPage} pageSize={PAGE_SIZE} total={failed.data.total} onPageChange={setFailedPage} />
+              </>
             ) : (
               <EmptyState message="No failed messages — everything's delivering cleanly." />
             ))}
@@ -587,7 +668,7 @@ export function ReportsPage() {
 
       <MessageDetailDialog messageId={selectedId} onOpenChange={(open) => !open && setSelectedId(null)} />
       <ScheduledDetailDialog
-        message={scheduled.data?.find((m) => m.id === selectedScheduledId) ?? null}
+        message={scheduled.data?.rows.find((m) => m.id === selectedScheduledId) ?? null}
         onOpenChange={(open) => !open && setSelectedScheduledId(null)}
         onCancel={(id) => cancelScheduled.mutate(id)}
         isCancelling={cancelScheduled.isPending}

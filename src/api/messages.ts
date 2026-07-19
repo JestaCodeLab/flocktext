@@ -1,4 +1,17 @@
 import { api } from '@/api/client';
+import type { DateRangeParams } from '@/lib/dateRange';
+
+export interface PageParams {
+  page: number;
+  pageSize: number;
+}
+
+export interface Paginated<T> {
+  rows: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
 
 export type RecipientType = 'groups' | 'single' | 'selection' | 'all' | 'birthday';
 export type SendMode = 'now' | 'once' | 'recurring';
@@ -57,8 +70,8 @@ export interface ScheduledMessage {
   recurringDayOfMonth?: number;
 }
 
-export async function fetchScheduledMessages() {
-  const { data } = await api.get<ScheduledMessage[]>('/messages/scheduled');
+export async function fetchScheduledMessages(range?: DateRangeParams, page?: PageParams) {
+  const { data } = await api.get<Paginated<ScheduledMessage>>('/messages/scheduled', { params: { ...range, ...page } });
   return data;
 }
 
@@ -133,7 +146,7 @@ export interface RecipientListRow {
   senderId: string;
 }
 
-export async function fetchRecipientsByStatus(status: 'delivered' | 'failed') {
-  const { data } = await api.get<RecipientListRow[]>('/messages/recipients', { params: { status } });
+export async function fetchRecipientsByStatus(status: 'delivered' | 'failed', range?: DateRangeParams, page?: PageParams) {
+  const { data } = await api.get<Paginated<RecipientListRow>>('/messages/recipients', { params: { status, ...range, ...page } });
   return data;
 }

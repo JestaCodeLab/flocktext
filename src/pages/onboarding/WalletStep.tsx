@@ -3,9 +3,10 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { CreditPackageGrid } from '@/components/wallet/CreditPackageGrid';
-import { fetchWallet, initializeTopup } from '@/api/wallet';
+import { fetchWallet, initializeTopup, verifyTopup } from '@/api/wallet';
 import { skipOnboardingStep } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
+import { openPaystackPopup } from '@/lib/paystack';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingBackLink } from '@/pages/onboarding/OnboardingBackLink';
 
@@ -14,16 +15,41 @@ export function WalletStep() {
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: fetchWallet });
 
+  // The webhook is the authoritative confirmation, but this gives immediate
+  // feedback - both paths call the same idempotent credit logic, so whichever
+  // lands first wins.
+  const verify = useMutation({
+    mutationFn: verifyTopup,
+    onSuccess: (data) => {
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
+      toast.success('Payment confirmed — credits added to your wallet.');
+      navigate('/app/dashboard');
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const topup = useMutation({
     mutationFn: initializeTopup,
-    onSuccess: (data) => {
-      if (data.mode === 'redirect') {
-        window.location.href = data.authorizationUrl;
+    onSuccess: async (data) => {
+      if (data.mode === 'stub') {
+        updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
+        toast.success('Credit added to your wallet.');
+        navigate('/app/dashboard');
         return;
       }
-      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
-      toast.success('Credit added to your wallet.');
-      navigate('/app/dashboard');
+      try {
+        await openPaystackPopup({
+          email: data.email,
+          amountGHS: data.amountGHS,
+          reference: data.reference,
+          subaccountCode: data.subaccountCode,
+          metadata: { organizationId: data.organizationId, packageGhs: data.packageGhs },
+          onSuccess: (reference) => verify.mutate(reference),
+          onClose: () => toast('Payment cancelled.'),
+        });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Could not open checkout.');
+      }
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });

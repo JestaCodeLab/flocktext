@@ -1,16 +1,17 @@
 import { api } from '@/api/client';
+import type { DateRangeParams } from '@/lib/dateRange';
 
 export interface DashboardSummary {
   churchName: string;
   walletBalanceCredits: number;
   contactsCount: number;
-  sentThisMonth: number;
+  messagesSent: number;
   deliveryRate: number;
-  creditsUsedThisMonth: number;
+  creditsUsed: number;
 }
 
-export async function fetchDashboardSummary() {
-  const { data } = await api.get<DashboardSummary>('/dashboard/summary');
+export async function fetchDashboardSummary(range: DateRangeParams) {
+  const { data } = await api.get<DashboardSummary>('/dashboard/summary', { params: range });
   return data;
 }
 
@@ -22,12 +23,10 @@ export interface RecentActivityItem {
   deliveredText: string;
 }
 
-export async function fetchRecentActivity() {
-  const { data } = await api.get<RecentActivityItem[]>('/messages/recent');
+export async function fetchRecentActivity(range: DateRangeParams, limit = 5) {
+  const { data } = await api.get<RecentActivityItem[]>('/messages/recent', { params: { ...range, limit } });
   return data;
 }
-
-export type DashboardChartRange = 'week' | 'month';
 
 export interface DashboardChartBucket {
   date: string;
@@ -37,11 +36,10 @@ export interface DashboardChartBucket {
 }
 
 export interface DashboardChart {
-  range: DashboardChartRange;
   buckets: DashboardChartBucket[];
 }
 
-export async function fetchDashboardChart(range: DashboardChartRange) {
-  const { data } = await api.get<DashboardChart>('/dashboard/chart', { params: { range } });
+export async function fetchDashboardChart(range: DateRangeParams) {
+  const { data } = await api.get<DashboardChart>('/dashboard/chart', { params: range });
   return data;
 }

@@ -34,9 +34,11 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
 import { InviteTeamMemberDialog } from '@/components/organization/InviteTeamMemberDialog';
+import { LowBalanceThresholdDialog } from '@/components/organization/LowBalanceThresholdDialog';
 import { updateOrganizationProfile, updateNotifPrefs, setPrimarySenderId, deleteSenderId } from '@/api/organization';
 import { updateMe, changePassword } from '@/api/auth';
 import { fetchTeam, updateTeamMemberRole, removeTeamMember } from '@/api/team';
@@ -392,7 +394,8 @@ function SenderIdsSection() {
 function NotificationsSection() {
   const organization = useAuthStore((s) => s.session?.organization);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
-  const prefs = organization?.notifPrefs ?? { lowBalance: true, scheduleConfirm: true, deliverySummary: false };
+  const prefs = organization?.notifPrefs ?? { lowBalance: true, lowBalanceThreshold: 50, scheduleConfirm: true, deliverySummary: false };
+  const [showThreshold, setShowThreshold] = useState(false);
 
   const save = useMutation({
     mutationFn: updateNotifPrefs,
@@ -400,30 +403,47 @@ function NotificationsSection() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  function toggle(key: keyof typeof prefs) {
+  type ToggleKey = 'lowBalance' | 'scheduleConfirm' | 'deliverySummary';
+
+  function toggle(key: ToggleKey) {
     save.mutate({ ...prefs, [key]: !prefs[key] });
   }
 
-  const rows: { key: keyof typeof prefs; label: string; description: string }[] = [
-    { key: 'lowBalance', label: 'Low balance alerts', description: 'Get notified when your SMS credit balance runs low.' },
+  const rows: { key: ToggleKey; label: string; description: string }[] = [
+    {
+      key: 'lowBalance',
+      label: 'Low balance alerts',
+      description: `Get notified when your SMS credit balance drops below ${prefs.lowBalanceThreshold.toLocaleString()} credits.`,
+    },
     { key: 'scheduleConfirm', label: 'Schedule confirmations', description: 'Get notified when a scheduled or recurring send is confirmed.' },
     { key: 'deliverySummary', label: 'Delivery summaries', description: 'Get a summary after each send completes.' },
   ];
 
   return (
-    <SettingsCard icon={Bell} title="Notifications" description="Choose what FlockText should keep you posted on." tint="teal">
-      <div className="divide-y divide-border">
-        {rows.map((row) => (
-          <div key={row.key} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
-            <div>
-              <div className="text-sm font-semibold">{row.label}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">{row.description}</div>
+    <>
+      <SettingsCard icon={Bell} title="Notifications" description="Choose what FlockText should keep you posted on." tint="teal">
+        <div className="divide-y divide-border">
+          {rows.map((row) => (
+            <div key={row.key} className="flex items-center justify-between gap-4 py-4 first:pt-0 last:pb-0">
+              <div>
+                <div className="text-sm font-semibold">{row.label}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{row.description}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                {row.key === 'lowBalance' && (
+                  <Button variant="outline" size="sm" onClick={() => setShowThreshold(true)}>
+                    Set limit
+                  </Button>
+                )}
+                <Switch checked={prefs[row.key]} onCheckedChange={() => toggle(row.key)} disabled={save.isPending} />
+              </div>
             </div>
-            <Switch checked={prefs[row.key]} onCheckedChange={() => toggle(row.key)} disabled={save.isPending} />
-          </div>
-        ))}
-      </div>
-    </SettingsCard>
+          ))}
+        </div>
+      </SettingsCard>
+
+      <LowBalanceThresholdDialog open={showThreshold} onOpenChange={setShowThreshold} prefs={prefs} />
+    </>
   );
 }
 
@@ -540,43 +560,58 @@ function TeamSection() {
           </div>
         )}
         {team.data && (
-          <div className="divide-y divide-border">
-            {team.data.map((member) => (
-              <div key={member.id} className="flex items-center justify-between gap-3 py-3.5 first:pt-0 last:pb-0">
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
-                    {getInitials(member.name)}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-semibold">{member.name}</div>
-                    <div className="truncate text-xs text-muted-foreground">{member.email}</div>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {isAdmin && member.id !== currentUser?.id ? (
-                    <Select value={member.role} onValueChange={(v) => changeRole.mutate({ id: member.id, role: v as 'admin' | 'user' })}>
-                      <SelectTrigger size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="user">User</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                      {member.role}
-                    </Badge>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Member</TableHead>
+                <TableHead>Role</TableHead>
+                {isAdmin && <TableHead className="w-px" />}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {team.data.map((member) => (
+                <TableRow key={member.id}>
+                  <TableCell>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
+                        {getInitials(member.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold">{member.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{member.email}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {isAdmin && member.id !== currentUser?.id ? (
+                      <Select value={member.role} onValueChange={(v) => changeRole.mutate({ id: member.id, role: v as 'admin' | 'user' })}>
+                        <SelectTrigger size="sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                        {member.role}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      {member.id !== currentUser?.id && (
+                        <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(member.id)}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </TableCell>
                   )}
-                  {isAdmin && member.id !== currentUser?.id && (
-                    <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(member.id)}>
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </SettingsCard>
 

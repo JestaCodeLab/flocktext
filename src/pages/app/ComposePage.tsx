@@ -512,7 +512,7 @@ export function ComposePage() {
         </div>
 
         <div className="w-[340px] shrink-0">
-          <div className="mb-4 rounded-2xl bg-foreground p-5.5">
+          <div className="mb-4 rounded-2xl bg-foreground dark:bg-foreground/10 p-5.5">
             <div className="mb-3.5 text-xs font-bold uppercase tracking-wide text-white/50">Preview</div>
             <div className="overflow-hidden rounded-xl bg-secondary">
               <div className="bg-primary px-3.5 py-2.5 text-[13px] font-bold text-white">{effectiveSenderIdForSend}</div>

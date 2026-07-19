@@ -16,12 +16,14 @@ api.interceptors.request.use((config) => {
 let refreshPromise: Promise<string> | null = null;
 
 async function refreshAccessToken(): Promise<string> {
-  const { refreshToken, setAccessToken, clear } = useAuthStore.getState();
+  const { refreshToken, setTokens, clear } = useAuthStore.getState();
   if (!refreshToken) throw new Error('No refresh token.');
 
   try {
     const { data } = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
-    setAccessToken(data.accessToken);
+    // The refresh token is rotated server-side on every use (old one is
+    // invalidated), so the new one must be persisted too, not just the access token.
+    setTokens(data.accessToken, data.refreshToken);
     return data.accessToken;
   } catch (err) {
     clear();
