@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -19,6 +20,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fetchMe, logout } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useEntityLabels, type EntityLabels } from '@/lib/terminology';
@@ -32,7 +34,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { NotificationsSheet } from '@/components/layout/NotificationsSheet';
+import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
 import type { LucideIcon } from 'lucide-react';
 
 type NavItem =
@@ -77,14 +82,27 @@ export function AppShell() {
   const location = useLocation();
   const session = useAuthStore((s) => s.session);
   const clear = useAuthStore((s) => s.clear);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const themeResolved = useThemeStore((s) => s.resolved);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const [contactsManualOpen, setContactsManualOpen] = useState<boolean | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const entity = useEntityLabels();
 
   useEffect(() => {
     setContactsManualOpen(null);
   }, [location.pathname]);
+
+  // The cached session (localStorage) can drift from the server - e.g. a role
+  // change made by another admin, or a legacy role value from before a data
+  // migration - so pull the authoritative copy once per app load.
+  const { data: freshSession } = useQuery({ queryKey: ['me'], queryFn: fetchMe, staleTime: 0 });
+  useEffect(() => {
+    if (!freshSession) return;
+    updateUser(freshSession.user);
+    updateOrganization(freshSession.organization);
+  }, [freshSession, updateUser, updateOrganization]);
 
   if (!session) return null;
 
@@ -99,7 +117,15 @@ export function AppShell() {
     pending_bms: 'bg-warning/15 text-warning',
   };
 
-  function handleLogout() {
+  async function handleLogout() {
+    const { refreshToken } = useAuthStore.getState();
+    if (refreshToken) {
+      try {
+        await logout(refreshToken);
+      } catch {
+        // best-effort - proceed with local logout regardless
+      }
+    }
     clear();
     navigate('/login', { replace: true });
   }
@@ -176,6 +202,7 @@ export function AppShell() {
             ) : (
               <Link
                 to="/app/settings"
+                state={{ tab: 'sender-ids' }}
                 className="flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
               >
                 <BadgeCheck className="h-3.5 w-3.5" /> No Sender ID
@@ -215,7 +242,7 @@ export function AppShell() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <div className="truncate text-sm font-medium">{user.name}</div>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 capitalize">
+                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 text-white capitalize">
                         {user.role}
                       </Badge>
                     </div>
@@ -223,17 +250,21 @@ export function AppShell() {
                   </div>
                 </div>
                 <DropdownMenuSeparator className="my-1.5" />
-                <DropdownMenuItem className="gap-2.5 px-2.5 py-2.5 text-[13px]" onClick={() => navigate('/app/settings')}>
+                <DropdownMenuItem className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]" onClick={() => navigate('/app/settings')}>
                   <Settings className="h-4 w-4" /> Account
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="gap-2.5 px-2.5 py-2.5 text-[13px]"
+                  className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"
                   onClick={() => navigate('/app/settings', { state: { tab: 'security' } })}
                 >
                   <KeyRound className="h-4 w-4" /> Change Password
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1.5" />
-                <DropdownMenuItem className="gap-2.5 px-2.5 py-2.5 text-[13px]" variant="destructive" onClick={handleLogout}>
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"
+                  variant="destructive"
+                  onClick={() => setShowLogoutConfirm(true)}
+                >
                   Log out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -241,10 +272,35 @@ export function AppShell() {
           </div>
         </header>
 
+        <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Log out?</DialogTitle>
+              <DialogDescription>Are you sure you want to log out of FlockText? </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowLogoutConfirm(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  setShowLogoutConfirm(false);
+                  handleLogout();
+                }}
+              >
+                Log out
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <main className="min-h-0 flex-1 overflow-y-auto px-9 py-7">
           <Outlet />
         </main>
       </div>
+
+      <SessionTimeoutModal />
     </div>
   );
 }

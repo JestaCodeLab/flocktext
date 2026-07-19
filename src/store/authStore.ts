@@ -7,6 +7,7 @@ interface AuthState {
   refreshToken: string | null;
   setSession: (session: Session, accessToken: string, refreshToken: string) => void;
   setAccessToken: (accessToken: string) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
   updateOrganization: (patch: Partial<Session['organization']>) => void;
   updateUser: (patch: Partial<Session['user']>) => void;
   clear: () => void;
@@ -41,6 +42,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const next = { session: get().session, accessToken, refreshToken: get().refreshToken };
     persist(next);
     set({ accessToken });
+  },
+
+  setTokens: (accessToken, refreshToken) => {
+    const next = { session: get().session, accessToken, refreshToken };
+    persist(next);
+    set({ accessToken, refreshToken });
   },
 
   updateOrganization: (patch) => {

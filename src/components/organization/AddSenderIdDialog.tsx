@@ -91,7 +91,7 @@ export function AddSenderIdDialog({
             Cancel
           </Button>
           <Button disabled={register.isPending} onClick={handleSubmit}>
-            {register.isPending ? 'Submitting…' : 'Register sender ID'}
+            {register.isPending ? 'Submitting…' : 'Register Sender ID'}
           </Button>
         </DialogFooter>
       </DialogContent>

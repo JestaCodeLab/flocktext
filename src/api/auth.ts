@@ -33,6 +33,16 @@ export async function fetchMe() {
   return data;
 }
 
+export async function refreshSession(refreshToken: string) {
+  const { data } = await api.post<AuthTokens>('/auth/refresh', { refreshToken });
+  return data;
+}
+
+export async function logout(refreshToken: string | null) {
+  const { data } = await api.post<{ message: string }>('/auth/logout', refreshToken ? { refreshToken } : {});
+  return data;
+}
+
 export async function updateMe(payload: { name: string; email: string }) {
   const { data } = await api.patch<Session>('/auth/me', payload);
   return data;

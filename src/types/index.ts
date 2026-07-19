@@ -20,6 +20,7 @@ export interface SenderIdRequest {
 
 export interface NotifPrefs {
   lowBalance: boolean;
+  lowBalanceThreshold: number;
   scheduleConfirm: boolean;
   deliverySummary: boolean;
 }

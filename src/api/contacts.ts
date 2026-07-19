@@ -1,4 +1,5 @@
 import { api } from '@/api/client';
+import type { DateRangeParams } from '@/lib/dateRange';
 
 export interface Contact {
   id: string;
@@ -13,8 +14,8 @@ export interface Contact {
   date: string;
 }
 
-export async function fetchContacts(search?: string) {
-  const { data } = await api.get<Contact[]>('/contacts', { params: search ? { search } : undefined });
+export async function fetchContacts(search?: string, range?: DateRangeParams) {
+  const { data } = await api.get<Contact[]>('/contacts', { params: { ...(search ? { search } : undefined), ...range } });
   return data;
 }
 

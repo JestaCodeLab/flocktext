@@ -1,30 +1,38 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   Users,
-  Wallet,
   Send,
   TrendingUp,
   TrendingDown,
   Inbox,
   SendIcon,
-  BadgeCheck,
-  Star,
+  CircleCheck,
   Trash2,
   RefreshCw,
   CalendarClock,
   Repeat,
   ChevronRight,
+  ChevronLeft,
+  ChevronsLeft,
+  ChevronsRight,
+  Search,
+  MoreVertical,
   X,
+  Plus,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { fetchDashboardSummary, fetchRecentActivity, fetchDashboardChart, type DashboardChartRange } from '@/api/dashboard';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
+import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
+import { fetchDashboardSummary, fetchRecentActivity, fetchDashboardChart } from '@/api/dashboard';
 import { fetchScheduledMessages, cancelScheduledMessage, type ScheduledMessage } from '@/api/messages';
 import { fetchMe } from '@/api/auth';
 import { setPrimarySenderId, deleteSenderId } from '@/api/organization';
@@ -33,6 +41,7 @@ import { useAuthStore } from '@/store/authStore';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
+import { rangeLabel, type DateRangeParams } from '@/lib/dateRange';
 
 type Accent = 'blue' | 'violet' | 'green' | 'gold';
 
@@ -50,6 +59,8 @@ function StatCard({
   sub,
   accent,
   highlight,
+  onIconClick,
+  iconTitle,
 }: {
   icon: LucideIcon;
   label: string;
@@ -57,7 +68,14 @@ function StatCard({
   sub?: string;
   accent?: Accent;
   highlight?: boolean;
+  onIconClick?: () => void;
+  iconTitle?: string;
 }) {
+  const iconClassName = cn(
+    'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+    highlight ? 'bg-stat-highlight-foreground/15 text-stat-highlight-foreground' : accent && ACCENT_CHIP[accent]
+  );
+
   return (
     <div
       className={cn(
@@ -67,14 +85,15 @@ function StatCard({
     >
       <div className="mb-4 flex items-start justify-between">
         <div className={cn('text-[13px]', highlight ? 'text-stat-highlight-foreground/75' : 'text-muted-foreground')}>{label}</div>
-        <div
-          className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
-            highlight ? 'bg-stat-highlight-foreground/15 text-stat-highlight-foreground' : accent && ACCENT_CHIP[accent]
-          )}
-        >
-          <Icon className="h-[18px] w-[18px]" />
-        </div>
+        {onIconClick ? (
+          <button type="button" onClick={onIconClick} title={iconTitle} className={cn(iconClassName, 'transition-opacity hover:opacity-80')}>
+            <Icon className="h-[18px] w-[18px]" />
+          </button>
+        ) : (
+          <div className={iconClassName}>
+            <Icon className="h-[18px] w-[18px]" />
+          </div>
+        )}
       </div>
       <div className="text-[26px] font-bold">{value}</div>
       {sub && <div className={cn('mt-0.5 text-[13px]', highlight ? 'text-stat-highlight-foreground/75' : 'text-muted-foreground')}>{sub}</div>}
@@ -82,10 +101,11 @@ function StatCard({
   );
 }
 
-const RANGE_OPTIONS: { value: DashboardChartRange; label: string }[] = [
-  { value: 'week', label: 'Week' },
-  { value: 'month', label: 'Month' },
-];
+// Long ranges roll up into weekly chart buckets (see api/controllers/dashboardController.js) -
+// skip enough X-axis ticks that labels stay readable instead of overlapping.
+function xAxisInterval(bucketCount: number) {
+  return bucketCount <= 10 ? 0 : Math.ceil(bucketCount / 8) - 1;
+}
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -102,31 +122,18 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-function ActivityChartCard() {
-  const [range, setRange] = useState<DashboardChartRange>('week');
+// Integrates with the dashboard's shared date-range filter instead of owning its own
+// week/month toggle - the parent passes down the resolved range plus its display label.
+function ActivityChartCard({ range, label }: { range: DateRangeParams; label: string }) {
   const chart = useQuery({ queryKey: ['dashboard-chart', range], queryFn: () => fetchDashboardChart(range) });
+  const buckets = chart.data?.buckets ?? [];
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <div className="text-[16px] font-bold">SMS Usage</div>
-          <div className="text-[13px] text-muted-foreground">{range === 'week' ? 'Last 7 days' : 'Last 30 days'}</div>
-        </div>
-        <div className="flex gap-1 rounded-lg border border-border bg-muted p-1">
-          {RANGE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setRange(option.value)}
-              className={cn(
-                'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
-                range === option.value ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
+          <div className="text-[13px] text-muted-foreground">{label}</div>
         </div>
       </div>
 
@@ -134,11 +141,11 @@ function ActivityChartCard() {
         <Skeleton className="h-[260px] w-full rounded-lg" />
       ) : (
         <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={chart.data?.buckets ?? []} barGap={4}>
+          <BarChart data={buckets} barGap={4}>
             <CartesianGrid vertical={false} stroke="var(--color-border)" />
             <XAxis
               dataKey="label"
-              interval={range === 'month' ? 4 : 0}
+              interval={xAxisInterval(buckets.length)}
               tickLine={false}
               axisLine={false}
               tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
@@ -155,12 +162,32 @@ function ActivityChartCard() {
   );
 }
 
+const SENDER_ID_PAGE_SIZE = 5;
+
 function SenderIdCard() {
-  const navigate = useNavigate();
   const organization = useAuthStore((s) => s.session?.organization);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const updateUser = useAuthStore((s) => s.updateUser);
-  const senderIds = organization?.senderIds ?? [];
+  const orgSenderIds = organization?.senderIds;
+  const allSenderIds = orgSenderIds ?? [];
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [showAdd, setShowAdd] = useState(false);
+
+  const senderIds = useMemo(() => {
+    const rows = orgSenderIds ?? [];
+    const q = search.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((s) => s.senderId.toLowerCase().includes(q));
+  }, [orgSenderIds, search]);
+
+  const totalPages = Math.max(1, Math.ceil(senderIds.length / SENDER_ID_PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageRows = senderIds.slice((currentPage - 1) * SENDER_ID_PAGE_SIZE, currentPage * SENDER_ID_PAGE_SIZE);
+
+  function goToPage(next: number) {
+    setPage(Math.min(Math.max(next, 1), totalPages));
+  }
 
   const checkStatus = useMutation({
     mutationFn: fetchMe,
@@ -193,64 +220,144 @@ function SenderIdCard() {
   return (
     <div className="flex flex-col rounded-2xl border border-border bg-card p-5">
       <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-chart-4/15 text-chart-4">
-            <BadgeCheck className="h-[18px] w-[18px]" />
-          </div>
-          <div className="text-[16px] font-bold">Sender IDs</div>
+        <div className="text-[16px] font-bold">Sender IDs</div>
+        <div className="flex items-center gap-1">
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            disabled={checkStatus.isPending}
+            onClick={() => checkStatus.mutate()}
+            title="Check status"
+          >
+            <RefreshCw className={cn('h-3.5 w-3.5', checkStatus.isPending && 'animate-spin')} />
+          </Button>
+          <Button size="sm" className="text-white" onClick={() => setShowAdd(true)}>
+            <Plus className="h-[15px] w-[15px]" /> Sender ID
+          </Button>
         </div>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          disabled={checkStatus.isPending}
-          onClick={() => checkStatus.mutate()}
-          title="Check status"
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5', checkStatus.isPending && 'animate-spin')} />
-        </Button>
       </div>
 
-      {senderIds.length === 0 ? (
+      {allSenderIds.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-center">
           <div className="text-sm text-muted-foreground">No sender IDs registered yet.</div>
-          <Button size="sm" variant="outline" onClick={() => navigate('/app/settings')}>
+          <Button size="sm" variant="outline" onClick={() => setShowAdd(true)}>
             Add sender ID
           </Button>
         </div>
       ) : (
-        <div className="flex-1 divide-y divide-border">
-          {senderIds.map((s) => (
-            <div key={s.id} className="py-3 first:pt-0 last:pb-0">
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <span className="truncate text-sm font-bold">{s.senderId}</span>
-                  {s.isPrimary && <Star className="h-3 w-3 shrink-0 fill-primary text-primary" />}
-                </div>
-                <div className="flex shrink-0 items-center gap-0.5">
-                  {!s.isPrimary && (
-                    <Button size="icon-sm" variant="ghost" disabled={setPrimary.isPending} onClick={() => setPrimary.mutate(s.id)} title="Make primary">
-                      <Star className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                  {s.status !== 'approved' && (
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      disabled={remove.isPending}
-                      onClick={() => remove.mutate(s.id)}
-                      title="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </div>
-              <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
+        <>
+          <div className="relative mb-3">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search sender Ids"
+              className="pl-10"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          {pageRows.length === 0 ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-center">
+              <div className="text-sm text-muted-foreground">No sender IDs match your search.</div>
             </div>
-          ))}
-        </div>
+          ) : (
+            <div className="flex-1 divide-y divide-border">
+              {pageRows.map((s) => (
+                <div key={s.id} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate text-sm font-medium">{s.senderId}</span>
+                      {s.isPrimary && <CircleCheck className="h-4 w-4 shrink-0 text-primary" />}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
+                      {(!s.isPrimary || s.status !== 'approved') && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button size="icon-sm" variant="ghost" title="Actions">
+                                <MoreVertical className="h-3.5 w-3.5" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end">
+                            {!s.isPrimary && (
+                              <DropdownMenuItem
+                                className="text-xs cursor-pointer"
+                                disabled={setPrimary.isPending}
+                                onClick={() => setPrimary.mutate(s.id)}
+                              >
+                                <CircleCheck className="h-2 w-2" /> Make primary
+                              </DropdownMenuItem>
+                            )}
+                            {s.status !== 'approved' && (
+                              <DropdownMenuItem
+                                className="text-xs cursor-pointer text-destructive"
+                                variant="destructive"
+                                disabled={remove.isPending}
+                                onClick={() => remove.mutate(s.id)}
+                              >
+                                <Trash2 className="h-2 w-2" /> Delete
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-1">
+              <Button size="icon-sm" variant="outline" disabled={currentPage <= 1} onClick={() => goToPage(1)} title="First page">
+                <ChevronsLeft className="h-3.5 w-3.5" />
+              </Button>
+              <Button size="icon-sm" variant="outline" disabled={currentPage <= 1} onClick={() => goToPage(currentPage - 1)} title="Previous page">
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => goToPage(p)}
+                  className={cn(
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold transition-colors',
+                    p === currentPage ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted'
+                  )}
+                >
+                  {p}
+                </button>
+              ))}
+              <Button
+                size="icon-sm"
+                variant="outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => goToPage(currentPage + 1)}
+                title="Next page"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                disabled={currentPage >= totalPages}
+                onClick={() => goToPage(totalPages)}
+                title="Last page"
+              >
+                <ChevronsRight className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
+
+      <AddSenderIdDialog open={showAdd} onOpenChange={setShowAdd} />
     </div>
   );
 }
@@ -275,8 +382,8 @@ function scheduledSummary(m: ScheduledMessage) {
 function ScheduledSmsCard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const scheduled = useQuery({ queryKey: ['scheduled-messages'], queryFn: fetchScheduledMessages });
-  const upcoming = (scheduled.data ?? []).slice(0, 4);
+  const scheduled = useQuery({ queryKey: ['scheduled-messages'], queryFn: () => fetchScheduledMessages() });
+  const upcoming = (scheduled.data?.rows ?? []).slice(0, 4);
 
   const cancel = useMutation({
     mutationFn: cancelScheduledMessage,
@@ -343,12 +450,13 @@ function ScheduledSmsCard() {
 export function DashboardPage() {
   const navigate = useNavigate();
   const entity = useEntityLabels();
-  const summary = useQuery({ queryKey: ['dashboard-summary'], queryFn: fetchDashboardSummary });
-  const activity = useQuery({ queryKey: ['recent-activity'], queryFn: () => fetchRecentActivity() });
+  const [range, setRange] = useState<DateRangeParams>({ preset: 'this_month' });
+  const summary = useQuery({ queryKey: ['dashboard-summary', range], queryFn: () => fetchDashboardSummary(range) });
+  const activity = useQuery({ queryKey: ['recent-activity', range], queryFn: () => fetchRecentActivity(range) });
 
   return (
     <div>
-      <div className="mb-7 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between">
         <div>
           <div className="mb-1 text-[26px] font-bold">Dashboard</div>
           <div className="text-sm text-muted-foreground">{summary.data?.churchName ?? <Skeleton className="h-4 w-40" />}</div>
@@ -360,9 +468,7 @@ export function DashboardPage() {
           <Button variant="outline" onClick={() => navigate('/app/contacts')}>
             <Users className="h-[15px] w-[15px]" /> Add {entity.plural}
           </Button>
-          <Button className={"bg-white"} variant="outline" onClick={() => navigate('/app/wallet')}>
-            <Wallet className="h-[15px] w-[15px]" /> Buy credit
-          </Button>
+          <DateRangeFilter range={range} onChange={setRange} />
         </div>
       </div>
 
@@ -375,23 +481,28 @@ export function DashboardPage() {
       ) : (
         <div className="mb-6 grid grid-cols-5 gap-4">
           <StatCard
-            icon={Wallet}
-            label="Wallet balance"
-            value={<>{(summary.data?.walletBalanceCredits ?? 0).toLocaleString()} <span className="text-sm font-semibold text-stat-highlight-foreground/75">credits</span></>}
+            icon={Plus}
+            label="Wallet Balance"
+            value={(summary.data?.walletBalanceCredits ?? 0).toLocaleString()}
             highlight
+            onIconClick={() => navigate('/app/wallet')}
+            iconTitle="Buy credit"
+            sub='Credits left'
           />
-          <StatCard icon={Users} label={`Total ${entity.plural}`} value={summary.data?.contactsCount ?? 0} accent="blue" />
-          <StatCard icon={Send} label="Messages sent this month" value={summary.data?.sentThisMonth ?? 0} accent="violet" />
+          <StatCard icon={Users} label={`Total ${entity.pluralCap}`} value={summary.data?.contactsCount ?? 0} accent="blue" sub={'Over time'} />
+          <StatCard icon={Send} label="Messages Sent" value={summary.data?.messagesSent ?? 0} sub={rangeLabel(range)} accent="violet" />
           <StatCard
             icon={TrendingUp}
-            label="Delivery rate this month"
-            value={<span className="text-success">{summary.data?.deliveryRate ?? 0}%</span>}
+            label="Delivery Rate"
+            value={`${summary.data?.deliveryRate ?? 0}%`}
+            sub={rangeLabel(range)}
             accent="green"
           />
           <StatCard
             icon={TrendingDown}
-            label="Credits used this month"
-            value={(summary.data?.creditsUsedThisMonth ?? 0).toLocaleString()}
+            label="Credits Used"
+            value={(summary.data?.creditsUsed ?? 0).toLocaleString()}
+            sub={rangeLabel(range)}
             accent="gold"
           />
         </div>
@@ -399,7 +510,7 @@ export function DashboardPage() {
 
       <div className="mb-6 grid grid-cols-3 gap-4">
         <div className="col-span-2">
-          <ActivityChartCard />
+          <ActivityChartCard range={range} label={rangeLabel(range)} />
         </div>
         <SenderIdCard />
       </div>

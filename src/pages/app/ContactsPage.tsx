@@ -4,6 +4,7 @@ import { Search, UserPlus, Upload, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { CsvImportPanel } from '@/components/contacts/CsvImportPanel';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
 import { AddContactDialog } from '@/components/contacts/AddContactDialog';
@@ -11,6 +12,7 @@ import { ContactsTable } from '@/components/contacts/ContactsTable';
 import { fetchContacts } from '@/api/contacts';
 import { useAuthStore } from '@/store/authStore';
 import { useEntityLabels } from '@/lib/terminology';
+import type { DateRangeParams } from '@/lib/dateRange';
 
 export function ContactsPage() {
   const queryClient = useQueryClient();
@@ -18,10 +20,14 @@ export function ContactsPage() {
   const entity = useEntityLabels();
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [range, setRange] = useState<DateRangeParams>({ preset: 'all_time' });
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
-  const contacts = useQuery({ queryKey: ['contacts', search], queryFn: () => fetchContacts(search || undefined) });
+  const contacts = useQuery({
+    queryKey: ['contacts', search, range],
+    queryFn: () => fetchContacts(search || undefined, range),
+  });
 
   return (
     <div>
@@ -67,6 +73,7 @@ export function ContactsPage() {
         <Button variant="outline" onClick={() => setSearch(searchInput)}>
           <Search className="h-[15px] w-[15px]" /> Search
         </Button>
+        <DateRangeFilter range={range} onChange={setRange} includeAllTime />
         {search && (
           <Button
             variant="ghost"
