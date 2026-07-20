@@ -2,20 +2,26 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import slide1 from '@/assets/auth-slides/slider_1.png';
+import slide2 from '@/assets/auth-slides/slider_2.png';
+import slide3 from '@/assets/auth-slides/slider_3.png';
 
 const logo = '/logo/flocktext-logo.png';
 const logoWhite = '/logo/flocktext-logo-white.png';
 
 const slides = [
   {
+    image: slide1,
     title: 'Reach your whole audience in seconds',
     body: 'Send reminders, announcements, and invitations to every contact group with one message.',
   },
   {
+    image: slide2,
     title: 'Pay-as-you-go, credit never expires',
     body: 'Top up whenever you like via card or mobile money. No subscriptions, no surprise renewals.',
   },
   {
+    image: slide3,
     title: 'Your name on every message',
     body: "We handle sender ID approval for you, so texts arrive from your organization's name, not a random number.",
   },
@@ -37,7 +43,19 @@ export function AuthLayout({ children, contentClassName }: { children: React.Rea
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 sm:p-8">
       <div className="flex min-h-[680px] w-full max-w-[1040px] overflow-hidden rounded-[28px] bg-card shadow-xl ring-1 ring-foreground/5">
         <div className="relative hidden w-[46%] min-w-[360px] overflow-hidden bg-foreground lg:block">
-          <div className="absolute inset-0 bg-gradient-to-b from-foreground/10 via-foreground/5 to-foreground" />
+          {slides.map((slide, i) => (
+            <img
+              key={slide.image}
+              src={slide.image}
+              alt=""
+              aria-hidden
+              className={cn(
+                'absolute inset-0 h-full w-full object-cover transition-opacity duration-700',
+                i === slideIndex ? 'opacity-100' : 'opacity-0'
+              )}
+            />
+          ))}
+          <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/10 to-foreground" />
           <Link to="/" className="absolute left-8 top-8 z-10">
             <img src={logoWhite} alt="FlockText" className="h-9 w-auto" />
           </Link>
