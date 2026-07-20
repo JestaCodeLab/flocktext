@@ -17,7 +17,7 @@ export function SenderIdsSection() {
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const [showAdd, setShowAdd] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; senderId: string; status: string } | null>(null);
-  const senderIds = organization?.senderIds ?? [];
+  const senderIds = (organization?.senderIds ?? []).filter((s) => s.status !== 'deleted');
   const hasApproved = senderIds.some((s) => s.status === 'approved');
 
   const setPrimary = useMutation({

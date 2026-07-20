@@ -20,7 +20,8 @@ export function SenderIdStep() {
   const [senderId, setSenderId] = useState('');
   const [purpose, setPurpose] = useState('');
 
-  const existing = organization?.senderIds.find((s) => s.isPrimary) ?? organization?.senderIds[0];
+  const activeSenderIds = organization?.senderIds.filter((s) => s.status !== 'deleted') ?? [];
+  const existing = activeSenderIds.find((s) => s.isPrimary) ?? activeSenderIds[0];
   const showForm = !existing || existing.status === 'rejected';
 
   const register = useMutation({

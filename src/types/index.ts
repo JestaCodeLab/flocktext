@@ -12,7 +12,7 @@ export interface SenderIdRequest {
   id: string;
   senderId: string;
   purpose: string;
-  status: 'pending_review' | 'pending_bms' | 'approved' | 'rejected';
+  status: 'pending_review' | 'pending_bms' | 'approved' | 'rejected' | 'deleted';
   rejectionReason: string;
   bmsStatus: string;
   isPrimary: boolean;

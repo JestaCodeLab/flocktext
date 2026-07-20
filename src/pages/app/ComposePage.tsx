@@ -78,7 +78,7 @@ export function ComposePage() {
   const groups = useQuery({ queryKey: ['groups'], queryFn: fetchGroups });
   const templates = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates });
   const contactsCount = useQuery({ queryKey: ['contacts-count'], queryFn: fetchContactsCount });
-  const senderIds = session?.organization.senderIds ?? [];
+  const senderIds = (session?.organization.senderIds ?? []).filter((s) => s.status !== 'deleted');
   const approvedSenderIds = senderIds.filter((s) => s.status === 'approved');
   const approvedSenderId = approvedSenderIds.find((s) => s.isPrimary) ?? approvedSenderIds[0];
 

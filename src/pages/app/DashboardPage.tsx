@@ -169,15 +169,15 @@ function SenderIdCard() {
   const organization = useAuthStore((s) => s.session?.organization);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const updateUser = useAuthStore((s) => s.updateUser);
-  const orgSenderIds = organization?.senderIds;
-  const allSenderIds = orgSenderIds ?? [];
+  const orgSenderIds = useMemo(() => (organization?.senderIds ?? []).filter((s) => s.status !== 'deleted'), [organization?.senderIds]);
+  const allSenderIds = orgSenderIds;
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; senderId: string; status: string } | null>(null);
 
   const senderIds = useMemo(() => {
-    const rows = orgSenderIds ?? [];
+    const rows = orgSenderIds;
     const q = search.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((s) => s.senderId.toLowerCase().includes(q));

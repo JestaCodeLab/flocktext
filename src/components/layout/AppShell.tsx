@@ -109,7 +109,8 @@ export function AppShell() {
   const mainNavItems = getMainNavItems(entity);
   const { user, organization } = session;
   const bottomNavItems = getBottomNavItems(user.role);
-  const senderId = organization.senderIds.find((s) => s.isPrimary) ?? organization.senderIds[0];
+  const activeSenderIds = organization.senderIds.filter((s) => s.status !== 'deleted');
+  const senderId = activeSenderIds.find((s) => s.isPrimary) ?? activeSenderIds[0];
   const senderStatusColor: Record<string, string> = {
     approved: 'bg-success/15 text-success',
     rejected: 'bg-destructive/15 text-destructive',
