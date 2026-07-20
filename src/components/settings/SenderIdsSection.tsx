@@ -5,6 +5,7 @@ import { BadgeCheck, Plus, Star, Trash2, Info } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
+import { DeleteSenderIdDialog } from '@/components/organization/DeleteSenderIdDialog';
 import { setPrimarySenderId, deleteSenderId } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
@@ -15,7 +16,8 @@ export function SenderIdsSection() {
   const organization = useAuthStore((s) => s.session?.organization);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const [showAdd, setShowAdd] = useState(false);
-  const senderIds = organization?.senderIds ?? [];
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; senderId: string; status: string } | null>(null);
+  const senderIds = (organization?.senderIds ?? []).filter((s) => s.status !== 'deleted');
   const hasApproved = senderIds.some((s) => s.status === 'approved');
 
   const setPrimary = useMutation({
@@ -32,6 +34,7 @@ export function SenderIdsSection() {
     onSuccess: (data) => {
       updateOrganization(data);
       toast.success('Sender ID removed.');
+      setDeleteTarget(null);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -78,17 +81,15 @@ export function SenderIdsSection() {
                           <Star className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      {s.status !== 'approved' && (
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          className="text-destructive"
-                          disabled={remove.isPending}
-                          onClick={() => remove.mutate(s.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      )}
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        disabled={remove.isPending}
+                        onClick={() => setDeleteTarget({ id: s.id, senderId: s.senderId, status: s.status })}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
                   <div className="text-sm text-muted-foreground">{s.purpose}</div>
@@ -103,6 +104,12 @@ export function SenderIdsSection() {
       </SettingsCard>
 
       <AddSenderIdDialog open={showAdd} onOpenChange={setShowAdd} />
+      <DeleteSenderIdDialog
+        target={deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && remove.mutate(deleteTarget.id)}
+        isPending={remove.isPending}
+      />
     </>
   );
 }
