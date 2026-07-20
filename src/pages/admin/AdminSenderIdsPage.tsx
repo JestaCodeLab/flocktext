@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, X, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Send, X, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,10 +11,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import {
   fetchPendingSenderIds,
   fetchAllSenderIds,
+  registerSenderId,
   approveSenderId,
   rejectSenderId,
   checkBmsStatus,
-  markSenderIdBmsApproved,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
@@ -34,10 +34,10 @@ export function AdminSenderIdsPage() {
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard-summary'] });
   }
 
-  const approve = useMutation({
-    mutationFn: (entry: AdminSenderIdPendingEntry) => approveSenderId(entry.orgId, entry.senderIdId),
+  const register = useMutation({
+    mutationFn: (entry: AdminSenderIdPendingEntry) => registerSenderId(entry.orgId, entry.senderIdId),
     onSuccess: () => {
-      toast.success('Approved and submitted to BMS Africa.');
+      toast.success('Submitted to BMS Africa for registration.');
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err, 'Could not register this sender ID with BMS Africa.')),
@@ -60,10 +60,10 @@ export function AdminSenderIdsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const markApproved = useMutation({
-    mutationFn: (row: { orgId: string; senderIdId: string }) => markSenderIdBmsApproved(row.orgId, row.senderIdId),
+  const approve = useMutation({
+    mutationFn: (row: { orgId: string; senderIdId: string }) => approveSenderId(row.orgId, row.senderIdId),
     onSuccess: () => {
-      toast.success('Marked as approved.');
+      toast.success('Approved.');
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -94,8 +94,8 @@ export function AdminSenderIdsPage() {
                 <TableCell className="text-muted-foreground">{new Date(entry.submittedAt).toLocaleDateString()}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1.5">
-                    <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(entry)}>
-                      <Check className="h-4 w-4" /> Approve
+                    <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(entry)}>
+                      <Send className="h-4 w-4" /> Register
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => setRejectTarget(entry)}>
                       <X className="h-4 w-4" /> Reject
@@ -142,8 +142,11 @@ export function AdminSenderIdsPage() {
                       <Button size="sm" variant="outline" disabled={sync.isPending} onClick={() => sync.mutate(row)}>
                         <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
                       </Button>
-                      <Button size="sm" disabled={markApproved.isPending} onClick={() => markApproved.mutate(row)}>
-                        <ShieldCheck className="h-3.5 w-3.5" /> Mark as BMS-approved
+                      <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(row)}>
+                        <ShieldCheck className="h-3.5 w-3.5" /> Approve
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => setRejectTarget(row)}>
+                        <X className="h-3.5 w-3.5" /> Reject
                       </Button>
                     </div>
                   )}

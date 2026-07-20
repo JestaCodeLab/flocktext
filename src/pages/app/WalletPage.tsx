@@ -86,7 +86,7 @@ export function WalletPage() {
                   Check balance
                 </button>
               </div>
-              <div className="text-[34px] font-extrabold">
+              <div className="text-[34px] font-bold">
                 {(wallet.data?.walletBalanceCredits ?? 0).toLocaleString()} <span className="text-base font-semibold text-muted-foreground">credits</span>
               </div>
             </div>
@@ -98,7 +98,7 @@ export function WalletPage() {
           <div className="flex items-center justify-between rounded-2xl border border-border bg-card p-6.5">
             <div>
               <div className="mb-1.5 text-[13px] text-muted-foreground">Credits used</div>
-              <div className="text-[34px] font-extrabold">
+              <div className="text-[34px] font-bold">
                 {(wallet.data?.creditsUsed ?? 0).toLocaleString()} <span className="text-base font-semibold text-muted-foreground">credits</span>
               </div>
             </div>

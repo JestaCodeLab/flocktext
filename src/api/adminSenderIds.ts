@@ -11,6 +11,11 @@ export async function fetchAllSenderIds() {
   return data;
 }
 
+export async function registerSenderId(orgId: string, senderIdId: string) {
+  const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/register`);
+  return data;
+}
+
 export async function approveSenderId(orgId: string, senderIdId: string) {
   const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/approve`);
   return data;
@@ -26,10 +31,5 @@ export async function rejectSenderId(orgId: string, senderIdId: string, reason: 
 
 export async function checkBmsStatus(orgId: string, senderIdId: string) {
   const { data } = await adminApi.post<{ bmsStatus: string }>(`/admin/sender-ids/${orgId}/${senderIdId}/check-bms`);
-  return data;
-}
-
-export async function markSenderIdBmsApproved(orgId: string, senderIdId: string) {
-  const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/mark-approved`);
   return data;
 }

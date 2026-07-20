@@ -31,7 +31,6 @@ import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const ALL_CONTACTS_ID = '__all__';
 
 function countSegments(body: string) {
   return Math.max(1, Math.ceil(body.length / 160));
@@ -58,11 +57,10 @@ export function ComposePage() {
   const session = useAuthStore((s) => s.session);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
 
-  const [recipientMode, setRecipientMode] = useState<'single' | 'groups' | 'selection'>(preset?.recipientMode ?? 'groups');
+  const [recipientMode, setRecipientMode] = useState<'single' | 'groups' | 'all'>(preset?.recipientMode ?? 'groups');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [singlePhone, setSinglePhone] = useState(preset?.phone ?? '');
   const [singleName, setSingleName] = useState(preset?.recipientName ?? '');
-  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
   const [scheduleMode, setScheduleMode] = useState<'now' | 'once' | 'recurring'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
@@ -93,10 +91,9 @@ export function ComposePage() {
 
   const recipientCount = useMemo(() => {
     if (recipientMode === 'single') return singlePhone.trim() ? 1 : 0;
-    if (recipientMode === 'selection') return selectedContactIds.size;
-    if (selectedGroupId === ALL_CONTACTS_ID) return contactsCount.data ?? 0;
+    if (recipientMode === 'all') return contactsCount.data ?? 0;
     return groups.data?.find((g) => g.id === selectedGroupId)?.count ?? 0;
-  }, [recipientMode, singlePhone, groups.data, selectedGroupId, contactsCount.data, selectedContactIds]);
+  }, [recipientMode, singlePhone, groups.data, selectedGroupId, contactsCount.data]);
 
   const segments = countSegments(body);
   const estimatedCost = segments * recipientCount;
@@ -113,7 +110,6 @@ export function ComposePage() {
     setSelectedGroupId(null);
     setSinglePhone('');
     setSingleName('');
-    setSelectedContactIds(new Set());
     setScheduleDate('');
     setScheduleMode('now');
     setSelectedSenderId(null);
@@ -170,10 +166,6 @@ export function ComposePage() {
       toast.error('Enter a phone number to send to.');
       return;
     }
-    if (recipientMode === 'selection' && selectedContactIds.size === 0) {
-      toast.error(`Choose at least one ${entity.singular} to send to.`);
-      return;
-    }
     if (scheduleMode === 'once') {
       if (!scheduleDate || !scheduleTime) {
         toast.error('Choose a date and time to send.');
@@ -189,16 +181,14 @@ export function ComposePage() {
   }
 
   function handleConfirm() {
-    const isAllContacts = recipientMode === 'groups' && selectedGroupId === ALL_CONTACTS_ID;
     const basePayload = {
       body,
-      recipientType: isAllContacts ? ('all' as const) : recipientMode,
-      groupIds: recipientMode === 'groups' && selectedGroupId && !isAllContacts ? [selectedGroupId] : undefined,
-      contactIds: recipientMode === 'selection' ? Array.from(selectedContactIds) : undefined,
+      recipientType: recipientMode,
+      groupIds: recipientMode === 'groups' && selectedGroupId ? [selectedGroupId] : undefined,
       phone: recipientMode === 'single' ? singlePhone : undefined,
       recipientName: recipientMode === 'single' ? singleName || undefined : undefined,
       templateId: templateId || null,
-      senderIdToUse: selectedSenderId || undefined,
+      senderId: selectedSenderId || undefined,
     };
 
     if (scheduleMode === 'now') {
@@ -287,35 +277,21 @@ export function ComposePage() {
                 >
                   Single
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setRecipientMode('all')}
+                  className={cn(
+                    'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
+                    recipientMode === 'all' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  All
+                </button>
               </div>
             </div>
 
             {recipientMode === 'groups' ? (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3">
-                {(() => {
-                  const selected = selectedGroupId === ALL_CONTACTS_ID;
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => selectGroup(ALL_CONTACTS_ID)}
-                      className={cn(
-                        'relative flex items-center gap-2.5 rounded-lg border p-3 text-left',
-                        selected ? 'border-primary bg-accent/40' : 'border-border bg-background'
-                      )}
-                    >
-                      {selected && (
-                        <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="h-2.5 w-2.5" />
-                        </div>
-                      )}
-                      <Users className={cn('h-5 w-5 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} />
-                      <div className="min-w-0">
-                        <div className="truncate text-[13px] font-semibold leading-tight">All {entity.pluralCap}</div>
-                        <div className="text-[11px] text-muted-foreground">{contactsCount.data ?? 0} {entity.plural}</div>
-                      </div>
-                    </button>
-                  );
-                })()}
                 {groups.data?.map((g) => {
                   const selected = selectedGroupId === g.id;
                   return (
@@ -341,6 +317,14 @@ export function ComposePage() {
                     </button>
                   );
                 })}
+              </div>
+            ) : recipientMode === 'all' ? (
+              <div className="flex items-center gap-2.5 rounded-lg border border-primary bg-accent/40 p-3">
+                <Users className="h-5 w-5 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <div className="truncate text-[13px] font-semibold leading-tight">All {entity.pluralCap}</div>
+                  <div className="text-[11px] text-muted-foreground">{contactsCount.data ?? 0} {entity.plural}</div>
+                </div>
               </div>
             ) : (
               <div className="space-y-3">

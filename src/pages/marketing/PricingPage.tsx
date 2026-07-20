@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowRight, Check, MessageCircle } from 'lucide-react';
 import { fetchPublicPackages } from '@/api/public';
-import { fallbackPackages } from '@/pages/marketing/data/packages';
 import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { routeSeo } from '@/pages/marketing/data/seo';
@@ -20,11 +20,22 @@ const includedFeatures = [
   'Message templates',
 ];
 
+function PackageCardSkeleton() {
+  return (
+    <div className="flex flex-col rounded-2xl bg-card p-7 ring-1 ring-foreground/10">
+      <Skeleton className="h-3.5 w-20" />
+      <Skeleton className="mt-4 h-10 w-28" />
+      <Skeleton className="mt-4 h-4 w-24" />
+      <Skeleton className="mt-2 h-3 w-32" />
+      <Skeleton className="mt-7 h-10 w-full rounded-full" />
+    </div>
+  );
+}
+
 export function PricingPage() {
-  const { data: packages } = useQuery({
+  const { data: packages, isLoading } = useQuery({
     queryKey: ['public', 'packages'],
     queryFn: fetchPublicPackages,
-    initialData: fallbackPackages,
     staleTime: 60_000,
   });
 
@@ -48,7 +59,9 @@ export function PricingPage() {
           </div>
 
           <div className="mx-auto mt-14 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {packages.map((pkg) => {
+            {isLoading
+              ? Array.from({ length: 4 }, (_, i) => <PackageCardSkeleton key={i} />)
+              : packages?.map((pkg) => {
               const perCredit = pkg.ghs / pkg.credits;
               const popular = pkg.badge === 'Most popular';
               return (
