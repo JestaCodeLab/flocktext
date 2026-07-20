@@ -355,7 +355,11 @@ export function ComposePage() {
             <div className="mb-3.5 text-[13px] font-bold text-foreground/80">Sender ID</div>
             <div className="flex gap-2">
               <div className="flex-1">
-                <Select value={selectedSenderId || ''} onValueChange={setSelectedSenderId}>
+                <Select
+                  value={selectedSenderId || ''}
+                  onValueChange={setSelectedSenderId}
+                  items={[{ value: '', label: 'Use system default sender ID' }, ...senderIds.map((s) => ({ value: s.id, label: s.senderId }))]}
+                >
                   <SelectTrigger size="sm" className="w-full">
                     <SelectValue placeholder="Use default sender ID" />
                   </SelectTrigger>

@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMemo, useRef, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import Papa from 'papaparse';
-import { UploadCloud, FileText, X } from 'lucide-react';
+import { UploadCloud, FileText, X, Download, TriangleAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { importContactsCsv, type ImportResult } from '@/api/contacts';
+import { importContactsCsv, fetchContactPhones, type ImportResult } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
@@ -24,6 +25,12 @@ interface PreviewRow {
   dateOfBirth: string;
 }
 
+type DuplicateType = 'file' | 'existing' | null;
+
+interface ImportRow extends PreviewRow {
+  duplicateType: DuplicateType;
+}
+
 function mapRow(row: Record<string, string>): PreviewRow {
   const normalized: Record<string, string> = {};
   for (const [key, value] of Object.entries(row)) {
@@ -39,6 +46,35 @@ function mapRow(row: Record<string, string>): PreviewRow {
   };
 }
 
+function normalizePhoneDigits(phone: string) {
+  return phone.replace(/\D/g, '');
+}
+
+function annotateDuplicates(rows: PreviewRow[], existingPhones: Set<string>): ImportRow[] {
+  const seen = new Set<string>();
+  return rows.map((row) => {
+    const digits = normalizePhoneDigits(row.phone);
+    let duplicateType: DuplicateType = null;
+    if (digits) {
+      if (seen.has(digits)) duplicateType = 'file';
+      else if (existingPhones.has(digits)) duplicateType = 'existing';
+      seen.add(digits);
+    }
+    return { ...row, duplicateType };
+  });
+}
+
+function downloadTemplate() {
+  const csv = 'Name,Phone,Date of Birth\nJane Doe,+15551234567,1990-05-14\n';
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'contacts-template.csv';
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 const PREVIEW_LIMIT = 20;
 
 export function CsvImportPanel({
@@ -51,10 +87,24 @@ export function CsvImportPanel({
   const entity = useEntityLabels();
   const fileInput = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<PreviewRow[] | null>(null);
-  const [totalRows, setTotalRows] = useState(0);
+  const [rawRows, setRawRows] = useState<PreviewRow[] | null>(null);
   const [dragging, setDragging] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+
+  const existingPhones = useQuery({
+    queryKey: ['contacts', 'phones'],
+    queryFn: fetchContactPhones,
+    enabled: !!file,
+    staleTime: 60_000,
+  });
+
+  const rows = useMemo(
+    () => (rawRows ? annotateDuplicates(rawRows, new Set(existingPhones.data ?? [])) : []),
+    [rawRows, existingPhones.data]
+  );
+  const preview = rows.slice(0, PREVIEW_LIMIT);
+  const totalRows = rows.length;
+  const duplicateCount = rows.filter((r) => r.duplicateType).length;
 
   const upload = useMutation({
     mutationFn: (uploadedFile: File) => importContactsCsv(uploadedFile, groupId),
@@ -77,9 +127,7 @@ export function CsvImportPanel({
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        const rows = results.data.map(mapRow).filter((r) => r.name || r.phone);
-        setTotalRows(rows.length);
-        setPreview(rows.slice(0, PREVIEW_LIMIT));
+        setRawRows(results.data.map(mapRow).filter((r) => r.name || r.phone));
       },
       error: () => {
         toast.error('Could not read that file. Make sure it is a valid CSV.');
@@ -103,16 +151,35 @@ export function CsvImportPanel({
 
   function reset() {
     setFile(null);
-    setPreview(null);
-    setTotalRows(0);
+    setRawRows(null);
     setResult(null);
+  }
+
+  function removeDuplicates() {
+    const removed = duplicateCount;
+    setRawRows((current) => (current ?? []).filter((_, i) => !rows[i]?.duplicateType));
+    toast.success(`Removed ${removed} duplicate${removed === 1 ? '' : 's'}.`);
+  }
+
+  function submitImport() {
+    if (!file) return;
+    const csv = Papa.unparse(rows.map((r) => ({ Name: r.name, Phone: r.phone, 'Date of Birth': r.dateOfBirth })));
+    upload.mutate(new File([csv], file.name, { type: 'text/csv' }));
   }
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <div className="mb-1 text-[13px] font-bold text-foreground/80">Upload a CSV</div>
-      <div className="mb-4 text-xs text-muted-foreground">
-        Columns: name (or first/last name), phone, and optionally date of birth.
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-1 text-[13px] font-bold text-foreground/80">Upload a CSV</div>
+          <div className="text-xs text-muted-foreground">
+            Columns: name (or first/last name), phone, and optionally date of birth.
+          </div>
+        </div>
+        <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={downloadTemplate}>
+          <Download className="h-3.5 w-3.5" />
+          Template
+        </Button>
       </div>
 
       {!file && (
@@ -138,7 +205,7 @@ export function CsvImportPanel({
         </div>
       )}
 
-      {file && preview && !result && (
+      {file && rawRows && !result && (
         <div>
           <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-3.5 py-2.5">
             <div className="flex items-center gap-2 text-sm font-semibold">
@@ -151,6 +218,19 @@ export function CsvImportPanel({
             </button>
           </div>
 
+          {duplicateCount > 0 && (
+            <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-2.5">
+              <div className="flex items-center gap-2 text-xs font-medium text-warning">
+                <TriangleAlert className="h-4 w-4 shrink-0" />
+                {duplicateCount} duplicate phone number{duplicateCount === 1 ? '' : 's'} found — repeated in the file or already in your{' '}
+                {entity.plural}.
+              </div>
+              <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={removeDuplicates}>
+                Remove duplicates
+              </Button>
+            </div>
+          )}
+
           <div className="mb-3 max-h-[280px] overflow-auto rounded-lg border border-border">
             <Table>
               <TableHeader>
@@ -162,9 +242,23 @@ export function CsvImportPanel({
               </TableHeader>
               <TableBody>
                 {preview.map((row, i) => (
-                  <TableRow key={i}>
+                  <TableRow key={i} className={cn(row.duplicateType && 'bg-warning/10')}>
                     <TableCell className={cn('font-semibold', !row.name && 'text-destructive')}>{row.name || 'Missing'}</TableCell>
-                    <TableCell className={cn('text-muted-foreground', !row.phone && 'text-destructive')}>{row.phone || 'Missing'}</TableCell>
+                    <TableCell className={cn('text-muted-foreground', !row.phone && 'text-destructive')}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {row.phone || 'Missing'}
+                        {row.duplicateType === 'file' && (
+                          <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
+                            Duplicate in file
+                          </Badge>
+                        )}
+                        {row.duplicateType === 'existing' && (
+                          <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
+                            Already a {entity.singular}
+                          </Badge>
+                        )}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{row.dateOfBirth || '—'}</TableCell>
                   </TableRow>
                 ))}
@@ -181,7 +275,7 @@ export function CsvImportPanel({
             <Button variant="outline" onClick={reset} disabled={upload.isPending}>
               Choose a different file
             </Button>
-            <Button className="flex-1" disabled={upload.isPending || totalRows === 0} onClick={() => file && upload.mutate(file)}>
+            <Button className="flex-1" disabled={upload.isPending || totalRows === 0} onClick={submitImport}>
               {upload.isPending ? 'Importing…' : `Import ${totalRows} ${totalRows === 1 ? entity.singular : entity.plural}`}
             </Button>
           </div>
