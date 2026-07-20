@@ -256,7 +256,7 @@ export function DeveloperDocsPage() {
           <nav className="space-y-6 text-sm">
             {navSections.map((section) => (
               <div key={section.title}>
-                <div className="mb-2 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{section.title}</div>
+                <div className="mb-2 text-[12px] font-semibold tracking-wide text-black dark:text-white uppercase">{section.title}</div>
                 <div className="space-y-0.5">
                   {section.items.map((item) => (
                     <a

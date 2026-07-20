@@ -38,6 +38,14 @@ export async function refreshSession(refreshToken: string) {
   return data;
 }
 
+// For the "stay signed in" button only - unlike refreshSession (also called
+// silently in the background on any 401), this resets the session's absolute
+// expiry, so it must only ever be triggered by an explicit user action.
+export async function extendSession(refreshToken: string) {
+  const { data } = await api.post<AuthTokens>('/auth/extend-session', { refreshToken });
+  return data;
+}
+
 export async function logout(refreshToken: string | null) {
   const { data } = await api.post<{ message: string }>('/auth/logout', refreshToken ? { refreshToken } : {});
   return data;

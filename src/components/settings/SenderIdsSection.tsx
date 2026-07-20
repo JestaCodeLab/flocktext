@@ -45,7 +45,7 @@ export function SenderIdsSection() {
         tint="gold"
         action={
           <Button size="sm" onClick={() => setShowAdd(true)}>
-            <Plus className="h-[15px] w-[15px]" /> Add sender ID
+            <Plus className="h-[15px] w-[15px]" /> Sender ID
           </Button>
         }
       >
@@ -69,8 +69,8 @@ export function SenderIdsSection() {
                   <div className="mb-1.5 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <div className="text-[15px] font-bold">{s.senderId}</div>
-                      {s.isPrimary && <Badge>Primary</Badge>}
-                      <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
+                      {s.isPrimary && <Badge className='text-white'>Primary</Badge>}
+                      <Badge className={senderIdStatusVariant[s.status] === 'default' ? 'text-white' : 'text-black'} variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
                     </div>
                     <div className="flex items-center gap-1">
                       {!s.isPrimary && (
