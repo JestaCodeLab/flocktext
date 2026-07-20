@@ -44,9 +44,9 @@ export function SignupPage() {
   return (
     <AuthLayout>
       <form onSubmit={handleSubmit}>
-        <div className="mb-1 text-[26px] font-bold">Create account</div>
-        <div className="mb-7 text-sm text-muted-foreground">
-          Set up your FlockText account. You'll add your church details next.
+        <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Create account</div>
+        <div className="mb-7 text-center text-sm text-muted-foreground lg:text-left">
+          Set up your FlockText account. You'll add your organization details next.
         </div>
 
         <div className="mb-3.5 space-y-1.5">
@@ -77,7 +77,7 @@ export function SignupPage() {
           <Input
             id="su-email"
             className="h-12 rounded-full px-5"
-            placeholder="admin@church.org"
+            placeholder="admin@yourbusiness.com"
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
           />

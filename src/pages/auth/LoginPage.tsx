@@ -45,8 +45,8 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <form onSubmit={handleSubmit}>
-        <div className="mb-1 text-[26px] font-bold">Welcome Back</div>
-        <div className="mb-7 text-sm text-muted-foreground">Log in to your church's FlockText account.</div>
+        <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Welcome Back</div>
+        <div className="mb-7 text-center text-sm text-muted-foreground lg:text-left">Log in to your organization's FlockText account.</div>
 
         <div className="mb-4 space-y-1.5">
           <Label htmlFor="login-phone">Mobile number</Label>

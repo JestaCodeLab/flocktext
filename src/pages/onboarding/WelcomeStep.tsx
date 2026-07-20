@@ -14,7 +14,7 @@ export function WelcomeStep() {
       </div>
       <div className="mb-1.5 text-[26px] font-bold">Welcome{name ? `, ${name.split(' ')[0]}` : ''}</div>
       <div className="mb-8 text-sm leading-relaxed text-muted-foreground">
-        Let's get your church set up on FlockText. This takes about two minutes — you can skip the optional steps and
+        Let's get your organization set up on FlockText. This takes about two minutes — you can skip the optional steps and
         finish them later.
       </div>
       <Button className="h-12 w-full rounded-full" size="lg" onClick={() => navigate('/onboarding/organization')}>

@@ -133,11 +133,8 @@ export function AppShell() {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <aside className="flex w-[236px] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground">
-        <div className="mb-7 flex items-center gap-2 px-2">
-          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-primary text-sm font-extrabold text-primary-foreground">
-            F
-          </div>
-          <div className="text-[17px] font-extrabold text-sidebar-foreground">FlockText</div>
+        <div className="mb-7 px-2">
+          <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-8 w-auto" />
         </div>
 
         <nav className="flex flex-1 flex-col gap-0.5">

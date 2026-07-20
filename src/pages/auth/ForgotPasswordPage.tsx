@@ -100,8 +100,8 @@ export function ForgotPasswordPage() {
 
       {step === 1 && (
         <form onSubmit={submitPhone}>
-          <div className="mb-1 text-[26px] font-bold">Reset password</div>
-          <div className="mb-7 text-sm leading-relaxed text-muted-foreground">
+          <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Reset password</div>
+          <div className="mb-7 text-center text-sm leading-relaxed text-muted-foreground lg:text-left">
             Enter the mobile number on your account. We'll send a verification code.
           </div>
           <div className="mb-6 space-y-1.5">
@@ -126,8 +126,8 @@ export function ForgotPasswordPage() {
 
       {step === 2 && (
         <div>
-          <div className="mb-1 text-[26px] font-bold">Enter code</div>
-          <div className="mb-7 text-sm leading-relaxed text-muted-foreground">We sent a 6-digit code to {phone}.</div>
+          <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Enter code</div>
+          <div className="mb-7 text-center text-sm leading-relaxed text-muted-foreground lg:text-left">We sent a 6-digit code to {phone}.</div>
           <div className="mb-6 flex gap-2.5">
             {digits.map((d, i) => (
               <input
@@ -155,8 +155,8 @@ export function ForgotPasswordPage() {
 
       {step === 3 && (
         <form onSubmit={submitNewPassword}>
-          <div className="mb-1 text-[26px] font-bold">New password</div>
-          <div className="mb-7 text-sm leading-relaxed text-muted-foreground">Choose a new password for your account.</div>
+          <div className="mb-1 text-center text-[26px] font-bold lg:text-left">New password</div>
+          <div className="mb-7 text-center text-sm leading-relaxed text-muted-foreground lg:text-left">Choose a new password for your account.</div>
           <div className="mb-3.5 space-y-1.5">
             <Label htmlFor="fp-new">New password</Label>
             <PasswordInput
@@ -188,8 +188,8 @@ export function ForgotPasswordPage() {
           <div className="mb-5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-success/15 text-success">
             <CheckCircle2 className="h-6 w-6" />
           </div>
-          <div className="mb-1 text-[26px] font-bold">Password reset</div>
-          <div className="mb-7 text-sm leading-relaxed text-muted-foreground">
+          <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Password reset</div>
+          <div className="mb-7 text-center text-sm leading-relaxed text-muted-foreground lg:text-left">
             Your password has been changed. Log in with your new password.
           </div>
           <Button className="h-12 w-full rounded-full" size="lg" onClick={() => navigate('/login')}>

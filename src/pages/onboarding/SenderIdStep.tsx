@@ -60,7 +60,7 @@ export function SenderIdStep() {
       <OnboardingBackLink to="/onboarding/organization" />
       <div className="mb-1.5 text-[26px] font-bold">Sender ID</div>
       <div className="mb-7 text-sm leading-relaxed text-muted-foreground">
-        Register a name (up to 11 characters) so texts arrive from your church instead of a random number. FlockText
+        Register a name (up to 11 characters) so texts arrive from your organization instead of a random number. FlockText
         reviews each request before it goes out for approval — until then, messages send from FlockText's shared
         sender ID.
       </div>
@@ -98,7 +98,7 @@ export function SenderIdStep() {
             <Label htmlFor="sender-purpose">Purpose</Label>
             <Textarea
               id="sender-purpose"
-              placeholder="Weekly service reminders and announcements to our congregation."
+              placeholder="Weekly reminders and announcements to our customers."
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
             />

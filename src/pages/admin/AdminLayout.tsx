@@ -40,13 +40,11 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-screen w-full bg-background">
       <aside className="flex w-[236px] shrink-0 flex-col border-r border-border bg-card p-3.5">
-        <div className="mb-7 flex items-center gap-2 px-2">
-          <div className="flex h-[30px] w-[30px] items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-[15px] font-extrabold leading-tight">FlockText</div>
-            <div className="text-[11px] font-semibold text-muted-foreground">Admin console</div>
+        <div className="mb-7 px-2">
+          <img src="/logo/flocktext-logo.png" alt="FlockText" className="h-7 w-auto" />
+          <div className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-muted-foreground">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Admin console
           </div>
         </div>
 

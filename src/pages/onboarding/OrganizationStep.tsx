@@ -82,11 +82,11 @@ export function OrganizationStep() {
       </div>
 
       <div className="mb-4 space-y-1.5">
-        <Label htmlFor="org-name">Church name</Label>
+        <Label htmlFor="org-name">Organization name</Label>
         <Input
           id="org-name"
           className="h-12 rounded-full px-5"
-          placeholder="Grace Chapel Accra"
+          placeholder="Acme Ventures"
           value={churchName}
           onChange={(e) => setChurchName(e.target.value)}
         />

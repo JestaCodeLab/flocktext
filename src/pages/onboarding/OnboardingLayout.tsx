@@ -19,11 +19,9 @@ export function OnboardingLayout() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 sm:p-8">
       <div className="w-full max-w-[560px] rounded-[28px] border border-border bg-card p-8 shadow-xl sm:p-10">
-        <div className="mb-8 flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-extrabold text-primary-foreground">
-            F
-          </div>
-          <div className="text-lg font-extrabold">FlockText</div>
+        <div className="mb-8">
+          <img src="/logo/flocktext-logo.png" alt="FlockText" className="h-9 w-auto dark:hidden" />
+          <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="hidden h-9 w-auto dark:block" />
         </div>
 
         <div className="mb-8 flex gap-1.5">
