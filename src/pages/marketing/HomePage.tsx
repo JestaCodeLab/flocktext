@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { DashboardPreview } from '@/pages/marketing/components/DashboardPreview';
 import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
+import { routeSeo } from '@/pages/marketing/data/seo';
 
 const stats = [
   {
@@ -104,10 +105,7 @@ const dashboardPoints = [
 export function HomePage() {
   return (
     <>
-      <Seo
-        title="FlockText — Bulk SMS for businesses, churches & institutions"
-        description="Reach everyone you serve by SMS. Contact groups, birthday automation, scheduled sends, and delivery reports for businesses, churches, and institutions."
-      />
+      <Seo {...routeSeo['/']} />
 
       {/* Hero */}
       <section className="relative overflow-hidden">

@@ -58,8 +58,8 @@ export function OtpPage() {
       <div className="mb-5 flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-accent text-accent-foreground">
         <ShieldCheck className="h-6 w-6" />
       </div>
-      <div className="mb-1 text-[26px] font-bold">Verify your phone</div>
-      <div className="mb-7 text-sm leading-relaxed text-muted-foreground">Enter the 6-digit code sent to {phone}.</div>
+      <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Verify your phone</div>
+      <div className="mb-7 text-center text-sm leading-relaxed text-muted-foreground lg:text-left">Enter the 6-digit code sent to {phone}.</div>
 
       <div className="mb-6 flex gap-2.5">
         {digits.map((d, i) => (

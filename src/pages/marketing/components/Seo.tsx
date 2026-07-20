@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 interface SeoProps {
   title: string;
   description: string;
+  image: string;
 }
 
 function setMetaTag(attr: 'name' | 'property', key: string, content: string) {
@@ -20,13 +21,17 @@ function setMetaTag(attr: 'name' | 'property', key: string, content: string) {
  * pages. The authoritative tags for first load/crawlers are baked in by
  * scripts/prerender.mjs at build time.
  */
-export function Seo({ title, description }: SeoProps) {
+export function Seo({ title, description, image }: SeoProps) {
   useEffect(() => {
     document.title = title;
     setMetaTag('name', 'description', description);
     setMetaTag('property', 'og:title', title);
     setMetaTag('property', 'og:description', description);
-  }, [title, description]);
+    setMetaTag('property', 'og:image', image);
+    setMetaTag('name', 'twitter:title', title);
+    setMetaTag('name', 'twitter:description', description);
+    setMetaTag('name', 'twitter:image', image);
+  }, [title, description, image]);
 
   return null;
 }

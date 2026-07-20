@@ -77,7 +77,7 @@ export function AuthLayout({ children, contentClassName }: { children: React.Rea
 
         <div className={cn('flex flex-1 items-center justify-center overflow-y-auto p-8 sm:p-12', contentClassName)}>
           <div className="w-full max-w-[380px]">
-            <Link to="/" className="mb-8 block w-fit lg:hidden">
+            <Link to="/" className="mx-auto mb-8 block w-fit lg:hidden">
               <img src={logo} alt="FlockText" className="h-9 w-auto" />
             </Link>
             {children}

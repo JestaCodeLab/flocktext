@@ -7,6 +7,7 @@ import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Seo } from '@/pages/marketing/components/Seo';
+import { routeSeo } from '@/pages/marketing/data/seo';
 
 const includedFeatures = [
   'REST API access',
@@ -29,10 +30,7 @@ export function PricingPage() {
 
   return (
     <>
-      <Seo
-        title="Pricing — FlockText"
-        description="Simple pay-as-you-go SMS credit pricing. No subscriptions, no locked features — buy credits and send whenever you need to."
-      />
+      <Seo {...routeSeo['/pricing']} />
 
       <section className="relative overflow-hidden">
         <div className="pointer-events-none absolute -top-32 left-1/2 h-[420px] w-[680px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />

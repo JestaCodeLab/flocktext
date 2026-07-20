@@ -38,13 +38,19 @@ async function main() {
     const { render, prerenderRoutes } = await vite.ssrLoadModule('/src/entry-server.tsx');
 
     for (const routePath of prerenderRoutes) {
-      const { html, title, description } = render(routePath);
+      const { html, title, description, image, imageWidth, imageHeight } = render(routePath);
 
       const page = template
         .replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
         .replace(/<meta name="description" content=".*?"\s*\/>/, `<meta name="description" content="${escapeHtml(description)}" />`)
         .replace(/<meta property="og:title" content=".*?"\s*\/>/, `<meta property="og:title" content="${escapeHtml(title)}" />`)
         .replace(/<meta property="og:description" content=".*?"\s*\/>/, `<meta property="og:description" content="${escapeHtml(description)}" />`)
+        .replace(/<meta property="og:image" content=".*?"\s*\/>/, `<meta property="og:image" content="${escapeHtml(image)}" />`)
+        .replace(/<meta property="og:image:width" content=".*?"\s*\/>/, `<meta property="og:image:width" content="${imageWidth}" />`)
+        .replace(/<meta property="og:image:height" content=".*?"\s*\/>/, `<meta property="og:image:height" content="${imageHeight}" />`)
+        .replace(/<meta name="twitter:title" content=".*?"\s*\/>/, `<meta name="twitter:title" content="${escapeHtml(title)}" />`)
+        .replace(/<meta name="twitter:description" content=".*?"\s*\/>/, `<meta name="twitter:description" content="${escapeHtml(description)}" />`)
+        .replace(/<meta name="twitter:image" content=".*?"\s*\/>/, `<meta name="twitter:image" content="${escapeHtml(image)}" />`)
         .replace('<div id="root"></div>', `<div id="root">${html}</div>`);
 
       const outFile = outputPathFor(routePath);
