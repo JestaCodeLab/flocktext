@@ -32,6 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
+import { DeleteSenderIdDialog } from '@/components/organization/DeleteSenderIdDialog';
 import { fetchDashboardSummary, fetchRecentActivity, fetchDashboardChart } from '@/api/dashboard';
 import { fetchScheduledMessages, cancelScheduledMessage, type ScheduledMessage } from '@/api/messages';
 import { fetchMe } from '@/api/auth';
@@ -173,6 +174,7 @@ function SenderIdCard() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; senderId: string; status: string } | null>(null);
 
   const senderIds = useMemo(() => {
     const rows = orgSenderIds ?? [];
@@ -213,6 +215,7 @@ function SenderIdCard() {
     onSuccess: (data) => {
       updateOrganization(data);
       toast.success('Sender ID removed.');
+      setDeleteTarget(null);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -275,38 +278,34 @@ function SenderIdCard() {
                     <div className="flex shrink-0 items-center gap-1.5">
                       {/* if pending status black else approved white */}
                       <Badge className={senderIdStatusVariant[s.status] === 'default' ? 'text-white' : 'text-black'} variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
-                      {(!s.isPrimary || s.status !== 'approved') && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button size="icon-sm" variant="ghost" title="Actions">
-                                <MoreVertical className="h-3.5 w-3.5" />
-                              </Button>
-                            }
-                          />
-                          <DropdownMenuContent align="end">
-                            {!s.isPrimary && (
-                              <DropdownMenuItem
-                                className="text-xs cursor-pointer"
-                                disabled={setPrimary.isPending}
-                                onClick={() => setPrimary.mutate(s.id)}
-                              >
-                                <CircleCheck className="h-2 w-2" /> Make primary
-                              </DropdownMenuItem>
-                            )}
-                            {s.status !== 'approved' && (
-                              <DropdownMenuItem
-                                className="text-xs cursor-pointer text-destructive"
-                                variant="destructive"
-                                disabled={remove.isPending}
-                                onClick={() => remove.mutate(s.id)}
-                              >
-                                <Trash2 className="h-2 w-2" /> Delete
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={
+                            <Button size="icon-sm" variant="ghost" title="Actions">
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          }
+                        />
+                        <DropdownMenuContent align="end">
+                          {!s.isPrimary && (
+                            <DropdownMenuItem
+                              className="text-xs cursor-pointer"
+                              disabled={setPrimary.isPending}
+                              onClick={() => setPrimary.mutate(s.id)}
+                            >
+                              <CircleCheck className="h-2 w-2" /> Make primary
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            className="text-xs cursor-pointer text-destructive"
+                            variant="destructive"
+                            disabled={remove.isPending}
+                            onClick={() => setDeleteTarget({ id: s.id, senderId: s.senderId, status: s.status })}
+                          >
+                            <Trash2 className="h-2 w-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                 </div>
@@ -359,6 +358,12 @@ function SenderIdCard() {
       )}
 
       <AddSenderIdDialog open={showAdd} onOpenChange={setShowAdd} />
+      <DeleteSenderIdDialog
+        target={deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && remove.mutate(deleteTarget.id)}
+        isPending={remove.isPending}
+      />
     </div>
   );
 }
