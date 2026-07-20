@@ -47,6 +47,9 @@ export type InitializeTopupResult =
       organizationId: string;
       packageGhs: number;
       subaccountCode?: string;
+      // Only present when the request passed `redirect: true` - this app uses
+      // Paystack Inline instead, so `initializeTopup` below never sets it.
+      authorization_url?: string;
     };
 
 export async function initializeTopup(ghs: number) {
