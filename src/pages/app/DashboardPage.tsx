@@ -273,7 +273,8 @@ function SenderIdCard() {
                       {s.isPrimary && <CircleCheck className="h-4 w-4 shrink-0 text-primary" />}
                     </div>
                     <div className="flex shrink-0 items-center gap-1.5">
-                      <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
+                      {/* if pending status black else approved white */}
+                      <Badge className={senderIdStatusVariant[s.status] === 'default' ? 'text-white' : 'text-black'} variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
                       {(!s.isPrimary || s.status !== 'approved') && (
                         <DropdownMenu>
                           <DropdownMenuTrigger

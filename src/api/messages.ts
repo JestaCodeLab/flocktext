@@ -25,7 +25,7 @@ export interface SendMessagePayload {
   phone?: string;
   recipientName?: string;
   templateId?: string | null;
-  senderIdToUse?: string;
+  senderId?: string;
 }
 
 export interface SendMessageResult {

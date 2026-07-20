@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { refreshSession, logout as logoutApi } from '@/api/auth';
+import { extendSession, logout as logoutApi } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { decodeJwtExpMs } from '@/lib/jwt';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -16,6 +16,7 @@ function formatCountdown(seconds: number) {
 
 export function SessionTimeoutModal() {
   const navigate = useNavigate();
+  const accessToken = useAuthStore((s) => s.accessToken);
   const refreshToken = useAuthStore((s) => s.refreshToken);
   const setTokens = useAuthStore((s) => s.setTokens);
   const clear = useAuthStore((s) => s.clear);
@@ -31,13 +32,19 @@ export function SessionTimeoutModal() {
     navigate('/login', { replace: true });
   }
 
+  // The access token's own expiry is the session's true absolute cap - the
+  // server never extends it on a silent background refresh (see
+  // api/services/session.js), only on the explicit "stay signed in" call
+  // below. Timing off the refresh token instead would show a countdown to
+  // the wrong (much later) deadline and let the session die out from under
+  // the user without warning.
   useEffect(() => {
     setSecondsLeft(null);
     setDismissed(false);
     loggedOutRef.current = false;
-    if (!refreshToken) return;
+    if (!accessToken) return;
 
-    const expMs = decodeJwtExpMs(refreshToken);
+    const expMs = decodeJwtExpMs(accessToken);
     if (!expMs) return;
 
     const warnInMs = expMs - WARNING_WINDOW_MS - Date.now();
@@ -62,13 +69,13 @@ export function SessionTimeoutModal() {
       if (tickInterval) clearInterval(tickInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshToken]);
+  }, [accessToken]);
 
   async function handleStay() {
     if (!refreshToken) return forceLogout();
     setStaying(true);
     try {
-      const data = await refreshSession(refreshToken);
+      const data = await extendSession(refreshToken);
       setTokens(data.accessToken, data.refreshToken);
     } catch {
       forceLogout();
@@ -97,8 +104,8 @@ export function SessionTimeoutModal() {
           <DialogTitle>You'll be signed out soon</DialogTitle>
         </DialogHeader>
         <div className="text-sm text-muted-foreground">
-          For your security, your session will end in{' '}
-          <span className="font-semibold text-foreground">{formatCountdown(secondsLeft ?? 0)}</span> due to inactivity.
+          For your security, you'll be signed out in{' '}
+          <span className="font-semibold text-foreground">{formatCountdown(secondsLeft ?? 0)}</span>. Stay signed in to continue.
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleLogoutNow}>

@@ -39,6 +39,7 @@ import { WalletPage } from '@/pages/app/WalletPage';
 import { ReportsPage } from '@/pages/app/ReportsPage';
 import { SettingsPage } from '@/pages/app/SettingsPage';
 import { ActivityLogPage } from '@/pages/app/ActivityLogPage';
+import { DeveloperDocsPage } from '@/pages/app/DeveloperDocsPage';
 
 function App() {
   const location = useLocation();
@@ -104,6 +105,7 @@ function App() {
             <Route path="scheduled" element={<Navigate to="/app/reports" replace />} />
             <Route path="sender-id" element={<Navigate to="/app/settings" replace />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="developer-docs" element={<DeveloperDocsPage />} />
             <Route path="activity-log" element={<ActivityLogPage />} />
           </Route>
         </Route>

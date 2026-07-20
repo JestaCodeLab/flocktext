@@ -24,6 +24,11 @@ export async function fetchContactsCount() {
   return data.count;
 }
 
+export async function fetchContactPhones() {
+  const { data } = await api.get<{ phones: string[] }>('/contacts/phones');
+  return data.phones;
+}
+
 export async function createContact(payload: {
   firstName: string;
   lastName?: string;

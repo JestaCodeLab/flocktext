@@ -68,7 +68,7 @@ export function WalletStep() {
       <OnboardingBackLink to="/onboarding/contacts" />
       <div className="mb-1.5 text-[26px] font-bold">Fund your wallet</div>
       <div className="mb-7 text-sm leading-relaxed text-muted-foreground">
-        Top up SMS credit now, or skip and do it later from Wallet. Every account starts with 20 free credits.
+        Top up SMS credit now, or skip and do it later from Wallet. Every account starts with 10 free credits.
       </div>
 
       {wallet.data && (

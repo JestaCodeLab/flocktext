@@ -26,8 +26,8 @@ export function CreditPackageGrid({
               {p.badge}
             </div>
           )}
-          <div className="mb-2.5 text-[13px] font-bold text-foreground/80">{p.label}</div>
-          <div className="mb-1 text-2xl font-extrabold">GHS {p.ghs.toLocaleString()}</div>
+          <div className="mb-2.5 text-[13px] font-medium text-foreground/80">{p.label}</div>
+          <div className="mb-1 text-2xl font-medium">GHS {p.ghs.toLocaleString()}</div>
           <div className="mb-3 text-sm font-bold text-success">{p.credits.toLocaleString()} credits</div>
           <div className="mb-4 text-xs text-muted-foreground">{p.perSms} / SMS</div>
           <Button
