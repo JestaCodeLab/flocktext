@@ -88,6 +88,9 @@ export function ComposePage() {
     enabled: !approvedSenderId,
   });
   const effectiveSenderName = approvedSenderId?.senderId || effectiveSenderId.data?.senderId;
+  // With an approved sender ID, that's always what gets used, so it's the
+  // preselected value and "use system default" isn't offered as a choice.
+  const senderSelectValue = selectedSenderId ?? approvedSenderId?.id ?? '';
 
   const recipientCount = useMemo(() => {
     if (recipientMode === 'single') return singlePhone.trim() ? 1 : 0;
@@ -208,7 +211,7 @@ export function ComposePage() {
     }
   }
 
-  const selectedSenderIdObj = senderIds.find((s) => s.id === selectedSenderId);
+  const selectedSenderIdObj = senderIds.find((s) => s.id === senderSelectValue);
   const effectiveSenderIdForSend = selectedSenderIdObj?.senderId || effectiveSenderName;
 
   return (
@@ -356,15 +359,20 @@ export function ComposePage() {
             <div className="flex gap-2">
               <div className="flex-1">
                 <Select
-                  value={selectedSenderId || ''}
+                  value={senderSelectValue}
                   onValueChange={setSelectedSenderId}
-                  items={[{ value: '', label: 'Use system default sender ID' }, ...senderIds.map((s) => ({ value: s.id, label: s.senderId }))]}
+                  items={[
+                    ...(approvedSenderId ? [] : [{ value: '', label: 'Use system default sender ID' }]),
+                    ...senderIds.map((s) => ({ value: s.id, label: s.senderId })),
+                  ]}
                 >
                   <SelectTrigger size="sm" className="w-full">
                     <SelectValue placeholder="Use default sender ID" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem className={'cursor-pointer'} value="">Use system default sender ID</SelectItem>
+                    {!approvedSenderId && (
+                      <SelectItem className={'cursor-pointer'} value="">Use system default sender ID</SelectItem>
+                    )}
                     {senderIds.map((s) => (
                       <SelectItem className={'cursor-pointer'} key={s.id} value={s.id} disabled={s.status !== 'approved'}>
                         <span className="flex-1 truncate">{s.senderId}</span>
