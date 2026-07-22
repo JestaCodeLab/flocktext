@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
 import { fetchMessageRecipients, resendFailedMessage } from '@/api/messages';
@@ -45,6 +46,8 @@ export function MessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const failedCount = detail.data?.stats.failed ?? 0;
+
   function exportCsv() {
     if (!detail.data) return;
     const rows = [
@@ -64,9 +67,16 @@ export function MessageReportPage() {
         <ArrowLeft className="h-4 w-4" /> Delivery Reports
       </button>
 
-      <div className="mb-6">
-        <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
-        <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
+          <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
+        </div>
+        {!!detail.data && failedCount > 0 && (
+          <Button disabled={resend.isPending} onClick={() => resend.mutate()}>
+            <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : `Resend to ${failedCount} failed`}
+          </Button>
+        )}
       </div>
 
       {detail.isLoading && (
@@ -77,9 +87,7 @@ export function MessageReportPage() {
         </div>
       )}
 
-      {detail.data && (
-        <MessageDetailBody detail={detail.data} onExportCsv={exportCsv} onResend={() => resend.mutate()} resending={resend.isPending} />
-      )}
+      {detail.data && <MessageDetailBody detail={detail.data} variant="page" onExportCsv={exportCsv} />}
     </div>
   );
 }

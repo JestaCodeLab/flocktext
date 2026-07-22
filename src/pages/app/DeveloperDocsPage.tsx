@@ -215,6 +215,7 @@ export function DeveloperDocsPage() {
       items: [
         { id: 'overview', label: 'Overview' },
         { id: 'authentication', label: 'Authentication' },
+        { id: 'response-format', label: 'Response Format' },
       ],
     },
     ...GROUPS.map((g) => ({
@@ -322,6 +323,31 @@ export function DeveloperDocsPage() {
                 401 Unauthorized
               </Badge>
               .
+            </p>
+          </section>
+
+          <section id="response-format" className="scroll-mt-6 space-y-4">
+            <h2 className="text-2xl font-bold">Response Format</h2>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Every response on this API - success or error - is wrapped in the same envelope:
+            </p>
+            <CodeBlock
+              code={`{
+  "status": "success" | "error",
+  "message": "Human-readable description of what happened.",
+  "data": { ... } | null
+}`}
+            />
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              On success, <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">status</code> is{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">"success"</code> and{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">data</code> holds the endpoint's payload, documented per
+              endpoint below. On failure (4xx/5xx),{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">status</code> is{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">"error"</code>,{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">message</code> explains what went wrong, and{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">data</code> is always{' '}
+              <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">null</code>.
             </p>
           </section>
 

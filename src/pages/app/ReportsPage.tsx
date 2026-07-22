@@ -24,7 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
-import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
+import { MessageDetailBody, downloadCsv, sourceBadge } from '@/components/messages/MessageDetailBody';
 import {
   fetchMessageRecipients,
   fetchMessages,
@@ -283,7 +283,9 @@ function MessagesTable({
             <TableHead className="text-[13px]">Date &amp; time</TableHead>
             <TableHead className="text-[13px]">Type</TableHead>
             <TableHead className="text-[13px]">Message</TableHead>
+            <TableHead className="text-center text-[13px]">Recipients</TableHead>
             <TableHead className="text-[13px]">Sender ID</TableHead>
+            <TableHead className="text-[13px]">Source</TableHead>
             <TableHead className="text-[13px]">Status</TableHead>
             <TableHead className="w-0 text-[13px]">Actions</TableHead>
           </TableRow>
@@ -291,6 +293,7 @@ function MessagesTable({
         <TableBody>
           {rows.map((m) => {
             const status = messageStatusBadge(m.stats);
+            const source = sourceBadge(m.source);
             return (
               <TableRow key={m.id}>
                 <TableCell>
@@ -302,10 +305,14 @@ function MessagesTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk (${m.stats.total})`}</Badge>
+                  <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk`}</Badge>
                 </TableCell>
                 <TableCell className="max-w-[240px] truncate text-muted-foreground">{m.preview}</TableCell>
+                <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
                 <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                <TableCell>
+                  <Badge variant={source.variant}>{source.label}</Badge>
+                </TableCell>
                 <TableCell>
                   <Badge variant={status.variant}>{status.label}</Badge>
                 </TableCell>

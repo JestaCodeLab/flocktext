@@ -55,7 +55,11 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
     responseParams: [{ name: 'creditsBalance', type: 'integer', requirement: 'Optional', description: 'Current SMS credit balance.' }],
     status: 200,
     response: `{
-  "creditsBalance": 1240
+  "status": "success",
+  "message": "Wallet balance retrieved successfully.",
+  "data": {
+    "creditsBalance": 1240
+  }
 }`,
     errors: [
       { status: 401, description: 'Invalid or missing API key.' },
@@ -93,14 +97,18 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
 }`,
     status: 200,
     response: `{
-  "mode": "checkout",
-  "reference": "FLK-3f9b6a2e-8f1a-4c9d-9e2a-8b6b7a5b2b10",
-  "amountGHS": 50,
-  "email": "admin@stpaulschurch.org",
-  "organizationId": "665f1c2e9b1d4a0012a3f8c7",
-  "packageGhs": 50,
-  "subaccountCode": "ACCT_8f4s02q6kd6xn2p",
-  "authorization_url": "https://checkout.paystack.com/8f4s02q6kd6xn2p"
+  "status": "success",
+  "message": "Top-up initialized successfully.",
+  "data": {
+    "mode": "checkout",
+    "reference": "FLK-3f9b6a2e-8f1a-4c9d-9e2a-8b6b7a5b2b10",
+    "amountGHS": 50,
+    "email": "admin@stpaulschurch.org",
+    "organizationId": "665f1c2e9b1d4a0012a3f8c7",
+    "packageGhs": 50,
+    "subaccountCode": "ACCT_8f4s02q6kd6xn2p",
+    "authorization_url": "https://checkout.paystack.com/8f4s02q6kd6xn2p"
+  }
 }`,
     errors: [
       { status: 401, description: 'Invalid or missing API key.' },
@@ -122,22 +130,26 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
       { name: 'purpose', type: 'string', requirement: 'Optional', description: 'Free-text note on what this sender ID is used for.' },
     ],
     status: 200,
-    response: `[
-  {
-    "id": "665f1c2e9b1d4a0012a3f8d1",
-    "senderId": "StPaulsChurch",
-    "status": "approved",
-    "isPrimary": true,
-    "purpose": "General church announcements"
-  },
-  {
-    "id": "665f1c2e9b1d4a0012a3f8d2",
-    "senderId": "STPAULEVENTS",
-    "status": "pending_review",
-    "isPrimary": false,
-    "purpose": "Event reminders"
-  }
-]`,
+    response: `{
+  "status": "success",
+  "message": "Sender IDs retrieved successfully.",
+  "data": [
+    {
+      "id": "665f1c2e9b1d4a0012a3f8d1",
+      "senderId": "StPaulsChurch",
+      "status": "approved",
+      "isPrimary": true,
+      "purpose": "General church announcements"
+    },
+    {
+      "id": "665f1c2e9b1d4a0012a3f8d2",
+      "senderId": "STPAULEVENTS",
+      "status": "pending_review",
+      "isPrimary": false,
+      "purpose": "Event reminders"
+    }
+  ]
+}`,
     errors: [{ status: 401, description: 'Invalid or missing API key.' }],
   },
   {
@@ -164,11 +176,15 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
 }`,
     status: 201,
     response: `{
-  "id": "665f1c2e9b1d4a0012a3f8d1",
-  "senderId": "StPaulsChurch",
-  "status": "pending_review",
-  "isPrimary": true,
-  "purpose": "General church announcements"
+  "status": "success",
+  "message": "Sender ID created successfully.",
+  "data": {
+    "id": "665f1c2e9b1d4a0012a3f8d1",
+    "senderId": "StPaulsChurch",
+    "status": "pending_review",
+    "isPrimary": true,
+    "purpose": "General church announcements"
+  }
 }`,
     errors: [
       { status: 401, description: 'Invalid or missing API key.' },
@@ -191,18 +207,22 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
     ],
     status: 200,
     response: `{
-  "id": "665f1c2e9b1d4a0012a3f8c7",
-  "churchName": "St. Paul's Church",
-  "creditsBalance": 1240,
-  "senderIds": [
-    {
-      "id": "665f1c2e9b1d4a0012a3f8d2",
-      "senderId": "STPAULEVENTS",
-      "status": "pending_review",
-      "isPrimary": true,
-      "purpose": "Event reminders"
-    }
-  ]
+  "status": "success",
+  "message": "Sender ID deleted successfully.",
+  "data": {
+    "id": "665f1c2e9b1d4a0012a3f8c7",
+    "churchName": "St. Paul's Church",
+    "creditsBalance": 1240,
+    "senderIds": [
+      {
+        "id": "665f1c2e9b1d4a0012a3f8d2",
+        "senderId": "STPAULEVENTS",
+        "status": "pending_review",
+        "isPrimary": true,
+        "purpose": "Event reminders"
+      }
+    ]
+  }
 }`,
     errors: [
       { status: 401, description: 'Invalid or missing API key.' },
@@ -237,10 +257,14 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
 }`,
     status: 201,
     response: `{
-  "id": "665f1c2e9b1d4a0012a3f8f0",
-  "stats": { "total": 2, "delivered": 0, "failed": 0, "pending": 2 },
-  "creditCost": 2,
-  "creditsBalance": 1112
+  "status": "success",
+  "message": "Message sent successfully.",
+  "data": {
+    "id": "665f1c2e9b1d4a0012a3f8f0",
+    "stats": { "total": 2, "delivered": 0, "failed": 0, "pending": 2 },
+    "creditCost": 2,
+    "creditsBalance": 1112
+  }
 }`,
     errors: [
       { status: 401, description: 'Invalid or missing API key.' },
