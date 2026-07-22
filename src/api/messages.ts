@@ -96,6 +96,7 @@ export interface MessageSummary {
   date: string;
   segments: number;
   creditCost: number;
+  source: 'web' | 'api' | 'automation';
   stats: MessageStats;
 }
 
@@ -119,6 +120,7 @@ export interface MessageDetail {
   date: string;
   senderId: string;
   creditCost: number;
+  source: 'web' | 'api' | 'automation';
   stats: MessageStats;
   recipients: MessageRecipientRow[];
 }
