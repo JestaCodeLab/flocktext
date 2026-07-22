@@ -236,16 +236,11 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
     method: 'POST',
     path: '/v1/messages/send',
     summary: 'Send a message immediately',
-    description:
-      'Sends an SMS to a phone number, group, or your full contact list. Debits wallet credits (segments × recipient count) and dispatches via the configured SMS provider.',
+    description: 'Sends an SMS to an explicit list of recipients. Debits wallet credits (segments × recipient count) and dispatches via the configured SMS provider.',
     requestParams: [
-      { name: 'body', type: 'string', requirement: 'Required', description: 'Message text.' },
-      { name: 'recipientType', type: 'string', requirement: 'Optional', description: '"groups" (default), "all", or "single".' },
-      { name: 'groupIds', type: 'string[]', requirement: 'Optional', description: 'Required when recipientType is "groups".' },
-      { name: 'phone', type: 'string', requirement: 'Optional', description: 'Required when recipientType is "single".' },
-      { name: 'recipientName', type: 'string', requirement: 'Optional', description: 'Label used when recipientType is "single".' },
-      { name: 'templateId', type: 'string', requirement: 'Optional', description: 'Template this send was composed from.' },
-      { name: 'senderId', type: 'string', requirement: 'Optional', description: 'Defaults to the organization’s primary approved sender ID.' },
+      { name: 'recipients', type: 'object[]', requirement: 'Required', description: 'Array of { phone, name? }. Max 1000 per request. Duplicate phone numbers are deduplicated.' },
+      { name: 'message', type: 'string', requirement: 'Required', description: 'Message text.' },
+      { name: 'sender_id', type: 'string', requirement: 'Optional', description: 'Defaults to the organization’s primary approved sender ID.' },
     ],
     responseParams: [
       { name: 'id', type: 'string', requirement: 'Optional', description: 'The created message’s ID.' },
@@ -254,21 +249,23 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
       { name: 'creditsBalance', type: 'integer', requirement: 'Optional', description: 'Remaining balance after this send.' },
     ],
     requestBody: `{
-  "body": "Service starts at 9am this Sunday!",
-  "recipientType": "groups",
-  "groupIds": ["665f1c2e9b1d4a0012a3f8e1"]
+  "recipients": [
+    { "phone": "+233241234567", "name": "Kwame" },
+    { "phone": "+233551234567" }
+  ],
+  "message": "Service starts at 9am this Sunday!"
 }`,
     status: 201,
     response: `{
   "id": "665f1c2e9b1d4a0012a3f8f0",
-  "stats": { "total": 128, "delivered": 0, "failed": 0, "pending": 128 },
-  "creditCost": 128,
+  "stats": { "total": 2, "delivered": 0, "failed": 0, "pending": 2 },
+  "creditCost": 2,
   "creditsBalance": 1112
 }`,
     errors: [
       { status: 401, description: 'Invalid or missing API key.' },
       { status: 402, description: 'Not enough wallet credits for this send.' },
-      { status: 422, description: 'Missing message body, an unsupported recipientType, or an empty group/contact list.' },
+      { status: 422, description: 'Missing message, no recipients, or an invalid recipient phone number.' },
     ],
   },
 ];

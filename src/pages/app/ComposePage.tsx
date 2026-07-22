@@ -127,7 +127,7 @@ export function ComposePage() {
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
       queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
-      navigate('/app/reports', { state: { messageId: data.id } });
+      navigate(`/app/reports/${data.id}`);
     },
     onError: (err) => {
       setShowConfirm(false);
@@ -258,13 +258,13 @@ export function ComposePage() {
         <div className="min-w-0 flex-1">
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
             <div className="mb-3.5 flex items-center justify-between">
-              <div className="text-[13px] font-bold text-foreground/80">Send To</div>
+              <div className="text-[15px] font-medium text-foreground/80">Send To</div>
               <div className="flex rounded-lg border border-border p-0.5">
                 <button
                   type="button"
                   onClick={() => setRecipientMode('groups')}
                   className={cn(
-                    'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
+                    'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
                     recipientMode === 'groups' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -274,7 +274,7 @@ export function ComposePage() {
                   type="button"
                   onClick={() => setRecipientMode('single')}
                   className={cn(
-                    'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
+                    'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
                     recipientMode === 'single' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -284,7 +284,7 @@ export function ComposePage() {
                   type="button"
                   onClick={() => setRecipientMode('all')}
                   className={cn(
-                    'rounded-md px-3 py-1 text-xs font-semibold transition-colors',
+                    'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
                     recipientMode === 'all' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -314,8 +314,8 @@ export function ComposePage() {
                       )}
                       <Users className={cn('h-5 w-5 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} />
                       <div className="min-w-0">
-                        <div className="truncate text-[13px] font-semibold leading-tight">{g.name}</div>
-                        <div className="text-[11px] text-muted-foreground">{g.count} {entity.plural}</div>
+                        <div className="truncate text-[14px] font-semibold leading-tight">{g.name}</div>
+                        <div className="text-[12px] text-muted-foreground">{g.count} {entity.plural}</div>
                       </div>
                     </button>
                   );
@@ -355,7 +355,7 @@ export function ComposePage() {
           </div>
 
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
-            <div className="mb-3.5 text-[13px] font-bold text-foreground/80">Sender ID</div>
+            <div className="mb-3.5 text-[15px] font-medium text-foreground/80">Sender ID</div>
             <div className="flex gap-2">
               <div className="flex-1">
                 <Select
@@ -398,7 +398,7 @@ export function ComposePage() {
 
           {(scheduleMode === 'once' || scheduleMode === 'recurring') && (
             <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
-              <div className="mb-3.5 text-[13px] font-bold text-foreground/80">Schedule details</div>
+              <div className="mb-3.5 text-[15px] font-medium text-foreground/80">Schedule details</div>
               {scheduleMode === 'once' && (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
@@ -473,7 +473,7 @@ export function ComposePage() {
           )}
 
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
-            <div className="mb-2.5 text-[13px] font-bold text-foreground/80">Template</div>
+            <div className="mb-2.5 text-[15px] font-medium text-foreground/80">Template</div>
             <select
               className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
               value={templateId}
@@ -494,16 +494,16 @@ export function ComposePage() {
           </div>
 
           <div className="mb-5 rounded-xl border border-border bg-card p-5">
-            <div className="mb-2.5 text-[13px] font-bold text-foreground/80">Message</div>
+            <div className="mb-2.5 text-[15px] font-medium text-foreground/80">Message</div>
             <Textarea
-              placeholder="Type your message… use {firstName}, {lastName} or {churchName} to personalize"
+              placeholder="Type your message… use {firstName}, {lastName} or {orgName} to personalize"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               className="min-h-[140px] resize-y border-none p-0 shadow-none focus-visible:ring-0"
             />
-            <div className="mt-2 border-t border-border pt-2.5 text-xs text-muted-foreground">
+            <div className="mt-2 border-t border-border pt-2.5 text-sm text-muted-foreground">
               {body.length}/160 characters — {segments} SMS segment(s) · <b className="font-semibold text-foreground/80">{'{firstName}'}</b>,{' '}
-              <b className="font-semibold text-foreground/80">{'{lastName}'}</b> and <b className="font-semibold text-foreground/80">{'{churchName}'}</b>{' '}
+              <b className="font-semibold text-foreground/80">{'{lastName}'}</b> and <b className="font-semibold text-foreground/80">{'{orgName}'}</b>{' '}
               personalize per recipient.
             </div>
           </div>

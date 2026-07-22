@@ -149,6 +149,12 @@
   html {
     font-size: 1rem;
     font-family: var(--font-sans);
+    /* Rethink Sans ships a contextual-alternates rule that swaps a literal single
+       digit in parens - e.g. "(2)" - for a circled-digit glyph (e.g. "②"). That's
+       unwanted here since the app renders plain counts like "(2)" as UI text, not
+       footnote markers. */
+    font-variant-ligatures: none;
+    font-feature-settings: "calt" 0, "liga" 0;
     }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
