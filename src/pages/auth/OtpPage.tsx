@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { OtpInput } from '@/components/auth/OtpInput';
+import { ResendCodeButton } from '@/components/auth/ResendCodeButton';
 import * as authApi from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { apiErrorMessage } from '@/api/client';
@@ -61,7 +62,7 @@ export function OtpPage() {
       >
         {loading ? 'Verifying…' : 'Confirm code'}
       </Button>
-      <div className="text-center text-[13px] text-muted-foreground">Resend code</div>
+      <ResendCodeButton onResend={() => authApi.resendOtp(normalizePhone(phone))} />
     </AuthLayout>
   );
 }

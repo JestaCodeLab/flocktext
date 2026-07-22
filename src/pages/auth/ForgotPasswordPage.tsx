@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/pages/auth/AuthLayout';
 import { OtpInput } from '@/components/auth/OtpInput';
+import { ResendCodeButton } from '@/components/auth/ResendCodeButton';
 import * as authApi from '@/api/auth';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
@@ -127,6 +128,9 @@ export function ForgotPasswordPage() {
           >
             {loading ? 'Verifying…' : 'Verify code'}
           </Button>
+          <div className="mb-5">
+            <ResendCodeButton onResend={() => authApi.forgotPasswordRequest(normalizePhone(phone))} />
+          </div>
           <Link to="/login" className="block text-center text-[13px] font-semibold text-muted-foreground hover:text-foreground">
             Back to log in
           </Link>

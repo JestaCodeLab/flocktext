@@ -23,6 +23,11 @@ export async function verifyOtp(phone: string, code: string) {
   return data;
 }
 
+export async function resendOtp(phone: string) {
+  const { data } = await api.post<{ message: string }>('/auth/resend-otp', { phone });
+  return data;
+}
+
 export async function login(phone: string, password: string) {
   const { data } = await api.post<Session & AuthTokens>('/auth/login', { phone, password });
   return data;
