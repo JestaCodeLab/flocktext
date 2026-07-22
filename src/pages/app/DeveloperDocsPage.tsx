@@ -15,7 +15,7 @@ const GROUPS: { key: ApiEndpointDoc['group']; title: string; description: string
 ];
 
 function apiBaseUrl() {
-  return `${window.location.origin.replace(/:\d+$/, '')}/api`;
+  return process.env.NODE_ENV === 'production' ? 'https://api.flocktext.com/api' : 'https://apiuat.flocktext.com/api';
 }
 
 function examplePathFor(e: ApiEndpointDoc): string {
