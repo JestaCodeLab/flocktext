@@ -1,8 +1,8 @@
-export type SenderIdStatusValue = 'pending_review' | 'pending_bms' | 'approved' | 'rejected' | 'deleted';
+export type SenderIdStatusValue = 'pending_review' | 'processing' | 'approved' | 'rejected' | 'deleted';
 
 export const senderIdStatusLabel: Record<SenderIdStatusValue, string> = {
   pending_review: 'Pending review',
-  pending_bms: 'Pending',
+  processing: 'Pending',
   approved: 'Approved',
   rejected: 'Rejected',
   deleted: 'Deleted',
@@ -10,7 +10,7 @@ export const senderIdStatusLabel: Record<SenderIdStatusValue, string> = {
 
 export const senderIdStatusVariant: Record<SenderIdStatusValue, 'default' | 'secondary' | 'destructive'> = {
   pending_review: 'secondary',
-  pending_bms: 'secondary',
+  processing: 'secondary',
   approved: 'default',
   rejected: 'destructive',
   deleted: 'destructive',

@@ -115,7 +115,7 @@ export function AppShell() {
     approved: 'bg-success/15 text-success',
     rejected: 'bg-destructive/15 text-destructive',
     pending_review: 'bg-warning/15 text-warning',
-    pending_bms: 'bg-warning/15 text-warning',
+    processing: 'bg-warning/15 text-warning',
   };
 
   async function handleLogout() {

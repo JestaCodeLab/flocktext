@@ -28,7 +28,7 @@ export interface AdminOrgUser {
   lastLoginAt: string | null;
 }
 
-export type SenderIdStatus = 'pending_review' | 'pending_bms' | 'approved' | 'rejected' | 'deleted';
+export type SenderIdStatus = 'pending_review' | 'processing' | 'approved' | 'rejected' | 'deleted';
 
 export interface AdminSenderId {
   senderId: string;

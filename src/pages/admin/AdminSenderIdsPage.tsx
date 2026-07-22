@@ -137,7 +137,7 @@ export function AdminSenderIdsPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{row.bmsStatus || '—'}</TableCell>
                 <TableCell>
-                  {row.status === 'pending_bms' && (
+                  {row.status === 'processing' && (
                     <div className="flex items-center gap-1.5">
                       <Button size="sm" variant="outline" disabled={sync.isPending} onClick={() => sync.mutate(row)}>
                         <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
