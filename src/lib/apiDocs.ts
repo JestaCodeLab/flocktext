@@ -117,7 +117,7 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
     responseParams: [
       { name: 'id', type: 'string', requirement: 'Optional', description: 'Sender ID record ID.' },
       { name: 'senderId', type: 'string', requirement: 'Optional', description: 'The registered sender name.' },
-      { name: 'status', type: 'string', requirement: 'Optional', description: 'One of pending_review, pending_bms, approved, rejected.' },
+      { name: 'status', type: 'string', requirement: 'Optional', description: 'One of pending_review, processing, approved, rejected.' },
       { name: 'isPrimary', type: 'boolean', requirement: 'Optional', description: 'Whether this is the default sender ID for sends.' },
       { name: 'purpose', type: 'string', requirement: 'Optional', description: 'Free-text note on what this sender ID is used for.' },
     ],
@@ -208,26 +208,6 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
       { status: 401, description: 'Invalid or missing API key.' },
       { status: 404, description: 'Sender ID not found.' },
       { status: 422, description: 'An approved sender ID cannot be removed.' },
-    ],
-  },
-  {
-    id: 'sender-ids-status',
-    group: 'Sender IDs',
-    method: 'GET',
-    path: '/v1/sender-ids/status',
-    summary: 'Check live sender ID status',
-    description: 'Checks a sender ID’s live registration status directly with the SMS provider (BMS Africa). The response shape is passed through as-is from the provider.',
-    requestParams: [{ name: 'senderId', type: 'string', requirement: 'Query', description: 'The sender ID to check.' }],
-    responseParams: [{ name: '(passthrough)', type: 'object', requirement: 'Optional', description: 'Provider-defined shape — not guaranteed to be stable.' }],
-    status: 200,
-    response: `{
-  "status": "success",
-  "senderId": "StPaulsChurch",
-  "bmsStatus": "approved"
-}`,
-    errors: [
-      { status: 401, description: 'Invalid or missing API key.' },
-      { status: 422, description: 'senderId is required.' },
     ],
   },
   {
