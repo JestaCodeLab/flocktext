@@ -13,7 +13,7 @@ export interface Paginated<T> {
   pageSize: number;
 }
 
-export type RecipientType = 'groups' | 'single' | 'selection' | 'all' | 'birthday';
+export type RecipientType = 'groups' | 'single' | 'selection' | 'all' | 'birthday' | 'list';
 export type SendMode = 'now' | 'once' | 'recurring';
 export type RecurringFreq = 'daily' | 'weekly' | 'monthly';
 
@@ -99,8 +99,8 @@ export interface MessageSummary {
   stats: MessageStats;
 }
 
-export async function fetchMessages(limit?: number) {
-  const { data } = await api.get<MessageSummary[]>('/messages', { params: limit ? { limit } : undefined });
+export async function fetchMessages(status?: 'delivered' | 'failed', range?: DateRangeParams, page?: PageParams) {
+  const { data } = await api.get<Paginated<MessageSummary>>('/messages', { params: { status, ...range, ...page } });
   return data;
 }
 
@@ -133,20 +133,3 @@ export async function resendFailedMessage(id: string) {
   return data;
 }
 
-export interface RecipientListRow {
-  id: string;
-  messageId: string;
-  name: string;
-  phone: string;
-  status: 'pending' | 'delivered' | 'failed';
-  reason: string;
-  deliveredAt: string | null;
-  date: string;
-  messagePreview: string;
-  senderId: string;
-}
-
-export async function fetchRecipientsByStatus(status: 'delivered' | 'failed', range?: DateRangeParams, page?: PageParams) {
-  const { data } = await api.get<Paginated<RecipientListRow>>('/messages/recipients', { params: { status, ...range, ...page } });
-  return data;
-}

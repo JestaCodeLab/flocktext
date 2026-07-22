@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 const TEMPLATE_VARIABLES = [
   { token: '{firstName}', description: "recipient's first name" },
   { token: '{lastName}', description: "recipient's last name" },
-  { token: '{churchName}', description: 'your organization name' },
+  { token: '{orgName}', description: 'your organization name' },
 ];
 
 export function TemplatesPage() {
@@ -110,7 +110,7 @@ export function TemplatesPage() {
             <div className="space-y-1.5">
               <div className="text-[13px] font-semibold">Message body</div>
               <Textarea
-                placeholder="Use {firstName}, {lastName} or {churchName} to personalize"
+                placeholder="Use {firstName}, {lastName} or {orgName} to personalize"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
                 className="min-h-[90px]"

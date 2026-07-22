@@ -235,9 +235,9 @@ export function CsvImportPanel({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Date of birth</TableHead>
+                  <TableHead className="text-[13px]">Name</TableHead>
+                  <TableHead className="text-[13px]">Phone</TableHead>
+                  <TableHead className="text-[13px]">Date of birth</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

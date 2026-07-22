@@ -114,7 +114,7 @@ export function GroupDetailPage() {
         </div>
       </div>
       <div className="mb-4.5 text-sm text-muted-foreground">
-        {detail.data?.count ?? 0} {detail.data?.count === 1 ? entity.singular : entity.plural}
+        Showing ({detail.data?.count ?? 0}) {detail.data?.count === 1 ? entity.singular : entity.plural}
       </div>
 
       <ContactsTable

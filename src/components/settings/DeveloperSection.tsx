@@ -237,7 +237,7 @@ export function DeveloperSection() {
             <DialogTitle>Your new API key</DialogTitle>
           </DialogHeader>
           <div className="flex items-center gap-2 rounded-lg border border-border bg-background p-3">
-            <code className="flex-1 overflow-x-auto text-sm">{revealedKey}</code>
+            <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-sm">{revealedKey}</code>
             <Button size="icon-sm" variant="ghost" onClick={copyKey}>
               <Copy className="h-3.5 w-3.5" />
             </Button>

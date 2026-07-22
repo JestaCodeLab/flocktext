@@ -87,7 +87,7 @@ export function BirthdayAutomationDialog({ open, onOpenChange }: { open: boolean
               />
               <div className="text-xs text-muted-foreground">
                 Use <span className="font-semibold text-foreground/80">{'{name}'}</span> and{' '}
-                <span className="font-semibold text-foreground/80">{'{churchName}'}</span> — they're replaced per contact.
+                <span className="font-semibold text-foreground/80">{'{orgName}'}</span> — they're replaced per contact.
               </div>
             </div>
           </div>

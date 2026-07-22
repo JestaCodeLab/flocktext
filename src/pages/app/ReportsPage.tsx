@@ -1,15 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   BarChart3,
-  Download,
   RotateCcw,
   Eye,
-  Send,
-  CheckCircle2,
-  XCircle,
-  Clock,
+  FileText,
+  MoreVertical,
   RefreshCw,
   CalendarClock,
   Repeat,
@@ -17,32 +14,40 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
+import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
 import {
   fetchMessageRecipients,
-  fetchRecipientsByStatus,
+  fetchMessages,
   resendFailedMessage,
   fetchScheduledMessages,
   cancelScheduledMessage,
-  type RecipientListRow,
+  type MessageSummary,
+  type MessageStats,
   type ScheduledMessage,
 } from '@/api/messages';
+import { createTemplate } from '@/api/templates';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
 
-function statusBadgeVariant(status: 'pending' | 'delivered' | 'failed') {
-  if (status === 'delivered') return 'success' as const;
-  if (status === 'failed') return 'destructive' as const;
-  return 'secondary' as const;
+// Delivered/Failed here refer to the whole send, not one recipient - "Failed"
+// means at least one recipient failed (matches the tab this row can appear in
+// and the set eligible for resend-failed); "Pending" means still resolving.
+function messageStatusBadge(stats: MessageStats) {
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})` };
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending' };
+  return { variant: 'success' as const, label: 'Delivered' };
 }
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -95,11 +100,11 @@ function ScheduledTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Next send</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Sent to</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead className="w-0">Actions</TableHead>
+            <TableHead className="text-[13px]">Next send</TableHead>
+            <TableHead className="text-[13px]">Type</TableHead>
+            <TableHead className="text-[13px]">Sent to</TableHead>
+            <TableHead className="text-[13px]">Message</TableHead>
+            <TableHead className="w-0 text-[13px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -191,166 +196,55 @@ function ScheduledDetailDialog({
   );
 }
 
-function MiniStatCard({
-  icon: Icon,
-  label,
-  value,
-  tint,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: React.ReactNode;
-  tint: 'primary' | 'blue' | 'success' | 'destructive' | 'muted';
-}) {
-  const tintClass = {
-    primary: 'bg-primary/10 text-primary',
-    blue: 'bg-chart-3/15 text-chart-3',
-    success: 'bg-success/10 text-success',
-    destructive: 'bg-destructive/10 text-destructive',
-    muted: 'bg-muted text-muted-foreground',
-  }[tint];
-
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3.5">
-      <div className={cn('flex h-9 w-9 shrink-0 items-center justify-center rounded-lg', tintClass)}>
-        <Icon className="h-[18px] w-[18px]" />
-      </div>
-      <div className="min-w-0">
-        <div className="truncate text-[13px] text-muted-foreground">{label}</div>
-        <div className="text-lg font-bold leading-tight text-foreground">{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function downloadCsv(filename: string, rows: string[][]) {
-  const csv = rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 0);
-}
-
-function MessageDetailDialog({ messageId, onOpenChange }: { messageId: string | null; onOpenChange: (open: boolean) => void }) {
+function SaveAsTemplateDialog({ messageId, onOpenChange }: { messageId: string | null; onOpenChange: (open: boolean) => void }) {
+  const [name, setName] = useState('');
   const queryClient = useQueryClient();
-  const updateOrganization = useAuthStore((s) => s.updateOrganization);
+
+  // Reuses the same query key the detail page fetches with, so if the user already
+  // opened this message's detail page, this is served from cache instead of refetching.
   const detail = useQuery({
     queryKey: ['message-recipients', messageId],
     queryFn: () => fetchMessageRecipients(messageId!),
     enabled: !!messageId,
-    // Keep polling while delivery is still resolving so the breakdown updates live.
-    refetchInterval: (query) => ((query.state.data?.stats.pending ?? 0) > 0 ? 3000 : false),
   });
 
-  // The flat Delivered/Failed lists only fetch on mount + manual refresh, so once this
-  // message finishes resolving here, nudge them to pick it up without a full page reload.
-  const prevPendingRef = useRef<number | null>(null);
   useEffect(() => {
-    prevPendingRef.current = null;
+    if (messageId) setName('');
   }, [messageId]);
-  useEffect(() => {
-    const pending = detail.data?.stats.pending;
-    if (pending === undefined) return;
-    if (prevPendingRef.current !== null && prevPendingRef.current > 0 && pending === 0) {
-      queryClient.invalidateQueries({ queryKey: ['recipients'] });
-    }
-    prevPendingRef.current = pending;
-  }, [detail.data?.stats.pending, queryClient]);
 
-  const resend = useMutation({
-    mutationFn: () => resendFailedMessage(messageId!),
-    onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
-      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
-      queryClient.invalidateQueries({ queryKey: ['messages'] });
+  const save = useMutation({
+    mutationFn: () => createTemplate({ name: name.trim(), body: detail.data!.body }),
+    onSuccess: () => {
+      toast.success('Saved as template.');
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
       onOpenChange(false);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const failedCount = detail.data?.recipients.filter((r) => r.status === 'failed').length ?? 0;
-
-  function exportCsv() {
-    if (!detail.data) return;
-    const rows = [
-      ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
-      ...detail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
-    ];
-    downloadCsv(`message-${messageId}-recipients.csv`, rows);
-  }
-
   return (
     <Dialog open={!!messageId} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>Delivery Details</DialogTitle>
+          <DialogTitle>Save as template</DialogTitle>
         </DialogHeader>
-        {detail.isLoading && (
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="template-name">Template name</Label>
+            <Input id="template-name" autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunday reminder" />
           </div>
-        )}
-        {detail.data && (
-          <>
-            <div className="mb-4 overflow-hidden rounded-xl bg-secondary">
-              <div className="flex items-center justify-between gap-3 bg-primary px-3.5 py-2.5 text-[13px] font-bold text-white">
-                <span>{detail.data.senderId}</span>
-                <span className="shrink-0 capitalize text-[13px] font-medium text-white/70">
-                  {detail.data.creditCost} credit{detail.data.creditCost === 1 ? '' : 's'} ·{' '}
-                  {new Date(detail.data.date).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                </span>
-              </div>
-              <div className="break-words p-3.5 text-sm leading-relaxed text-foreground">{detail.data.body}</div>
-            </div>
-
-            <div className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-              <MiniStatCard icon={Send} label="Total" value={detail.data.stats.total} tint="muted" />
-              <MiniStatCard icon={CheckCircle2} label="Delivered" value={detail.data.stats.delivered} tint="success" />
-              <MiniStatCard icon={XCircle} label="Failed" value={detail.data.stats.failed} tint="destructive" />
-              <MiniStatCard icon={Clock} label="Pending" value={detail.data.stats.pending} tint="muted" />
-            </div>
-            <div className="max-h-[320px] overflow-auto rounded-lg border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Reason</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {detail.data.recipients.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="font-semibold">{r.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{r.phone}</TableCell>
-                      <TableCell>
-                        <Badge variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{r.reason || '—'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
-        <DialogFooter>
-          <Button variant="outline" onClick={exportCsv} disabled={!detail.data}>
-            <Download className="h-[15px] w-[15px]" /> Export CSV
-          </Button>
-          {failedCount > 0 && (
-            <Button disabled={resend.isPending} onClick={() => resend.mutate()}>
-              <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : `Resend to ${failedCount} failed`}
-            </Button>
+          {detail.isLoading && <Skeleton className="h-16 w-full" />}
+          {detail.data && (
+            <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">{detail.data.body}</div>
           )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button disabled={!name.trim() || !detail.data || save.isPending} onClick={() => save.mutate()}>
+            {save.isPending ? 'Saving…' : 'Save template'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -368,17 +262,17 @@ function EmptyState({ message }: { message: React.ReactNode }) {
   );
 }
 
-function RecipientsTable({
+function MessagesTable({
   rows,
-  showReason,
   onView,
   onResend,
+  onSaveTemplate,
   resendingMessageId,
 }: {
-  rows: RecipientListRow[];
-  showReason: boolean;
-  onView: (messageId: string) => void;
+  rows: MessageSummary[];
+  onView: (row: MessageSummary) => void;
   onResend?: (messageId: string) => void;
+  onSaveTemplate: (messageId: string) => void;
   resendingMessageId?: string | null;
 }) {
   return (
@@ -386,52 +280,66 @@ function RecipientsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date &amp; time</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead>Sender ID</TableHead>
-            <TableHead>Status</TableHead>
-            {showReason && <TableHead>Reason</TableHead>}
-            <TableHead className="w-0">Actions</TableHead>
+            <TableHead className="text-[13px]">Date &amp; time</TableHead>
+            <TableHead className="text-[13px]">Type</TableHead>
+            <TableHead className="text-[13px]">Message</TableHead>
+            <TableHead className="text-[13px]">Sender ID</TableHead>
+            <TableHead className="text-[13px]">Status</TableHead>
+            <TableHead className="w-0 text-[13px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((r) => (
-            <TableRow key={r.id}>
-              <TableCell>
-                <div className="font-medium text-foreground">
-                  {new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {new Date(r.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                </div>
-              </TableCell>
-              <TableCell className="font-semibold">{r.phone}</TableCell>
-              <TableCell className="max-w-[240px] truncate text-muted-foreground">{r.messagePreview}</TableCell>
-              <TableCell className="text-muted-foreground">{r.senderId}</TableCell>
-              <TableCell>
-                <Badge className='capitalize' variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
-              </TableCell>
-              {showReason && <TableCell className="text-muted-foreground">{r.reason || '—'}</TableCell>}
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button size="icon-sm" variant="ghost" onClick={() => onView(r.messageId)}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  {onResend && (
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      disabled={resendingMessageId === r.messageId}
-                      onClick={() => onResend(r.messageId)}
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </Button>
-                  )}
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {rows.map((m) => {
+            const status = messageStatusBadge(m.stats);
+            return (
+              <TableRow key={m.id}>
+                <TableCell>
+                  <div className="font-medium text-foreground">
+                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk (${m.stats.total})`}</Badge>
+                </TableCell>
+                <TableCell className="max-w-[240px] truncate text-muted-foreground">{m.preview}</TableCell>
+                <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                <TableCell>
+                  <Badge variant={status.variant}>{status.label}</Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button size="icon-sm" variant="ghost" title="Actions">
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end" className="w-42">
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
+                        <Eye className="h-3 w-3" /> View details
+                      </DropdownMenuItem>
+                      {onResend && (
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          disabled={resendingMessageId === m.id}
+                          onClick={() => onResend(m.id)}
+                        >
+                          <RotateCcw className="h-3 w-3" /> Resend
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem className="cursor-pointer" onClick={() => onSaveTemplate(m.id)}>
+                        <FileText className="h-3 w-3" /> Save as template
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
@@ -480,7 +388,8 @@ function PaginationControls({
 export function ReportsPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [templateSourceId, setTemplateSourceId] = useState<string | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
   const [selectedScheduledId, setSelectedScheduledId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'scheduled' | 'delivered' | 'failed'>('delivered');
   const [range, setRange] = useState<DateRangeParams>({ preset: 'all_time' });
@@ -498,13 +407,11 @@ export function ReportsPage() {
     setFailedPage(1);
   }, [range]);
 
-  // Land here right after a send with the just-sent message's breakdown open automatically,
-  // or jump straight to the Scheduled tab (e.g. from the Dashboard's "View all" link).
+  // Jump straight to the Scheduled tab (e.g. from the Dashboard's "View all" link).
   useEffect(() => {
-    const state = location.state as { messageId?: string; tab?: 'scheduled' | 'delivered' | 'failed' } | null;
-    if (state?.messageId) setSelectedId(state.messageId);
+    const state = location.state as { tab?: 'scheduled' | 'delivered' | 'failed' } | null;
     if (state?.tab) setActiveTab(state.tab);
-    if (state?.messageId || state?.tab) window.history.replaceState({}, '');
+    if (state?.tab) window.history.replaceState({}, '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -513,12 +420,12 @@ export function ReportsPage() {
     queryFn: () => fetchScheduledMessages(range, { page: scheduledPage, pageSize: PAGE_SIZE }),
   });
   const delivered = useQuery({
-    queryKey: ['recipients', 'delivered', range, deliveredPage],
-    queryFn: () => fetchRecipientsByStatus('delivered', range, { page: deliveredPage, pageSize: PAGE_SIZE }),
+    queryKey: ['messages', 'delivered', range, deliveredPage],
+    queryFn: () => fetchMessages('delivered', range, { page: deliveredPage, pageSize: PAGE_SIZE }),
   });
   const failed = useQuery({
-    queryKey: ['recipients', 'failed', range, failedPage],
-    queryFn: () => fetchRecipientsByStatus('failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
+    queryKey: ['messages', 'failed', range, failedPage],
+    queryFn: () => fetchMessages('failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
   });
 
   const resend = useMutation({
@@ -526,10 +433,36 @@ export function ReportsPage() {
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
-      queryClient.invalidateQueries({ queryKey: ['recipients'] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
+
+  // Each row already carries its own recipient count, so there's no need to fetch
+  // anything before deciding where "View details" goes: a single-recipient send
+  // opens a quick modal, anything more opens the full detail page.
+  function handleView(row: MessageSummary) {
+    if (row.stats.total <= 1) {
+      setViewingId(row.id);
+    } else {
+      navigate(`/app/reports/${row.id}`);
+    }
+  }
+
+  const viewDetail = useQuery({
+    queryKey: ['message-recipients', viewingId],
+    queryFn: () => fetchMessageRecipients(viewingId!),
+    enabled: !!viewingId,
+  });
+
+  function exportViewingCsv() {
+    if (!viewDetail.data) return;
+    const rows = [
+      ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
+      ...viewDetail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
+    ];
+    downloadCsv(`message-${viewingId}-recipients.csv`, rows);
+  }
 
   const cancelScheduled = useMutation({
     mutationFn: cancelScheduledMessage,
@@ -547,7 +480,7 @@ export function ReportsPage() {
     <div>
       <div className="mb-6">
         <div className="mb-1 text-[26px] font-bold">Delivery Reports</div>
-        <div className="text-sm text-muted-foreground">Per-recipient delivery and failure breakdowns for every send.</div>
+        <div className="text-sm text-muted-foreground">Delivery and failure breakdowns for every send.</div>
       </div>
 
       {isLoading && (
@@ -641,7 +574,11 @@ export function ReportsPage() {
           {activeTab === 'delivered' &&
             (delivered.data?.rows.length ? (
               <>
-                <RecipientsTable rows={delivered.data.rows} showReason={false} onView={setSelectedId} />
+                <MessagesTable
+                  rows={delivered.data.rows}
+                  onView={handleView}
+                  onSaveTemplate={setTemplateSourceId}
+                />
                 <PaginationControls page={deliveredPage} pageSize={PAGE_SIZE} total={delivered.data.total} onPageChange={setDeliveredPage} />
               </>
             ) : (
@@ -651,11 +588,11 @@ export function ReportsPage() {
           {activeTab === 'failed' &&
             (failed.data?.rows.length ? (
               <>
-                <RecipientsTable
+                <MessagesTable
                   rows={failed.data.rows}
-                  showReason
-                  onView={setSelectedId}
+                  onView={handleView}
                   onResend={(messageId) => resend.mutate(messageId)}
+                  onSaveTemplate={setTemplateSourceId}
                   resendingMessageId={resend.isPending ? (resend.variables ?? null) : null}
                 />
                 <PaginationControls page={failedPage} pageSize={PAGE_SIZE} total={failed.data.total} onPageChange={setFailedPage} />
@@ -666,7 +603,28 @@ export function ReportsPage() {
         </>
       )}
 
-      <MessageDetailDialog messageId={selectedId} onOpenChange={(open) => !open && setSelectedId(null)} />
+      <SaveAsTemplateDialog messageId={templateSourceId} onOpenChange={(open) => !open && setTemplateSourceId(null)} />
+      <Dialog open={!!viewingId} onOpenChange={(open) => !open && setViewingId(null)}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Delivery Details</DialogTitle>
+          </DialogHeader>
+          {viewDetail.isLoading && (
+            <div className="space-y-2.5">
+              <Skeleton className="h-[60px] rounded-xl" />
+              <Skeleton className="h-[100px] rounded-xl" />
+            </div>
+          )}
+          {viewDetail.data && (
+            <MessageDetailBody
+              detail={viewDetail.data}
+              onExportCsv={exportViewingCsv}
+              onResend={() => resend.mutate(viewingId!)}
+              resending={resend.isPending && resend.variables === viewingId}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
       <ScheduledDetailDialog
         message={scheduled.data?.rows.find((m) => m.id === selectedScheduledId) ?? null}
         onOpenChange={(open) => !open && setSelectedScheduledId(null)}

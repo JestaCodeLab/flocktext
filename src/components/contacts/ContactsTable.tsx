@@ -55,11 +55,11 @@ export function ContactsTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Phone</TableHead>
-            <TableHead>Groups</TableHead>
-            <TableHead>Added</TableHead>
-            <TableHead className="w-0">Actions</TableHead>
+            <TableHead className="text-[13px]">Name</TableHead>
+            <TableHead className="text-[13px]">Phone</TableHead>
+            <TableHead className="text-[13px]">Groups</TableHead>
+            <TableHead className="text-[13px]">Added</TableHead>
+            <TableHead className="w-0 text-[13px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

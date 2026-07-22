@@ -37,6 +37,7 @@ import { ComposePage } from '@/pages/app/ComposePage';
 import { TemplatesPage } from '@/pages/app/TemplatesPage';
 import { WalletPage } from '@/pages/app/WalletPage';
 import { ReportsPage } from '@/pages/app/ReportsPage';
+import { MessageReportPage } from '@/pages/app/MessageReportPage';
 import { SettingsPage } from '@/pages/app/SettingsPage';
 import { ActivityLogPage } from '@/pages/app/ActivityLogPage';
 import { DeveloperDocsPage } from '@/pages/app/DeveloperDocsPage';
@@ -101,6 +102,7 @@ function App() {
             <Route path="compose" element={<ComposePage />} />
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="reports" element={<ReportsPage />} />
+            <Route path="reports/:id" element={<MessageReportPage />} />
             <Route path="wallet" element={<WalletPage />} />
             <Route path="scheduled" element={<Navigate to="/app/reports" replace />} />
             <Route path="sender-id" element={<Navigate to="/app/settings" replace />} />
