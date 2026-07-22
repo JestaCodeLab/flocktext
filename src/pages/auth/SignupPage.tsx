@@ -94,7 +94,12 @@ export function SignupPage() {
           />
         </div>
 
-        <Button type="submit" className="h-12 w-full rounded-full" size="lg" disabled={loading}>
+        <Button
+          type="submit"
+          className="h-12 w-full rounded-full"
+          size="lg"
+          disabled={loading || Object.values(form).some((v) => !v) || form.password.length < 8}
+        >
           {loading ? 'Creating account…' : 'Create account'}
         </Button>
 

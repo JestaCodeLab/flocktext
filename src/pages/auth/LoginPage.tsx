@@ -77,7 +77,7 @@ export function LoginPage() {
           </Link>
         </div>
 
-        <Button type="submit" className="h-12 w-full rounded-full" size="lg" disabled={loading}>
+        <Button type="submit" className="h-12 w-full rounded-full" size="lg" disabled={loading || !phone || !password}>
           {loading ? 'Logging in…' : 'Log in'}
         </Button>
 
