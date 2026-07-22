@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -7,6 +7,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/pages/auth/AuthLayout';
+import { OtpInput } from '@/components/auth/OtpInput';
 import * as authApi from '@/api/auth';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
@@ -22,7 +23,6 @@ export function ForgotPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
-  const inputs = useRef<(HTMLInputElement | null)[]>([]);
 
   async function submitPhone(e: React.FormEvent) {
     e.preventDefault();
@@ -37,16 +37,6 @@ export function ForgotPasswordPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function updateDigit(index: number, value: string) {
-    const char = value.slice(-1);
-    setDigits((d) => {
-      const next = [...d];
-      next[index] = char;
-      return next;
-    });
-    if (char && index < 5) inputs.current[index + 1]?.focus();
   }
 
   async function submitOtp() {
@@ -115,7 +105,7 @@ export function ForgotPasswordPage() {
               onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             />
           </div>
-          <Button type="submit" className="mb-5 h-12 w-full rounded-full" size="lg" disabled={loading}>
+          <Button type="submit" className="mb-5 h-12 w-full rounded-full" size="lg" disabled={loading || !phone}>
             {loading ? 'Sending…' : 'Send code'}
           </Button>
           <Link to="/login" className="block text-center text-[13px] font-semibold text-muted-foreground hover:text-foreground">
@@ -128,23 +118,13 @@ export function ForgotPasswordPage() {
         <div>
           <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Enter code</div>
           <div className="mb-7 text-center text-sm leading-relaxed text-muted-foreground lg:text-left">We sent a 6-digit code to {phone}.</div>
-          <div className="mb-6 flex gap-2.5">
-            {digits.map((d, i) => (
-              <input
-                key={i}
-                ref={(el) => {
-                  inputs.current[i] = el;
-                }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={d}
-                onChange={(e) => updateDigit(i, e.target.value)}
-                className="w-full rounded-2xl border border-border bg-background py-3 text-center text-[22px] font-bold transition-colors focus:border-ring focus:outline-none focus:ring-3 focus:ring-ring/50"
-              />
-            ))}
-          </div>
-          <Button className="mb-5 h-12 w-full rounded-full" size="lg" onClick={submitOtp} disabled={loading}>
+          <OtpInput digits={digits} onChange={setDigits} disabled={loading} />
+          <Button
+            className="mb-5 h-12 w-full rounded-full"
+            size="lg"
+            onClick={submitOtp}
+            disabled={loading || digits.some((d) => !d)}
+          >
             {loading ? 'Verifying…' : 'Verify code'}
           </Button>
           <Link to="/login" className="block text-center text-[13px] font-semibold text-muted-foreground hover:text-foreground">
@@ -177,7 +157,12 @@ export function ForgotPasswordPage() {
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
           </div>
-          <Button type="submit" className="h-12 w-full rounded-full" size="lg" disabled={loading}>
+          <Button
+            type="submit"
+            className="h-12 w-full rounded-full"
+            size="lg"
+            disabled={loading || newPassword.length < 8 || newPassword !== confirmPassword}
+          >
             {loading ? 'Resetting…' : 'Reset password'}
           </Button>
         </form>
@@ -185,7 +170,7 @@ export function ForgotPasswordPage() {
 
       {step === 4 && (
         <div>
-          <div className="mb-5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-success/15 text-success">
+          <div className="mx-auto mb-5 flex h-[52px] w-[52px] items-center justify-center rounded-full bg-success/15 text-success lg:mx-0">
             <CheckCircle2 className="h-6 w-6" />
           </div>
           <div className="mb-1 text-center text-[26px] font-bold lg:text-left">Password reset</div>
