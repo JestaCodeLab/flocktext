@@ -31,6 +31,9 @@ export type InitializeAddonPurchaseResult =
       organizationId: string;
       addonKey: string;
       subaccountCode?: string;
+      // Only present when the request passed `redirect: true` - this app uses
+      // Paystack Inline instead, so `initializeAddonPurchase` below never sets it.
+      authorization_url?: string;
     };
 
 export async function initializeAddonPurchase(key: string) {
