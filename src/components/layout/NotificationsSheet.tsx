@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, BellOff, Wallet, CalendarClock, SendHorizonal, BadgeCheck, XCircle, UserPlus } from 'lucide-react';
+import { Bell, BellOff, Wallet, CalendarClock, SendHorizonal, BadgeCheck, XCircle, UserPlus, Megaphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { fetchNotifications, markNotificationRead, markAllNotificationsRead, type NotificationType } from '@/api/notifications';
@@ -11,6 +11,7 @@ const NOTIFICATION_ICON: Record<NotificationType, typeof Bell> = {
   sender_id_approved: BadgeCheck,
   sender_id_rejected: XCircle,
   team_invite: UserPlus,
+  platform_announcement: Megaphone,
 };
 
 export function NotificationsSheet() {

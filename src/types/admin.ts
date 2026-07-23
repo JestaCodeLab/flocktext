@@ -90,6 +90,24 @@ export interface AdminAddon {
   active: boolean;
 }
 
+export type AnnouncementStatus = 'queued' | 'sending' | 'sent' | 'failed';
+
+export interface AdminAnnouncement {
+  id: string;
+  title: string;
+  message: string;
+  status: AnnouncementStatus;
+  createdBy: { id: string; name: string } | null;
+  orgsTargeted: number;
+  notificationsCreated: number;
+  pushTokensTargeted: number;
+  pushSent: number;
+  pushFailed: number;
+  error: string;
+  createdAt: string;
+  processedAt: string | null;
+}
+
 export interface AdminDashboardSummary {
   totalOrganizations: number;
   activeOrganizations: number;
