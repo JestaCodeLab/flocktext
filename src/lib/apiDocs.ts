@@ -67,54 +67,8 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
       { status: 429, description: 'Rate limit exceeded.' },
     ],
   },
-  {
-    id: 'wallet-topup',
-    group: 'Wallet',
-    method: 'POST',
-    path: '/v1/wallet/topup',
-    summary: 'Start a wallet top-up',
-    description:
-      'Starts a credit purchase. By default, returns the fields needed to present a Paystack checkout to your user. Pass `redirect: true` to instead get back an `authorization_url` for Paystack’s hosted checkout page - recommended for external and mobile apps, which can’t embed Paystack’s browser-only Inline checkout. If Paystack isn’t configured (e.g. a sandbox environment), credits are applied immediately and `mode` is `"stub"` instead.',
-    requestParams: [
-      { name: 'ghs', type: 'number', requirement: 'Required', description: 'Must match an active Package.ghs value.' },
-      { name: 'redirect', type: 'boolean', requirement: 'Optional', description: 'If true, the response includes `authorization_url` for Paystack’s hosted checkout instead of Inline.' },
-      { name: 'callbackUrl', type: 'string', requirement: 'Optional', description: 'Where Paystack redirects your user after payment. Only used when `redirect` is true.' },
-    ],
-    responseParams: [
-      { name: 'mode', type: 'string', requirement: 'Optional', description: '"checkout" or "stub".' },
-      { name: 'reference', type: 'string', requirement: 'Optional', description: 'Transaction reference to key the checkout/webhook/verify flow off of.' },
-      { name: 'amountGHS', type: 'number', requirement: 'Optional', description: 'Amount to charge, in GHS.' },
-      { name: 'email', type: 'string', requirement: 'Optional', description: 'Payer email to prefill at checkout.' },
-      { name: 'organizationId', type: 'string', requirement: 'Optional', description: 'Your organization’s ID.' },
-      { name: 'packageGhs', type: 'number', requirement: 'Optional', description: 'Selected package amount, in GHS.' },
-      { name: 'subaccountCode', type: 'string', requirement: 'Optional', description: 'Paystack subaccount code, if configured.' },
-      { name: 'authorization_url', type: 'string', requirement: 'Optional', description: 'Paystack hosted checkout URL to redirect your user to. Only present when the request passed `redirect: true`.' },
-    ],
-    requestBody: `{
-  "ghs": 50,
-  "redirect": true,
-  "callbackUrl": "https://yourapp.example.com/payment-complete"
-}`,
-    status: 200,
-    response: `{
-  "status": "success",
-  "message": "Top-up initialized successfully.",
-  "data": {
-    "mode": "checkout",
-    "reference": "FLK-3f9b6a2e-8f1a-4c9d-9e2a-8b6b7a5b2b10",
-    "amountGHS": 50,
-    "email": "admin@stpaulschurch.org",
-    "organizationId": "665f1c2e9b1d4a0012a3f8c7",
-    "packageGhs": 50,
-    "subaccountCode": "ACCT_8f4s02q6kd6xn2p",
-    "authorization_url": "https://checkout.paystack.com/8f4s02q6kd6xn2p"
-  }
-}`,
-    errors: [
-      { status: 401, description: 'Invalid or missing API key.' },
-      { status: 422, description: 'Choose a valid credit package.' },
-    ],
-  },
+  // 'wallet-topup' (/v1/wallet/topup) intentionally omitted from these docs for now -
+  // SMS/wallet crediting is web-only. The route itself is untouched, just hidden here.
   {
     id: 'sender-ids-list',
     group: 'Sender IDs',
