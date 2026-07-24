@@ -31,12 +31,14 @@ export interface AdminOrgUser {
 export type SenderIdStatus = 'pending_review' | 'processing' | 'approved' | 'rejected' | 'deleted';
 
 export interface AdminSenderId {
+  id: string;
   senderId: string;
   purpose: string;
   status: SenderIdStatus;
   rejectionReason: string;
   bmsStatus: string;
   isPrimary: boolean;
+  createdAt: string;
 }
 
 export interface AdminOrgDetail {
@@ -108,12 +110,29 @@ export interface AdminAnnouncement {
   processedAt: string | null;
 }
 
+export interface AdminTopOrganization {
+  id: string;
+  churchName: string;
+  messagesSent: number;
+  walletBalanceCredits: number;
+}
+
 export interface AdminDashboardSummary {
   totalOrganizations: number;
   activeOrganizations: number;
-  suspendedOrganizations: number;
-  sentThisMonth: number;
-  deliveredThisMonth: number;
-  totalWalletCredits: number;
+  messagesSent: number;
+  messagesDelivered: number;
   pendingSenderIdCount: number;
+  topOrganizations: AdminTopOrganization[];
+}
+
+export interface AdminDashboardChartBucket {
+  label: string;
+  newOrganizations: number;
+  messagesSent: number;
+  creditsUsed: number;
+}
+
+export interface AdminDashboardChart {
+  buckets: AdminDashboardChartBucket[];
 }

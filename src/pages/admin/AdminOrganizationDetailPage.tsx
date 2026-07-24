@@ -1,34 +1,71 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Ban, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Ban, CheckCircle2, Send, X, RefreshCw, ShieldCheck, Plus, Users as UsersIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
+import { AdminAddUserDialog } from '@/components/admin/AdminAddUserDialog';
+import { DeleteOrganizationDialog } from '@/components/admin/DeleteOrganizationDialog';
 import {
   fetchAdminOrganizationDetail,
   updateAdminOrganizationProfile,
   suspendOrganization,
   reactivateOrganization,
   adjustOrganizationWallet,
+  deleteOrganization,
 } from '@/api/adminOrganizations';
+import { registerSenderId, approveSenderId, rejectSenderId, checkBmsStatus } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
+import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
+import type { AdminSenderId } from '@/types/admin';
+
+function DetailSkeleton() {
+  return (
+    <div>
+      <Skeleton className="mb-4 h-4 w-40" />
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="mt-2 h-4 w-32" />
+        </div>
+        <Skeleton className="h-9 w-28" />
+      </div>
+      <div className="mb-6 grid grid-cols-4 gap-3.5">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[84px] rounded-xl" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <Skeleton className="h-64 rounded-xl" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    </div>
+  );
+}
 
 export function AdminOrganizationDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const detail = useQuery({
     queryKey: ['admin-org-detail', id],
     queryFn: () => fetchAdminOrganizationDetail(id!),
     enabled: !!id,
+    retry: false,
   });
 
   const [profileForm, setProfileForm] = useState({ churchName: '', address: '', contactEmail: '' });
   const [walletCredits, setWalletCredits] = useState('');
   const [walletReason, setWalletReason] = useState('');
+  const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   useEffect(() => {
     if (detail.data) {
@@ -74,7 +111,66 @@ export function AdminOrganizationDetailPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  if (!detail.data) return null;
+  const register = useMutation({
+    mutationFn: (senderIdId: string) => registerSenderId(id!, senderIdId),
+    onSuccess: () => {
+      toast.success('Submitted to BMS Africa for registration.');
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err, 'Could not register this sender ID with BMS Africa.')),
+  });
+
+  const approve = useMutation({
+    mutationFn: (senderIdId: string) => approveSenderId(id!, senderIdId),
+    onSuccess: () => {
+      toast.success('Sender ID approved.');
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const reject = useMutation({
+    mutationFn: (reason: string) => rejectSenderId(id!, rejectTarget!.id, reason),
+    onSuccess: () => {
+      toast.success('Rejected.');
+      setRejectTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const syncBms = useMutation({
+    mutationFn: (senderIdId: string) => checkBmsStatus(id!, senderIdId),
+    onSuccess: () => invalidate(),
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const remove = useMutation({
+    mutationFn: (confirmChurchName: string) => deleteOrganization(id!, confirmChurchName),
+    onSuccess: () => {
+      toast.success('Organization deleted.');
+      queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
+      navigate('/admin/organizations');
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  if (detail.isLoading) return <DetailSkeleton />;
+
+  if (detail.isError || !detail.data) {
+    return (
+      <div>
+        <Link to="/admin/organizations" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Back to organizations
+        </Link>
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-14 text-center">
+          <div className="text-sm font-semibold">Organization not found.</div>
+          <div className="text-sm text-muted-foreground">It may have been deleted or the link is incorrect.</div>
+        </div>
+      </div>
+    );
+  }
+
   const org = detail.data;
 
   return (
@@ -187,20 +283,43 @@ export function AdminOrganizationDetailPage() {
               <TableHead>Purpose</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>BMS status</TableHead>
+              <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {org.senderIds.map((s) => (
-              <TableRow key={s.senderId}>
+              <TableRow key={s.id}>
                 <TableCell className="font-semibold">{s.senderId}</TableCell>
-                <TableCell className="text-muted-foreground">{s.purpose || '—'}</TableCell>
-                <TableCell className="text-muted-foreground">{s.status}</TableCell>
+                <TableCell className="max-w-[220px] text-muted-foreground">{s.purpose || '—'}</TableCell>
+                <TableCell>
+                  <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
+                </TableCell>
                 <TableCell className="text-muted-foreground">{s.bmsStatus || '—'}</TableCell>
+                <TableCell>
+                  {s.status === 'pending_review' && (
+                    <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
+                      <Send className="h-3.5 w-3.5" /> Register
+                    </Button>
+                  )}
+                  {s.status === 'processing' && (
+                    <div className="flex items-center gap-1.5">
+                      <Button size="sm" variant="outline" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
+                        <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
+                      </Button>
+                      <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
+                        <ShieldCheck className="h-3.5 w-3.5" /> Approve
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
+                        <X className="h-3.5 w-3.5" /> Reject
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
             {org.senderIds.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="py-6 text-center text-muted-foreground">
+                <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
                   No sender IDs submitted yet.
                 </TableCell>
               </TableRow>
@@ -209,8 +328,13 @@ export function AdminOrganizationDetailPage() {
         </Table>
       </div>
 
-      <div className="mb-3 text-[13px] font-bold text-foreground/80">Users</div>
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-[13px] font-bold text-foreground/80">Users</div>
+        <Button size="sm" onClick={() => setShowAddUser(true)}>
+          <Plus className="h-3.5 w-3.5" /> Add user
+        </Button>
+      </div>
+      <div className="mb-6 overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">
@@ -231,9 +355,50 @@ export function AdminOrganizationDetailPage() {
                 <TableCell className="text-muted-foreground">{u.isVerified ? 'Yes' : 'No'}</TableCell>
               </TableRow>
             ))}
+            {org.users.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <UsersIcon className="h-5 w-5 text-muted-foreground" />
+                    No team members yet.
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
           </TableBody>
         </Table>
       </div>
+
+      <div className="rounded-xl border border-destructive/30 bg-card p-5">
+        <div className="mb-1 text-[13px] font-bold text-destructive">Danger zone</div>
+        <div className="mb-4 text-sm text-muted-foreground">
+          Permanently delete this organization and all of its data. This cannot be undone.
+        </div>
+        <Button variant="destructive" onClick={() => setShowDelete(true)}>
+          Delete organization
+        </Button>
+      </div>
+
+      <RejectSenderIdDialog
+        target={rejectTarget}
+        onOpenChange={(open) => !open && setRejectTarget(null)}
+        onConfirm={(reason) => reject.mutate(reason)}
+        isPending={reject.isPending}
+      />
+      <AdminAddUserDialog orgId={id!} open={showAddUser} onOpenChange={setShowAddUser} />
+      <DeleteOrganizationDialog
+        org={{
+          churchName: org.churchName,
+          userCount: org.users.length,
+          contactsCount: org.contactsCount,
+          messagesTotal: org.messagesTotal,
+          walletBalanceCredits: org.walletBalanceCredits,
+        }}
+        open={showDelete}
+        onOpenChange={setShowDelete}
+        onConfirm={() => remove.mutate(org.churchName)}
+        isPending={remove.isPending}
+      />
     </div>
   );
 }

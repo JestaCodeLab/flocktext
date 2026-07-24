@@ -1,5 +1,5 @@
 import { adminApi } from '@/api/adminClient';
-import type { AdminOrgDetail, AdminOrgListItem } from '@/types/admin';
+import type { AdminOrgDetail, AdminOrgListItem, AdminOrgUser } from '@/types/admin';
 
 export interface AdminOrgListResponse {
   organizations: AdminOrgListItem[];
@@ -41,5 +41,20 @@ export async function adjustOrganizationWallet(id: string, payload: { credits: n
     `/admin/organizations/${id}/wallet/adjust`,
     payload
   );
+  return data;
+}
+
+export async function addOrganizationUser(
+  id: string,
+  payload: { name: string; email: string; phone: string; role: 'admin' | 'user' }
+) {
+  const { data } = await adminApi.post<AdminOrgUser>(`/admin/organizations/${id}/users`, payload);
+  return data;
+}
+
+export async function deleteOrganization(id: string, confirmChurchName: string) {
+  const { data } = await adminApi.delete<{ deleted: true }>(`/admin/organizations/${id}`, {
+    data: { confirmChurchName },
+  });
   return data;
 }

@@ -116,6 +116,7 @@ export function DateRangeFilter({
             </>
           )}
           <DropdownMenuItem onClick={() => onChange({ preset: 'this_week' })}>This week</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onChange({ preset: 'last_week' })}>Last week</DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange({ preset: 'this_month' })}>This month</DropdownMenuItem>
           <DropdownMenuItem onClick={() => onChange({ preset: 'last_month' })}>Last month</DropdownMenuItem>
           <DropdownMenuSeparator />

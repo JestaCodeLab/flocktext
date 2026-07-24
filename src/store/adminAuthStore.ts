@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AdminSession } from '@/types/admin';
+import type { AdminSession, AdminSessionAdmin } from '@/types/admin';
 
 interface AdminAuthState {
   session: AdminSession | null;
@@ -7,6 +7,8 @@ interface AdminAuthState {
   refreshToken: string | null;
   setSession: (session: AdminSession, accessToken: string, refreshToken: string) => void;
   setAccessToken: (accessToken: string) => void;
+  setTokens: (accessToken: string, refreshToken: string) => void;
+  updateAdmin: (patch: Partial<AdminSessionAdmin>) => void;
   clear: () => void;
 }
 
@@ -39,6 +41,21 @@ export const useAdminAuthStore = create<AdminAuthState>((set, get) => ({
     const next = { session: get().session, accessToken, refreshToken: get().refreshToken };
     persist(next);
     set({ accessToken });
+  },
+
+  setTokens: (accessToken, refreshToken) => {
+    const next = { session: get().session, accessToken, refreshToken };
+    persist(next);
+    set({ accessToken, refreshToken });
+  },
+
+  updateAdmin: (patch) => {
+    const session = get().session;
+    if (!session) return;
+    const nextSession = { ...session, admin: { ...session.admin, ...patch } };
+    const next = { session: nextSession, accessToken: get().accessToken, refreshToken: get().refreshToken };
+    persist(next);
+    set({ session: nextSession });
   },
 
   clear: () => {

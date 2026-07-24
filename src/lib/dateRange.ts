@@ -1,4 +1,4 @@
-export type DateRangePreset = 'all_time' | 'this_week' | 'this_month' | 'last_month' | 'custom';
+export type DateRangePreset = 'all_time' | 'this_week' | 'last_week' | 'this_month' | 'last_month' | 'custom';
 
 export interface DateRangeParams {
   preset: DateRangePreset;
@@ -9,6 +9,7 @@ export interface DateRangeParams {
 const RANGE_PRESET_LABEL: Record<DateRangePreset, string> = {
   all_time: 'All time',
   this_week: 'This week',
+  last_week: 'Last week',
   this_month: 'This month',
   last_month: 'Last month',
   custom: 'Custom range',

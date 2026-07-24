@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { fetchAdminOrganizations } from '@/api/adminOrganizations';
 
 export function AdminOrganizationsPage() {
@@ -44,6 +45,14 @@ export function AdminOrganizationsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {orgs.isLoading &&
+              Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={6}>
+                    <Skeleton className="h-5 w-full" />
+                  </TableCell>
+                </TableRow>
+              ))}
             {orgs.data?.organizations.map((org) => (
               <TableRow key={org.id}>
                 <TableCell className="font-semibold">
