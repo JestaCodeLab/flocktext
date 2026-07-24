@@ -23,6 +23,7 @@ import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
 import { AdminSenderIdsPage } from '@/pages/admin/AdminSenderIdsPage';
 import { AdminAddonsPage } from '@/pages/admin/AdminAddonsPage';
 import { AdminAnnouncementsPage } from '@/pages/admin/AdminAnnouncementsPage';
+import { AdminAccountPage } from '@/pages/admin/AdminAccountPage';
 import { OnboardingLayout } from '@/pages/onboarding/OnboardingLayout';
 import { WelcomeStep } from '@/pages/onboarding/WelcomeStep';
 import { OrganizationStep } from '@/pages/onboarding/OrganizationStep';
@@ -79,6 +80,7 @@ function App() {
           <Route path="sender-ids" element={<AdminSenderIdsPage />} />
           <Route path="addons" element={<AdminAddonsPage />} />
           <Route path="announcements" element={<AdminAnnouncementsPage />} />
+          <Route path="account" element={<AdminAccountPage />} />
         </Route>
       </Route>
 

@@ -4,10 +4,8 @@ import { Send, X, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import {
   fetchPendingSenderIds,
   fetchAllSenderIds,
@@ -26,7 +24,6 @@ export function AdminSenderIdsPage() {
   const all = useQuery({ queryKey: ['admin-sender-ids-all'], queryFn: fetchAllSenderIds });
 
   const [rejectTarget, setRejectTarget] = useState<AdminSenderIdPendingEntry | null>(null);
-  const [reason, setReason] = useState('');
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['admin-sender-ids-pending'] });
@@ -44,11 +41,10 @@ export function AdminSenderIdsPage() {
   });
 
   const reject = useMutation({
-    mutationFn: () => rejectSenderId(rejectTarget!.orgId, rejectTarget!.senderIdId, reason),
+    mutationFn: (reason: string) => rejectSenderId(rejectTarget!.orgId, rejectTarget!.senderIdId, reason),
     onSuccess: () => {
       toast.success('Rejected.');
       setRejectTarget(null);
-      setReason('');
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -164,25 +160,12 @@ export function AdminSenderIdsPage() {
         </Table>
       </div>
 
-      <Dialog open={!!rejectTarget} onOpenChange={(open) => !open && setRejectTarget(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reject sender ID</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-1.5">
-            <Label htmlFor="reject-reason">Reason</Label>
-            <Input id="reject-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Not appropriate for church notifications…" />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRejectTarget(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" disabled={reject.isPending || !reason} onClick={() => reject.mutate()}>
-              {reject.isPending ? 'Rejecting…' : 'Reject'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RejectSenderIdDialog
+        target={rejectTarget}
+        onOpenChange={(open) => !open && setRejectTarget(null)}
+        onConfirm={(reason) => reject.mutate(reason)}
+        isPending={reject.isPending}
+      />
     </div>
   );
 }
