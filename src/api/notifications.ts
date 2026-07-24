@@ -6,7 +6,8 @@ export type NotificationType =
   | 'delivery_summary'
   | 'sender_id_approved'
   | 'sender_id_rejected'
-  | 'team_invite';
+  | 'team_invite'
+  | 'platform_announcement';
 
 export interface NotificationItem {
   id: string;

@@ -133,7 +133,7 @@ export function DeveloperSection() {
         </div>
         <div className="mb-4 space-y-1 text-sm">
           <div className="text-muted-foreground">
-            Base URL: <span className="font-mono text-foreground">{window.location.origin.replace(/:\d+$/, '')}/api</span>
+            Base URL: <span className="font-mono text-foreground">`${process.env.NODE_ENV === 'production' ? 'https://api.flocktext.com/api' : 'https://apiuat.flocktext.com/api'}`/api</span>
           </div>
           <div className="text-muted-foreground">
             Auth header: <span className="font-mono text-foreground">Authorization: Bearer &lt;your key&gt;</span>
