@@ -1,256 +1,515 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users,
-  Cake,
-  CalendarClock,
   FileText,
-  Tag,
   BarChart3,
-  Wallet,
-  Link2,
-  Code2,
-  Check,
-  ArrowRight,
-  Sparkles,
-  MessageCircle,
+  Settings2,
+  Send,
+  Stethoscope,
+  Church,
+  Briefcase,
+  UtensilsCrossed,
   CircleCheck,
+  ArrowRight,
+  Quote,
+  Download,
+  CalendarClock,
+  Gift,
+  UserPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/pages/marketing/components/Seo';
-import { DashboardPreview } from '@/pages/marketing/components/DashboardPreview';
-import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
+import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
+import { APP_STORE_URL, PLAY_STORE_URL } from '@/pages/marketing/data/contact';
 import { routeSeo } from '@/pages/marketing/data/seo';
+import heroImage from '@/assets/images/flocktext_home_banner.png';
+import churchImage from '@/assets/images/church.png';
+import healthcareImage from '@/assets/images/healthcare.png';
+import businessImage from '@/assets/images/business.png';
+import restaurantImage from '@/assets/images/restaurant.png';
+import handPhoneImage from '@/assets/images/phone.png';
+import pastorsImage from '@/assets/images/pastors.png';
+import shopsImage from '@/assets/images/shops.png';
+import appStoreBadge from '@/assets/images/Appstore-download.webp';
+import playStoreBadge from '@/assets/images/googleplay-download.webp';
 
-const stats = [
-  {
-    icon: CircleCheck,
-    value: '100%',
-    label: 'Delivery rate',
-    sub: 'Every send tracked',
-    chip: 'bg-chart-2/15 text-chart-2',
-  },
-  {
-    icon: Cake,
-    value: '0',
-    label: 'Missed birthdays',
-    sub: 'Fully automated',
-    chip: 'bg-chart-1/15 text-chart-1',
-  },
-  {
-    icon: Code2,
-    value: '2',
-    label: 'Ways to send',
-    sub: 'Dashboard or API',
-    chip: 'bg-chart-3/15 text-chart-3',
-  },
+const trustPoints = ['No credit card required', 'Instant delivery', '99%+ delivery rate'];
+
+const heroSlides = [
+  { image: heroImage, caption: 'Delivered to 2,481 contacts', focus: 'object-[60%_20%]' },
+  { image: pastorsImage, caption: 'Delivered to 2,314 members', focus: 'object-[50%_15%]' },
+  { image: shopsImage, caption: 'Delivered to 2,431 customers', focus: 'object-[38%_15%]' },
 ];
+
+// Generic placeholder wordmarks — swap for real client logos once confirmed. See [[flocktext-marketing-homepage]].
+const trustedByLogos = ['Vertex', 'Northbridge', 'Solace', 'Meridian', 'Anchor Co.', 'Halcyon'];
 
 const features = [
   {
-    icon: Users,
-    title: 'Contacts & groups',
-    description: 'Organize your contacts into groups — customers, members, staff — and message exactly who you mean to.',
-    chip: 'bg-chart-3/15 text-chart-3',
-  },
-  {
-    icon: Cake,
-    title: 'Birthday automation',
-    description: 'FlockText sends birthday messages on its own, using each contact’s date of birth. Nothing to remember.',
-    chip: 'bg-chart-1/15 text-chart-1',
-  },
-  {
-    icon: CalendarClock,
-    title: 'Scheduled & recurring',
-    description: 'Queue a message for later or set it to repeat — weekly reminders, monthly promotions, and more.',
-    chip: 'bg-chart-4/15 text-chart-4',
-  },
-  {
-    icon: FileText,
-    title: 'Templates',
-    description: 'Save your most-used messages as templates so composing a new blast takes seconds, not minutes.',
+    icon: Send,
+    title: 'Bulk SMS Messaging',
+    description: 'Send messages to thousands instantly. Share promotions, alerts, reminders and more.',
     chip: 'bg-chart-2/15 text-chart-2',
   },
   {
-    icon: Tag,
-    title: 'Custom sender ID',
-    description: 'Messages arrive from your organization’s name, not a random shortcode.',
-    chip: 'bg-chart-5/15 text-chart-5',
+    icon: Users,
+    title: 'Contact Management',
+    description: 'Organize your contacts into lists and groups for targeted and personalized communication.',
+    chip: 'bg-chart-3/15 text-chart-3',
   },
   {
     icon: BarChart3,
-    title: 'Delivery reports',
-    description: 'See exactly what was delivered, pending, or failed for every message you send.',
-    chip: 'bg-chart-3/15 text-chart-3',
+    title: 'Delivery Reports',
+    description: 'Track every message with real-time delivery reports and analytics.',
+    chip: 'bg-chart-1/15 text-chart-1',
   },
   {
-    icon: Link2,
-    title: 'Self-service join links',
-    description: 'Share a link and let customers or members add themselves to your contact list — no manual data entry.',
+    icon: Settings2,
+    title: 'Easy Integration',
+    description: 'Integrate our SMS API into your systems and apps in just a few steps.',
+    chip: 'bg-chart-4/15 text-chart-4',
+  },
+  {
+    icon: CalendarClock,
+    title: 'Scheduled & Recurring Sends',
+    description: 'Queue messages for later or set up recurring sends so nothing slips through the cracks.',
     chip: 'bg-chart-2/15 text-chart-2',
   },
   {
-    icon: Wallet,
-    title: 'Pay-as-you-go credits',
-    description: 'Top up your wallet with Paystack and spend it down at your own pace.',
+    icon: Gift,
+    title: 'Birthday Automation',
+    description: 'Automatically send birthday greetings to your contacts without lifting a finger.',
+    chip: 'bg-chart-3/15 text-chart-3',
+  },
+  {
+    icon: FileText,
+    title: 'Message Templates',
+    description: 'Save and reuse your best-performing messages so you can send faster next time.',
     chip: 'bg-chart-1/15 text-chart-1',
+  },
+  {
+    icon: UserPlus,
+    title: 'Team Member Accounts',
+    description: 'Invite your team and manage access so everyone can send without sharing logins.',
+    chip: 'bg-chart-4/15 text-chart-4',
   },
 ];
 
-const dashboardPoints = [
-  'Compose and send in a few clicks',
-  'Manage contacts, groups, and templates',
-  'Track delivery in real time',
+const appHighlights = [
+  'Send SMS and check delivery from anywhere',
+  'Track wallet balance and buy credits in seconds',
+  'Get notified the moment a campaign finishes sending',
+];
+
+const steps = [
+  { icon: Users, step: 1, title: 'Add Contacts', description: 'Upload your contacts or import from existing lists.' },
+  { icon: FileText, step: 2, title: 'Create Message', description: 'Type your message and personalize it.' },
+  { icon: Send, step: 3, title: 'Send', description: 'Choose your recipients and hit send.' },
+  { icon: BarChart3, step: 4, title: 'Track Results', description: 'View delivery reports and measure performance.' },
+];
+
+const industries = [
+  {
+    icon: Church,
+    title: 'Churches',
+    description: 'Sunday reminders, event announcements, and congregation updates.',
+    image: churchImage,
+  },
+  {
+    icon: Stethoscope,
+    title: 'Healthcare',
+    description: 'Appointment reminders, health tips, and patient engagement.',
+    image: healthcareImage,
+  },
+  {
+    icon: Briefcase,
+    title: 'Business',
+    description: 'Promotions, customer updates, and team announcements.',
+    image: businessImage,
+  },
+  {
+    icon: UtensilsCrossed,
+    title: 'Restaurants',
+    description: 'Daily specials, order updates, and customer promotions.',
+    image: restaurantImage,
+  },
+];
+
+// Placeholder testimonials — pending real customer quotes to replace these. See [[flocktext-marketing-homepage]].
+const testimonials = [
+  {
+    quote: 'FlockText has transformed the way we communicate with our customers. Reliable, fast and easy to use.',
+    name: 'Business Owner',
+    role: 'Retail',
+  },
+  {
+    quote: 'The delivery rate is excellent and the reports help us track every campaign effectively.',
+    name: 'Operations Manager',
+    role: 'Financial services',
+  },
+  {
+    quote: "We use FlockText daily for reminders and promotions. It's simply the best SMS platform we've used.",
+    name: 'Team Lead',
+    role: 'Hospitality',
+  },
 ];
 
 export function HomePage() {
+  const [heroSlide, setHeroSlide] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setHeroSlide((i) => (i + 1) % heroSlides.length), 6000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <>
       <Seo {...routeSeo['/']} />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-32 left-1/2 h-[480px] w-[720px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl" />
-        <div className="pointer-events-none absolute top-40 -right-40 h-[360px] w-[360px] rounded-full bg-chart-1/10 blur-3xl" />
+      {/* Mobile hero — dedicated layout below sm: a rounded photo card with a delivery
+          "toast" overlay, then stacked full-width CTAs and a vertical trust list. The
+          sm+ hero below is a completely different full-bleed layout, so these render as
+          two separate blocks rather than one responsive tree. */}
+      <section className="sm:hidden">
+        <div className="px-4 pt-3">
+          <div className="relative overflow-hidden rounded-3xl ring-1 ring-foreground/10">
+            <div className="relative h-64 w-full">
+              {heroSlides.map((slide, i) => (
+                <img
+                  key={slide.image}
+                  src={slide.image}
+                  alt=""
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${
+                    i === heroSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              ))}
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-foreground/50" />
 
-        <div className="relative mx-auto grid w-full max-w-7xl items-center gap-12 px-5 pt-16 pb-20 sm:px-8 lg:grid-cols-[1.05fr_1fr] lg:pt-24 lg:pb-28">
-          <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-semibold text-muted-foreground">
-              <Sparkles className="size-3.5 text-primary" />
-              Credits never sit behind a subscription
+            <div className="absolute top-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+              {heroSlides.map((slide, i) => (
+                <span
+                  key={slide.image}
+                  className={`h-1.5 rounded-full transition-all ${i === heroSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                />
+              ))}
             </div>
 
-            <h1 className="text-4xl leading-[1.08] font-bold tracking-tight text-foreground sm:text-[46px] lg:text-[54px]">
-              Bulk SMS for <span className="text-primary">everyone</span> you serve
+            <div className="absolute inset-x-3 bottom-3 flex items-center gap-2.5 rounded-2xl bg-card/95 p-2.5 shadow-lg backdrop-blur-sm">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+                <Send className="size-4" />
+              </span>
+              <div className="text-[11px] leading-tight">
+                <div className="font-bold text-foreground">FlockText</div>
+                <div className="text-muted-foreground">{heroSlides[heroSlide].caption}</div>
+              </div>
+              <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-success">
+                <CircleCheck className="size-3.5 text-white" />
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 pt-6 pb-20">
+          <h1 className="text-[34px] leading-[1.1] font-bold tracking-tight text-foreground">
+            Business Communication
+            <span className="block text-primary">Made Simple</span>
+          </h1>
+
+          <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
+            Send bulk SMS, manage contacts, and engage your audience effectively with FlockText.
+          </p>
+
+          <div className="mt-5 flex flex-col gap-3">
+            <Button size="lg" className="h-[52px] w-full rounded-full text-base" render={<Link to="/signup" />}>
+              Start sending today
+              <ArrowRight data-icon="inline-end" className="size-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-[52px] w-full rounded-full text-base"
+              render={<Link to="/#download-app" />}
+            >
+              Download App
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Hero (sm+) — flocktext_home_banner.png as a full-bleed background, white-to-transparent
+          gradient over it so the left-aligned copy stays legible against the photo.
+          -mt-[68px] pulls this section up behind the sticky header (which is transparent
+          at the top of the page) so the photo shows through the nav instead of stopping
+          below it; min-h is bumped by that same 68px so nothing after the hero shifts. */}
+      <section
+        className="relative -mt-[68px] hidden min-h-[628px] items-center overflow-hidden bg-cover bg-right sm:flex lg:min-h-[708px]"
+        style={{ backgroundImage: `url(${heroImage})` }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(to right, var(--background) 0%, var(--background) 30%, color-mix(in oklch, var(--background) 55%, transparent) 48%, transparent 68%)',
+          }}
+        />
+
+        <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
+          <div className="max-w-xl lg:max-w-lg">
+            <h1 className="text-[52px] leading-[1] font-bold tracking-tight text-foreground lg:text-[62px]">
+              Business
+              <br />
+              Communication
+              <br />
+              <span className="text-primary">Made Simple</span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
-              Send announcements, reminders, and birthday messages to your customers, members, or staff in seconds —
-              from a dashboard your team can actually use, or a REST API if you’d rather build it in.
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Send bulk SMS, manage contacts, and engage your audience effectively with FlockText.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" className="h-12 rounded-full px-7 text-[15px]" render={<Link to="/signup" />}>
-                Start for free
+              <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to="/signup" />}>
+                Start sending for free
                 <ArrowRight data-icon="inline-end" className="size-4" />
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="h-12 rounded-full px-7 text-[15px]"
-                render={<Link to="/pricing" />}
+                className="h-12 rounded-full px-7 text-base"
+                render={<Link to="/#download-app" />}
               >
-                See pricing
+                Download App
               </Button>
             </div>
 
-            <div className="mt-10 grid max-w-xl grid-cols-1 divide-y divide-border overflow-hidden rounded-xl bg-card/80 ring-1 ring-foreground/10 backdrop-blur-sm sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {stats.map((stat) => (
-                <div key={stat.label} className="flex items-center gap-3 p-4">
-                  <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${stat.chip}`}>
-                    <stat.icon className="size-4" />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-lg font-bold tracking-tight text-foreground">{stat.value}</span>
-                      <span className="truncate text-[13px] font-semibold text-foreground/80">{stat.label}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">{stat.sub}</div>
-                  </div>
+            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
+              {trustPoints.map((point) => (
+                <div key={point} className="flex items-center gap-2 text-base text-foreground/80">
+                  <CircleCheck className="size-4 text-success" />
+                  {point}
                 </div>
               ))}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="relative">
-            <div className="pointer-events-none absolute -inset-6 rounded-[32px] bg-gradient-to-br from-primary/15 via-transparent to-chart-1/15" />
-            <DashboardPreview className="relative" />
+      {/* Trusted by */}
+      <section className="hidden border-t border-border sm:block">
+        <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8">
+          <p className="text-center text-base text-muted-foreground">
+            Trusted by businesses and organizations across Africa
+          </p>
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 grayscale">
+            {trustedByLogos.map((name) => (
+              <span key={name} className="text-xl font-bold tracking-tight text-muted-foreground/70">
+                {name}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features */}
-      <section className="border-t border-border bg-card/60">
+      {/* Industries */}
+      <section id="industries" className="border-t border-border bg-card/60">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-3 text-xs font-bold tracking-widest text-primary uppercase">Features</div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Everything a serious sender needs
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Built for every industry</div>
+            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              One platform. Many possibilities.
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              No bloated messaging suite — just the tools your team actually uses, whether you run a business, a
-              church, or an institution.
-            </p>
           </div>
 
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature) => (
+          <div className="no-scrollbar -mx-5 mt-14 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+            {industries.map((industry) => (
               <div
-                key={feature.title}
-                className="group rounded-2xl bg-card p-6 ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5"
+                key={industry.title}
+                className="w-[78%] shrink-0 snap-center overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5 sm:w-auto sm:shrink sm:snap-align-none"
               >
-                <span className={`flex size-11 items-center justify-center rounded-xl ${feature.chip}`}>
-                  <feature.icon className="size-5" />
-                </span>
-                <div className="mt-4 text-[15px] font-bold text-foreground">{feature.title}</div>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{feature.description}</p>
+                <img
+                  src={industry.image}
+                  alt=""
+                  width={1536}
+                  height={1024}
+                  className="aspect-[4/3] w-full object-cover"
+                />
+                <div className="p-5">
+                  <div className="text-lg font-bold text-foreground">{industry.title}</div>
+                  <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{industry.description}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Dashboard or API */}
-      <section>
+      {/* Features */}
+      <section id="features" className="border-t border-border">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-3 text-xs font-bold tracking-widest text-primary uppercase">Two ways to send</div>
-            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              Dashboard or API — you choose
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Powerful features</div>
+            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Everything you need to reach more people
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground">
-              Compose from the FlockText dashboard, or send programmatically with a keyed REST API.
+          </div>
+
+          <div className="no-scrollbar -mx-5 mt-14 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
+            {features.map((feature) => (
+              <div
+                key={feature.title}
+                className="group w-[78%] shrink-0 snap-center rounded-2xl bg-card p-6 ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5 sm:w-auto sm:shrink sm:snap-align-none"
+              >
+                <span className={`flex size-11 items-center justify-center rounded-xl ${feature.chip}`}>
+                  <feature.icon className="size-5" />
+                </span>
+                <div className="mt-4 text-lg font-bold text-foreground">{feature.title}</div>
+                <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 text-center">
+            <Button className="rounded-full px-6" render={<Link to="/signup" />}>
+              Explore all features
+              <ArrowRight data-icon="inline-end" className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile app */}
+      <section id="download-app" className="relative overflow-hidden bg-sidebar lg:min-h-[680px] xl:min-h-[780px]">
+        <div className="pointer-events-none absolute -top-32 left-1/3 h-[320px] w-[520px] rounded-full bg-primary/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-32 right-0 h-[280px] w-[440px] rounded-full bg-sidebar-primary/10 blur-3xl" />
+
+        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-[42%] items-center justify-center lg:flex xl:w-[50%]">
+          <img
+            src={handPhoneImage}
+            alt="Hand holding a phone showing the FlockText create account screen"
+            className="h-[110%] w-auto max-w-none translate-y-20 object-contain"
+          />
+        </div>
+
+        <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
+          <div className="max-w-xl text-center sm:text-left lg:max-w-md xl:max-w-xl">
+            <div className="mb-3 text-sm font-bold tracking-widest text-sidebar-primary uppercase">Mobile app</div>
+            <h2 className="text-4xl leading-[1.05] font-bold tracking-tight text-sidebar-foreground sm:text-5xl lg:text-4xl xl:text-6xl">
+              Manage Everything On The Go
+            </h2>
+            <p className="mx-auto mt-6 max-w-md text-lg leading-relaxed text-sidebar-foreground/70 sm:mx-0">
+              Send messages, track your wallet, and monitor delivery in real time — the FlockText app is available
+              now on the App Store and Google Play.
+            </p>
+
+            <div className="mt-8 space-y-3 text-left">
+              {appHighlights.map((point) => (
+                <div key={point} className="flex items-start gap-2.5 text-base text-sidebar-foreground/80">
+                  <CircleCheck className="mt-0.5 size-4 shrink-0 text-sidebar-primary" />
+                  {point}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-9 -mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+              <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
+                <img src={appStoreBadge} alt="Download on the App Store" className="h-16 w-auto lg:h-20 lg:-ml-3 sm:-ml-3" />
+              </a>
+              <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
+                <img src={playStoreBadge} alt="Get it on Google Play" className="h-16 w-auto lg:h-20 lg:-ml-6 sm:-ml-3" />
+              </a>
+            </div>
+          </div>
+
+          <div className="-mt-5 flex justify-center lg:hidden">
+            <img
+              src={handPhoneImage}
+              alt="Hand holding a phone showing the FlockText create account screen"
+              className="w-[112%] translate-y-20 max-w-none object-contain sm:w-auto sm:max-w-sm"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section className="hidden sm:block">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">How it works</div>
+            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Send your message in 4 simple steps
+            </h2>
+          </div>
+
+          <div className="mx-auto mt-14 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            {steps.map((item, i) => (
+              <div key={item.title} className="relative text-center">
+                {i < steps.length - 1 ? (
+                  <div className="absolute top-8 left-1/2 hidden h-px w-full border-t border-dashed border-border lg:block" />
+                ) : null}
+                <div className="relative mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10">
+                  <item.icon className="size-6 text-primary" />
+                  <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                    {item.step}
+                  </span>
+                </div>
+                <div className="mt-4 text-lg font-bold text-foreground">{item.title}</div>
+                <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{item.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="border-t border-border bg-card/60">
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Pricing</div>
+            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Simple, pay-as-you-go pricing
+            </h2>
+            <p className="mt-4 text-xl text-muted-foreground">
+              Buy SMS credits once and spend them on your own schedule. No monthly contracts, no locked features.
             </p>
           </div>
 
-          <div className="mx-auto mt-14 grid max-w-5xl gap-5 md:grid-cols-2">
-            <div className="flex flex-col rounded-2xl bg-card p-8 ring-1 ring-foreground/10">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <BarChart3 className="size-5" />
-              </span>
-              <div className="mt-5 text-lg font-bold text-foreground">No-code dashboard</div>
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                Built for teams — no technical setup required.
-              </p>
-              <ul className="mt-5 space-y-3">
-                {dashboardPoints.map((item) => (
-                  <li key={item} className="flex items-start gap-2.5 text-sm text-foreground/80">
-                    <span className="mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
-                      <Check className="size-3" />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="mx-auto mt-14 max-w-6xl">
+            <PackageGrid />
+          </div>
 
-            <div className="flex flex-col overflow-hidden rounded-2xl bg-sidebar p-8 text-sidebar-foreground ring-1 ring-sidebar-border">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-sidebar-primary/15 text-sidebar-primary">
-                <Code2 className="size-5" />
-              </span>
-              <div className="mt-5 text-lg font-bold">Developer API</div>
-              <p className="mt-1.5 text-sm text-sidebar-foreground/60">
-                A keyed REST API with the same credits and delivery reporting.
-              </p>
-              <pre className="mt-5 overflow-x-auto rounded-xl bg-sidebar-accent p-5 font-mono text-[13px] leading-relaxed text-sidebar-foreground/90">
-{`POST /api/v1/messages/send
-Authorization: Bearer <api-key>
+          <div className="mt-10 text-center">
+            <Button variant="outline" className="rounded-full px-6" render={<Link to="/pricing" />}>
+              See full pricing
+              <ArrowRight data-icon="inline-end" className="size-4" />
+            </Button>
+          </div>
+        </div>
+      </section>
 
-{
-  "to": "+233...",
-  "message": "Your order is ready for pickup!"
-}`}
-              </pre>
-            </div>
+      {/* Testimonials */}
+      <section>
+        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">What our customers say</div>
+            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              Loved by businesses, trusted for results
+            </h2>
+          </div>
+
+          <div className="mx-auto mt-14 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {testimonials.map((testimonial) => (
+              <div key={testimonial.quote} className="flex flex-col rounded-2xl bg-card p-7 ring-1 ring-foreground/10">
+                <Quote className="size-6 text-primary/40" />
+                <p className="mt-4 flex-1 text-base leading-relaxed text-foreground/80">{testimonial.quote}</p>
+                <div className="mt-5 border-t border-border pt-4">
+                  <div className="text-base font-bold text-foreground">{testimonial.name}</div>
+                  <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -260,26 +519,27 @@ Authorization: Bearer <api-key>
         <div className="pointer-events-none absolute -top-24 left-1/4 h-[300px] w-[500px] rounded-full bg-primary/15 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 right-1/4 h-[260px] w-[420px] rounded-full bg-sidebar-primary/10 blur-3xl" />
 
-        <div className="relative mx-auto w-full max-w-7xl px-5 py-20 text-center sm:px-8 lg:py-24">
-          <h2 className="mx-auto max-w-2xl text-3xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
-            Ready to start sending?
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-base text-sidebar-foreground/60">
-            Create a free account and top up credits whenever you’re ready to send.
-          </p>
-          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" className="h-12 rounded-full px-7 text-[15px]" render={<Link to="/signup" />}>
-              Start for free
-              <ArrowRight data-icon="inline-end" className="size-4" />
+        <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-6 px-5 py-14 text-center sm:px-8 lg:flex-row lg:text-left">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
+              Start communicating better today
+            </h2>
+            <p className="mt-2 max-w-xl text-base text-sidebar-foreground/60">
+              Join thousands of businesses using FlockText to connect, engage and grow.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to="/signup" />}>
+              Sign up free
             </Button>
             <Button
               size="lg"
-              className="h-12 rounded-full border-sidebar-foreground/20 bg-transparent px-7 text-[15px] text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              className="h-11 rounded-full border-sidebar-foreground/20 bg-transparent px-6 text-base text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
               variant="outline"
-              render={<a href={WHATSAPP_URL} target="_blank" rel="noreferrer" />}
+              render={<Link to="/#download-app" />}
             >
-              <MessageCircle data-icon="inline-start" className="size-4" />
-              Talk to us
+              <Download data-icon="inline-start" className="size-4" />
+              Download App
             </Button>
           </div>
         </div>
