@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users,
@@ -28,10 +29,18 @@ import healthcareImage from '@/assets/images/healthcare.png';
 import businessImage from '@/assets/images/business.png';
 import restaurantImage from '@/assets/images/restaurant.png';
 import handPhoneImage from '@/assets/images/phone.png';
+import pastorsImage from '@/assets/images/pastors.png';
+import shopsImage from '@/assets/images/shops.png';
 import appStoreBadge from '@/assets/images/Appstore-download.webp';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
 
 const trustPoints = ['No credit card required', 'Instant delivery', '99%+ delivery rate'];
+
+const heroSlides = [
+  { image: heroImage, caption: 'Delivered to 2,481 contacts', focus: 'object-[60%_20%]' },
+  { image: pastorsImage, caption: 'Delivered to 2,314 members', focus: 'object-[50%_15%]' },
+  { image: shopsImage, caption: 'Delivered to 2,431 customers', focus: 'object-[38%_15%]' },
+];
 
 // Generic placeholder wordmarks — swap for real client logos once confirmed. See [[flocktext-marketing-homepage]].
 const trustedByLogos = ['Vertex', 'Northbridge', 'Solace', 'Meridian', 'Anchor Co.', 'Halcyon'];
@@ -147,6 +156,13 @@ const testimonials = [
 ];
 
 export function HomePage() {
+  const [heroSlide, setHeroSlide] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setHeroSlide((i) => (i + 1) % heroSlides.length), 6000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <>
       <Seo {...routeSeo['/']} />
@@ -158,15 +174,36 @@ export function HomePage() {
       <section className="sm:hidden">
         <div className="px-4 pt-3">
           <div className="relative overflow-hidden rounded-3xl ring-1 ring-foreground/10">
-            <img src={heroImage} alt="" className="h-64 w-full object-cover object-[60%_20%]" />
+            <div className="relative h-64 w-full">
+              {heroSlides.map((slide, i) => (
+                <img
+                  key={slide.image}
+                  src={slide.image}
+                  alt=""
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${
+                    i === heroSlide ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
+              ))}
+            </div>
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-foreground/50" />
+
+            <div className="absolute top-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+              {heroSlides.map((slide, i) => (
+                <span
+                  key={slide.image}
+                  className={`h-1.5 rounded-full transition-all ${i === heroSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                />
+              ))}
+            </div>
+
             <div className="absolute inset-x-3 bottom-3 flex items-center gap-2.5 rounded-2xl bg-card/95 p-2.5 shadow-lg backdrop-blur-sm">
               <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
                 <Send className="size-4" />
               </span>
               <div className="text-[11px] leading-tight">
                 <div className="font-bold text-foreground">FlockText</div>
-                <div className="text-muted-foreground">Delivered to 2,481 contacts</div>
+                <div className="text-muted-foreground">{heroSlides[heroSlide].caption}</div>
               </div>
               <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-success">
                 <CircleCheck className="size-3.5 text-white" />
