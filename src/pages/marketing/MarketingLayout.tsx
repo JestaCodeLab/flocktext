@@ -153,15 +153,15 @@ export function MarketingLayout() {
                 <Button variant="ghost" className="hidden rounded-full sm:inline-flex" render={<Link to="/login" />}>
                   Log in
                 </Button>
-                <Button className="rounded-full px-5" render={<Link to="/signup" />}>
-                  Sign up free
+                <Button className="hidden rounded-full px-5 sm:inline-flex" render={<Link to="/signup" />}>
+                  Sign up
                 </Button>
               </>
             )}
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="rounded-full md:hidden"
+              className="rounded-lg bg-white md:hidden"
               aria-label={menuOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={menuOpen}
               onClick={() => setMenuOpen((open) => !open)}
@@ -171,75 +171,75 @@ export function MarketingLayout() {
           </div>
         </div>
 
-        {menuOpen ? (
-          <div className="border-t border-border/70 bg-background md:hidden">
-            <nav className="mx-auto flex w-full max-w-7xl flex-col px-5 py-3 sm:px-8">
-              <Link
-                to={anchorLinks[0].to}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-[15px] font-medium text-muted-foreground"
-              >
-                {anchorLinks[0].label}
-              </Link>
+        <div
+          className={cn(
+            'overflow-hidden bg-background transition-[max-height] duration-300 ease-in-out md:hidden',
+            menuOpen ? 'max-h-[520px] border-t border-border/70' : 'max-h-0'
+          )}
+        >
+          <nav className="mx-auto flex w-full max-w-7xl flex-col px-5 py-3 sm:px-8">
+            <Link
+              to={anchorLinks[0].to}
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium text-muted-foreground"
+            >
+              {anchorLinks[0].label}
+            </Link>
 
-              <Link
-                to={anchorLinks[1].to}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-[15px] font-medium text-muted-foreground"
-              >
-                {anchorLinks[1].label}
-              </Link>
+            <Link
+              to={anchorLinks[1].to}
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium text-muted-foreground"
+            >
+              {anchorLinks[1].label}
+            </Link>
 
-              {navLinks.map((link) => (
-                <NavLink
-                  key={link.to}
-                  to={link.to}
-                  end={link.end}
-                  onClick={() => setMenuOpen(false)}
-                  className={({ isActive }) =>
-                    cn(
-                      'rounded-lg px-3 py-2.5 text-[15px] font-medium',
-                      isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
-                    )
-                  }
-                >
-                  {link.label}
-                </NavLink>
-              ))}
-              {isAuthed ? null : (
-                <Link
-                  to="/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="rounded-lg px-3 py-2.5 text-[15px] font-medium text-muted-foreground sm:hidden"
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.end}
+                onClick={() => setMenuOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium',
+                    isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                  )
+                }
+              >
+                {link.label}
+              </NavLink>
+            ))}
+
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => setMenuOpen(false)}
+              className="rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium text-muted-foreground"
+            >
+              Contact us
+            </a>
+
+            {isAuthed ? null : (
+              <div className="mt-2 flex items-center gap-2.5 sm:hidden">
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-full text-base"
+                  render={<Link to="/login" onClick={() => setMenuOpen(false)} />}
                 >
                   Log in
-                </Link>
-              )}
-
-              <div className="mt-2 flex flex-col gap-1 border-t border-border/70 pt-3">
-                <div className="px-3 pb-1 text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                  Contact
-                </div>
-                <a
-                  href={`mailto:${SUPPORT_EMAIL}`}
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[15px] font-medium text-muted-foreground"
+                </Button>
+                <Button
+                  className="flex-1 rounded-full text-base"
+                  render={<Link to="/signup" onClick={() => setMenuOpen(false)} />}
                 >
-                  <Mail className="size-4 text-primary" />
-                  Email us
-                </a>
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[15px] font-medium text-muted-foreground"
-                >
-                  <WhatsAppIcon className="size-4 text-success" />
-                  WhatsApp
-                </a>
+                  Sign up
+                </Button>
               </div>
-            </nav>
-          </div>
-        ) : null}
+            )}
+          </nav>
+        </div>
       </header>
 
       <main className="flex-1">

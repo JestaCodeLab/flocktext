@@ -13,7 +13,7 @@ function PackageCardSkeleton() {
       <Skeleton className="mt-4 h-10 w-28" />
       <Skeleton className="mt-4 h-4 w-24" />
       <Skeleton className="mt-2 h-3 w-32" />
-      <Skeleton className="mt-7 h-10 w-full rounded-full" />
+      <Skeleton className="mt-7 h-12 w-full rounded-full" />
     </div>
   );
 }
@@ -76,8 +76,9 @@ export function PackageGrid() {
                 </div>
 
                 <Button
+                  size="lg"
                   className={cn(
-                    'mt-7 w-full rounded-full',
+                    'mt-7 h-12 w-full rounded-full text-base',
                     !popular && 'bg-foreground text-background hover:bg-foreground/85'
                   )}
                   render={<Link to="/signup" />}

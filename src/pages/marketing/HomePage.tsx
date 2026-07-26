@@ -27,7 +27,7 @@ import churchImage from '@/assets/images/church.png';
 import healthcareImage from '@/assets/images/healthcare.png';
 import businessImage from '@/assets/images/business.png';
 import restaurantImage from '@/assets/images/restaurant.png';
-import handPhoneImage from '@/assets/images/hand-phone-app.png';
+import handPhoneImage from '@/assets/images/phone.png';
 import appStoreBadge from '@/assets/images/Appstore-download.webp';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
 
@@ -151,13 +151,64 @@ export function HomePage() {
     <>
       <Seo {...routeSeo['/']} />
 
-      {/* Hero — flocktext_home_banner.png as a full-bleed background, white-to-transparent
+      {/* Mobile hero — dedicated layout below sm: a rounded photo card with a delivery
+          "toast" overlay, then stacked full-width CTAs and a vertical trust list. The
+          sm+ hero below is a completely different full-bleed layout, so these render as
+          two separate blocks rather than one responsive tree. */}
+      <section className="sm:hidden">
+        <div className="px-4 pt-3">
+          <div className="relative overflow-hidden rounded-3xl ring-1 ring-foreground/10">
+            <img src={heroImage} alt="" className="h-64 w-full object-cover object-[60%_20%]" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-foreground/50" />
+            <div className="absolute inset-x-3 bottom-3 flex items-center gap-2.5 rounded-2xl bg-card/95 p-2.5 shadow-lg backdrop-blur-sm">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+                <Send className="size-4" />
+              </span>
+              <div className="text-[11px] leading-tight">
+                <div className="font-bold text-foreground">FlockText</div>
+                <div className="text-muted-foreground">Delivered to 2,481 contacts</div>
+              </div>
+              <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-success">
+                <CircleCheck className="size-3.5 text-white" />
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 pt-6 pb-20">
+          <h1 className="text-[34px] leading-[1.1] font-bold tracking-tight text-foreground">
+            Business Communication
+            <span className="block text-primary">Made Simple</span>
+          </h1>
+
+          <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
+            Send bulk SMS, manage contacts, and engage your audience effectively with FlockText.
+          </p>
+
+          <div className="mt-5 flex flex-col gap-3">
+            <Button size="lg" className="h-[52px] w-full rounded-full text-base" render={<Link to="/signup" />}>
+              Start sending today
+              <ArrowRight data-icon="inline-end" className="size-4" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-[52px] w-full rounded-full text-base"
+              render={<Link to="/#download-app" />}
+            >
+              Download App
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Hero (sm+) — flocktext_home_banner.png as a full-bleed background, white-to-transparent
           gradient over it so the left-aligned copy stays legible against the photo.
           -mt-[68px] pulls this section up behind the sticky header (which is transparent
           at the top of the page) so the photo shows through the nav instead of stopping
           below it; min-h is bumped by that same 68px so nothing after the hero shifts. */}
       <section
-        className="relative -mt-[68px] flex min-h-[628px] items-center overflow-hidden bg-cover bg-right lg:min-h-[708px]"
+        className="relative -mt-[68px] hidden min-h-[628px] items-center overflow-hidden bg-cover bg-right sm:flex lg:min-h-[708px]"
         style={{ backgroundImage: `url(${heroImage})` }}
       >
         <div
@@ -170,7 +221,7 @@ export function HomePage() {
 
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
           <div className="max-w-xl lg:max-w-lg">
-            <h1 className="text-5xl leading-[1] font-bold tracking-tight text-foreground sm:text-[52px] lg:text-[62px]">
+            <h1 className="text-[52px] leading-[1] font-bold tracking-tight text-foreground lg:text-[62px]">
               Business
               <br />
               Communication
@@ -210,7 +261,7 @@ export function HomePage() {
       </section>
 
       {/* Trusted by */}
-      <section className="border-t border-border">
+      <section className="hidden border-t border-border sm:block">
         <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8">
           <p className="text-center text-base text-muted-foreground">
             Trusted by businesses and organizations across Africa
@@ -235,11 +286,11 @@ export function HomePage() {
             </h2>
           </div>
 
-          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="no-scrollbar -mx-5 mt-14 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
             {industries.map((industry) => (
               <div
                 key={industry.title}
-                className="overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5"
+                className="w-[78%] shrink-0 snap-center overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5 sm:w-auto sm:shrink sm:snap-align-none"
               >
                 <img
                   src={industry.image}
@@ -268,11 +319,11 @@ export function HomePage() {
             </h2>
           </div>
 
-          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="no-scrollbar -mx-5 mt-14 flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="group rounded-2xl bg-card p-6 ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5"
+                className="group w-[78%] shrink-0 snap-center rounded-2xl bg-card p-6 ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5 sm:w-auto sm:shrink sm:snap-align-none"
               >
                 <span className={`flex size-11 items-center justify-center rounded-xl ${feature.chip}`}>
                   <feature.icon className="size-5" />
@@ -301,22 +352,22 @@ export function HomePage() {
           <img
             src={handPhoneImage}
             alt="Hand holding a phone showing the FlockText create account screen"
-            className="h-[125%] w-auto max-w-none translate-y-20 object-contain"
+            className="h-[110%] w-auto max-w-none translate-y-20 object-contain"
           />
         </div>
 
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
-          <div className="max-w-xl lg:max-w-md xl:max-w-xl">
+          <div className="max-w-xl text-center sm:text-left lg:max-w-md xl:max-w-xl">
             <div className="mb-3 text-sm font-bold tracking-widest text-sidebar-primary uppercase">Mobile app</div>
             <h2 className="text-4xl leading-[1.05] font-bold tracking-tight text-sidebar-foreground sm:text-5xl lg:text-4xl xl:text-6xl">
               Manage Everything On The Go
             </h2>
-            <p className="mt-6 max-w-md text-lg leading-relaxed text-sidebar-foreground/70">
+            <p className="mx-auto mt-6 max-w-md text-lg leading-relaxed text-sidebar-foreground/70 sm:mx-0">
               Send messages, track your wallet, and monitor delivery in real time — the FlockText app is available
               now on the App Store and Google Play.
             </p>
 
-            <div className="mt-8 space-y-3">
+            <div className="mt-8 space-y-3 text-left">
               {appHighlights.map((point) => (
                 <div key={point} className="flex items-start gap-2.5 text-base text-sidebar-foreground/80">
                   <CircleCheck className="mt-0.5 size-4 shrink-0 text-sidebar-primary" />
@@ -325,28 +376,28 @@ export function HomePage() {
               ))}
             </div>
 
-            <div className="mt-9 flex flex-wrap items-center gap-3">
+            <div className="mt-9 -mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
               <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
-                <img src={appStoreBadge} alt="Download on the App Store" className="h-12 w-auto sm:h-14" />
+                <img src={appStoreBadge} alt="Download on the App Store" className="h-16 w-auto lg:h-20 lg:-ml-3 sm:-ml-3" />
               </a>
               <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
-                <img src={playStoreBadge} alt="Get it on Google Play" className="h-12 w-auto sm:h-14" />
+                <img src={playStoreBadge} alt="Get it on Google Play" className="h-16 w-auto lg:h-20 lg:-ml-6 sm:-ml-3" />
               </a>
             </div>
           </div>
 
-          <div className="mt-12 flex justify-center lg:hidden">
+          <div className="-mt-5 flex justify-center lg:hidden">
             <img
               src={handPhoneImage}
               alt="Hand holding a phone showing the FlockText create account screen"
-              className="w-full max-w-xs object-contain sm:max-w-sm"
+              className="w-[112%] translate-y-20 max-w-none object-contain sm:w-auto sm:max-w-sm"
             />
           </div>
         </div>
       </section>
 
       {/* How it works */}
-      <section>
+      <section className="hidden sm:block">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">How it works</div>
