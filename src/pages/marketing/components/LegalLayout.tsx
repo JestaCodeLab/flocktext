@@ -15,10 +15,10 @@ export function LegalLayout({ eyebrow = 'Legal', title, effectiveDate, subtitle,
 
       <div className="relative mx-auto w-full max-w-3xl px-5 pt-16 pb-24 sm:px-8 lg:pt-24">
         <div className="text-center">
-          <div className="mb-3 text-xs font-bold tracking-widest text-primary uppercase">{eyebrow}</div>
+          <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">{eyebrow}</div>
           <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">{title}</h1>
-          {effectiveDate ? <p className="mt-4 text-sm text-muted-foreground">Effective {effectiveDate}</p> : null}
-          {subtitle ? <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">{subtitle}</p> : null}
+          {effectiveDate ? <p className="mt-4 text-base text-muted-foreground">Effective {effectiveDate}</p> : null}
+          {subtitle ? <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">{subtitle}</p> : null}
         </div>
 
         <div className="mt-14 space-y-10">{children}</div>
@@ -31,7 +31,7 @@ export function LegalSection({ title, children }: { title: string; children: Rea
   return (
     <div className="space-y-3">
       <h2 className="text-xl font-bold text-foreground">{title}</h2>
-      <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
+      <div className="space-y-3 text-base leading-relaxed text-muted-foreground">{children}</div>
     </div>
   );
 }

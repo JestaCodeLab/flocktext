@@ -66,8 +66,8 @@ export function SupportPage() {
             className="flex flex-col items-center gap-2 rounded-2xl bg-card p-6 text-center ring-1 ring-foreground/10 transition-colors hover:ring-foreground/20"
           >
             <Mail className="size-5 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Email</span>
-            <span className="text-xs text-muted-foreground">{SUPPORT_EMAIL}</span>
+            <span className="text-base font-semibold text-foreground">Email</span>
+            <span className="text-sm text-muted-foreground">{SUPPORT_EMAIL}</span>
           </a>
           <a
             href={WHATSAPP_URL}
@@ -76,8 +76,8 @@ export function SupportPage() {
             className="flex flex-col items-center gap-2 rounded-2xl bg-card p-6 text-center ring-1 ring-foreground/10 transition-colors hover:ring-foreground/20"
           >
             <WhatsAppIcon className="size-5 text-success" />
-            <span className="text-sm font-semibold text-foreground">WhatsApp</span>
-            <span className="text-xs text-muted-foreground">Chat with support</span>
+            <span className="text-base font-semibold text-foreground">WhatsApp</span>
+            <span className="text-sm text-muted-foreground">Chat with support</span>
           </a>
         </div>
 
@@ -85,8 +85,8 @@ export function SupportPage() {
           <div className="space-y-6">
             {faqs.map((faq) => (
               <div key={faq.question}>
-                <div className="text-sm font-semibold text-foreground">{faq.question}</div>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+                <div className="text-base font-semibold text-foreground">{faq.question}</div>
+                <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{faq.answer}</p>
               </div>
             ))}
           </div>
