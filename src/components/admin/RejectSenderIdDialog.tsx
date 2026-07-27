@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { fetchSenderIdTemplates } from '@/api/adminSenderIds';
 
 export function RejectSenderIdDialog({
   target,
@@ -16,6 +18,18 @@ export function RejectSenderIdDialog({
   isPending: boolean;
 }) {
   const [reason, setReason] = useState('');
+  // Rarely changes and every admin page that can reject a sender ID mounts this
+  // dialog - cache it instead of refetching each time the dialog opens.
+  const templates = useQuery({
+    queryKey: ['admin-sender-id-templates'],
+    queryFn: fetchSenderIdTemplates,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (target) setReason(templates.data?.rejectionReason || '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, templates.data]);
 
   function handleOpenChange(next: boolean) {
     onOpenChange(next);
