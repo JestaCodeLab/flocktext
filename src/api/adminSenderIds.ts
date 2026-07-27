@@ -1,6 +1,11 @@
 import { adminApi } from '@/api/adminClient';
 import type { AdminSenderIdPendingEntry, AdminSenderIdRow, SenderIdStatus } from '@/types/admin';
 
+export async function fetchSenderIdTemplates() {
+  const { data } = await adminApi.get<{ rejectionReason: string }>('/admin/sender-ids/templates');
+  return data;
+}
+
 export async function fetchPendingSenderIds() {
   const { data } = await adminApi.get<AdminSenderIdPendingEntry[]>('/admin/sender-ids/pending');
   return data;
