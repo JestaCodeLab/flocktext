@@ -36,6 +36,18 @@ export async function reactivateOrganization(id: string) {
   return data;
 }
 
+export interface SendOrgSmsResult {
+  id: string;
+  stats: { total: number; delivered: number; failed: number; pending: number };
+}
+
+// Sends to every admin user of the org under FlockText's own platform sender ID -
+// not billed against the org's wallet. See AdminOrganizationDetailPage's "Send SMS" button.
+export async function sendOrgSms(id: string, payload: { body: string }) {
+  const { data } = await adminApi.post<SendOrgSmsResult>(`/admin/organizations/${id}/send-sms`, payload);
+  return data;
+}
+
 export async function adjustOrganizationWallet(id: string, payload: { credits: number; reason: string }) {
   const { data } = await adminApi.post<{ walletBalanceCredits: number }>(
     `/admin/organizations/${id}/wallet/adjust`,

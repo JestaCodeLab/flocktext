@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -30,7 +30,13 @@ export function RejectSenderIdDialog({
         </DialogHeader>
         <div className="space-y-1.5">
           <Label htmlFor="reject-reason">Reason</Label>
-          <Input id="reject-reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Not appropriate for church notifications…" />
+          <Textarea
+            id="reject-reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="Not appropriate for church notifications…"
+            className="min-h-[100px] resize-y"
+          />
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)}>

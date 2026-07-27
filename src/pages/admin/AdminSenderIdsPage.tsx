@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Send, X, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Pencil, Send, X, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
+import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
 import {
   fetchPendingSenderIds,
   fetchAllSenderIds,
   registerSenderId,
   approveSenderId,
   rejectSenderId,
+  editSenderId,
   checkBmsStatus,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
@@ -24,6 +26,7 @@ export function AdminSenderIdsPage() {
   const all = useQuery({ queryKey: ['admin-sender-ids-all'], queryFn: fetchAllSenderIds });
 
   const [rejectTarget, setRejectTarget] = useState<AdminSenderIdPendingEntry | null>(null);
+  const [editTarget, setEditTarget] = useState<(EditSenderIdTarget & { orgId: string }) | null>(null);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['admin-sender-ids-pending'] });
@@ -65,6 +68,17 @@ export function AdminSenderIdsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const edit = useMutation({
+    mutationFn: ({ senderId, purpose }: { senderId: string; purpose: string }) =>
+      editSenderId(editTarget!.orgId, editTarget!.senderIdId, { senderId, purpose }),
+    onSuccess: () => {
+      toast.success('Sender ID updated and resubmitted for review.');
+      setEditTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   return (
     <div>
       <div className="mb-6 text-[26px] font-extrabold">Sender ID review</div>
@@ -92,6 +106,13 @@ export function AdminSenderIdsPage() {
                   <div className="flex items-center gap-1.5">
                     <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(entry)}>
                       <Send className="h-4 w-4" /> Register
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditTarget({ orgId: entry.orgId, senderIdId: entry.senderIdId, senderId: entry.senderId, purpose: entry.purpose })}
+                    >
+                      <Pencil className="h-4 w-4" /> Edit
                     </Button>
                     <Button size="sm" variant="destructive" onClick={() => setRejectTarget(entry)}>
                       <X className="h-4 w-4" /> Reject
@@ -133,6 +154,15 @@ export function AdminSenderIdsPage() {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{row.bmsStatus || '—'}</TableCell>
                 <TableCell>
+                  {(row.status === 'pending_review' || row.status === 'rejected') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setEditTarget({ orgId: row.orgId, senderIdId: row.senderIdId, senderId: row.senderId, purpose: row.purpose })}
+                    >
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Button>
+                  )}
                   {row.status === 'processing' && (
                     <div className="flex items-center gap-1.5">
                       <Button size="sm" variant="outline" disabled={sync.isPending} onClick={() => sync.mutate(row)}>
@@ -160,6 +190,12 @@ export function AdminSenderIdsPage() {
         </Table>
       </div>
 
+      <EditSenderIdDialog
+        target={editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+        onConfirm={(senderId, purpose) => edit.mutate({ senderId, purpose })}
+        isPending={edit.isPending}
+      />
       <RejectSenderIdDialog
         target={rejectTarget}
         onOpenChange={(open) => !open && setRejectTarget(null)}

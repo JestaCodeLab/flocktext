@@ -11,6 +11,16 @@ export async function fetchAllSenderIds() {
   return data;
 }
 
+// Only allowed while the request is pending_review or rejected - editing resets
+// it to pending_review with a clean rejection reason/BMS status server-side.
+export async function editSenderId(orgId: string, senderIdId: string, payload: { senderId: string; purpose: string }) {
+  const { data } = await adminApi.patch<{ id: string; senderId: string; purpose: string; status: SenderIdStatus }>(
+    `/admin/sender-ids/${orgId}/${senderIdId}`,
+    payload
+  );
+  return data;
+}
+
 export async function registerSenderId(orgId: string, senderIdId: string) {
   const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/register`);
   return data;
