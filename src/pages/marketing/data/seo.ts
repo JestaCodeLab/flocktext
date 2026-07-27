@@ -26,4 +26,18 @@ export const routeSeo: Record<string, RouteSeo> = {
     imageWidth: 1731,
     imageHeight: 909,
   },
+  '/terms': {
+    title: 'FlockText | Terms & Conditions',
+    description: 'The terms and conditions governing your use of the FlockText bulk SMS platform.',
+    image: '/og/og-home.png',
+    imageWidth: 1734,
+    imageHeight: 907,
+  },
+  '/privacy': {
+    title: 'FlockText | Privacy Policy',
+    description: 'How FlockText collects, uses, and protects your information and the contact data you upload.',
+    image: '/og/og-home.png',
+    imageWidth: 1734,
+    imageHeight: 907,
+  },
 };

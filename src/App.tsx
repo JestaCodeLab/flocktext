@@ -4,6 +4,8 @@ import { useThemeStore } from '@/store/themeStore';
 import { MarketingLayout } from '@/pages/marketing/MarketingLayout';
 import { HomePage } from '@/pages/marketing/HomePage';
 import { PricingPage } from '@/pages/marketing/PricingPage';
+import { TermsPage } from '@/pages/marketing/TermsPage';
+import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { OtpPage } from '@/pages/auth/OtpPage';
@@ -58,6 +60,8 @@ function App() {
       <Route element={<MarketingLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
       </Route>
 
       <Route element={<GuestRoute />}>
