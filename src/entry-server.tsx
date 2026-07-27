@@ -6,6 +6,7 @@ import { HomePage } from '@/pages/marketing/HomePage';
 import { PricingPage } from '@/pages/marketing/PricingPage';
 import { TermsPage } from '@/pages/marketing/TermsPage';
 import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
+import { SupportPage } from '@/pages/marketing/SupportPage';
 import { routeSeo } from '@/pages/marketing/data/seo';
 
 export function render(path: string) {
@@ -22,6 +23,7 @@ export function render(path: string) {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/support" element={<SupportPage />} />
           </Route>
         </Routes>
       </MemoryRouter>

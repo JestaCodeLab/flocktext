@@ -298,6 +298,9 @@ export function MarketingLayout() {
           <div className="mx-auto flex w-full max-w-7xl flex-col-reverse items-center gap-3 px-5 py-6 text-xs text-sidebar-foreground/45 sm:flex-row sm:justify-between sm:px-8">
             <span>© {new Date().getFullYear()} FlockText. All rights reserved.</span>
             <div className="flex items-center gap-5">
+              <Link to="/support" className="transition-colors hover:text-sidebar-foreground">
+                Support
+              </Link>
               <Link to="/terms" className="transition-colors hover:text-sidebar-foreground">
                 Terms & Conditions
               </Link>
