@@ -64,6 +64,20 @@ export async function addOrganizationUser(
   return data;
 }
 
+export async function updateOrganizationUser(
+  id: string,
+  userId: string,
+  payload: { name: string; email: string; phone: string; role: 'admin' | 'user' }
+) {
+  const { data } = await adminApi.patch<AdminOrgUser>(`/admin/organizations/${id}/users/${userId}`, payload);
+  return data;
+}
+
+export async function deleteOrganizationUser(id: string, userId: string) {
+  const { data } = await adminApi.delete<{ deleted: true }>(`/admin/organizations/${id}/users/${userId}`);
+  return data;
+}
+
 export async function deleteOrganization(id: string, confirmChurchName: string) {
   const { data } = await adminApi.delete<{ deleted: true }>(`/admin/organizations/${id}`, {
     data: { confirmChurchName },

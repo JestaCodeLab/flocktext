@@ -1,7 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Ban, CheckCircle2, MessageSquareText, Pencil, Send, X, RefreshCw, ShieldCheck, Plus, Users as UsersIcon } from 'lucide-react';
+import {
+  ArrowLeft,
+  Ban,
+  BadgeCheck,
+  CheckCircle2,
+  MessageSquareText,
+  Pencil,
+  Rocket,
+  Send,
+  Trash2,
+  UserPlus,
+  X,
+  RefreshCw,
+  ShieldCheck,
+  Plus,
+  Users as UsersIcon,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,11 +25,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
 import { AdminAddUserDialog } from '@/components/admin/AdminAddUserDialog';
+import { EditOrgUserDialog } from '@/components/admin/EditOrgUserDialog';
+import { DeleteOrgUserDialog } from '@/components/admin/DeleteOrgUserDialog';
 import { DeleteOrganizationDialog } from '@/components/admin/DeleteOrganizationDialog';
 import { SendOrgSmsDialog } from '@/components/admin/SendOrgSmsDialog';
+import { OrgProgressTimeline, type OrgProgressStep } from '@/components/admin/OrgProgressTimeline';
 import {
   fetchAdminOrganizationDetail,
   updateAdminOrganizationProfile,
@@ -21,11 +41,12 @@ import {
   reactivateOrganization,
   adjustOrganizationWallet,
   deleteOrganization,
+  deleteOrganizationUser,
 } from '@/api/adminOrganizations';
 import { registerSenderId, approveSenderId, rejectSenderId, editSenderId, checkBmsStatus } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
-import type { AdminSenderId } from '@/types/admin';
+import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
 
 function DetailSkeleton() {
   return (
@@ -68,6 +89,8 @@ export function AdminOrganizationDetailPage() {
   const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
   const [editTarget, setEditTarget] = useState<EditSenderIdTarget | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [editUserTarget, setEditUserTarget] = useState<AdminOrgUser | null>(null);
+  const [deleteUserTarget, setDeleteUserTarget] = useState<AdminOrgUser | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [showSendSms, setShowSendSms] = useState(false);
 
@@ -160,6 +183,16 @@ export function AdminOrganizationDetailPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const removeUser = useMutation({
+    mutationFn: () => deleteOrganizationUser(id!, deleteUserTarget!.id),
+    onSuccess: () => {
+      toast.success(`${deleteUserTarget?.name} removed.`);
+      setDeleteUserTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const remove = useMutation({
     mutationFn: (confirmChurchName: string) => deleteOrganization(id!, confirmChurchName),
     onSuccess: () => {
@@ -188,6 +221,14 @@ export function AdminOrganizationDetailPage() {
 
   const org = detail.data;
 
+  const firstSenderIdAt = org.senderIds.map((s) => s.createdAt).sort()[0] ?? null;
+  const progressSteps: OrgProgressStep[] = [
+    { key: 'registered', label: 'Registered', icon: UserPlus, completedAt: org.createdAt },
+    { key: 'onboarded', label: 'Onboarding', icon: Rocket, completedAt: org.onboardingCompletedAt },
+    { key: 'sender-id', label: 'Sender ID', icon: BadgeCheck, completedAt: firstSenderIdAt },
+    { key: 'first-send', label: 'First SMS sent', icon: Send, completedAt: org.firstMessageSentAt },
+  ];
+
   return (
     <div>
       <Link to="/admin/organizations" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted-foreground hover:text-foreground">
@@ -200,7 +241,17 @@ export function AdminOrganizationDetailPage() {
             {org.churchName || 'Untitled organization'}
             <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
           </div>
-          <div className="mt-0.5 text-sm text-muted-foreground">Joined {new Date(org.createdAt).toLocaleDateString()}</div>
+          <div className="mt-0.5 text-sm text-muted-foreground">
+            Joined{' '}
+            {new Date(org.createdAt).toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setShowSendSms(true)}>
@@ -241,6 +292,10 @@ export function AdminOrganizationDetailPage() {
           <div className="text-xs text-muted-foreground">Messages all-time</div>
           <div className="mt-1 text-xl font-extrabold">{org.messagesTotal}</div>
         </div>
+      </div>
+
+      <div className="mb-6">
+        <OrgProgressTimeline steps={progressSteps} />
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-4">
@@ -303,14 +358,23 @@ export function AdminOrganizationDetailPage() {
               <TableHead>Purpose</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>BMS status</TableHead>
-              <TableHead></TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {org.senderIds.map((s) => (
               <TableRow key={s.id}>
                 <TableCell className="font-semibold">{s.senderId}</TableCell>
-                <TableCell className="max-w-[220px] text-muted-foreground">{s.purpose || '—'}</TableCell>
+                <TableCell className="w-[220px] text-muted-foreground">
+                  {s.purpose ? (
+                    <Tooltip>
+                      <TooltipTrigger render={<span className="block max-w-[220px] truncate" />}>{s.purpose}</TooltipTrigger>
+                      <TooltipContent>{s.purpose}</TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    '—'
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
                 </TableCell>
@@ -376,6 +440,7 @@ export function AdminOrganizationDetailPage() {
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Verified</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -386,11 +451,27 @@ export function AdminOrganizationDetailPage() {
                 <TableCell className="text-muted-foreground">{u.email}</TableCell>
                 <TableCell className="text-muted-foreground">{u.role}</TableCell>
                 <TableCell className="text-muted-foreground">{u.isVerified ? 'Yes' : 'No'}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      title="Remove"
+                      onClick={() => setDeleteUserTarget(u)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {org.users.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <UsersIcon className="h-5 w-5 text-muted-foreground" />
                     No team members yet.
@@ -425,6 +506,13 @@ export function AdminOrganizationDetailPage() {
         isPending={reject.isPending}
       />
       <AdminAddUserDialog orgId={id!} open={showAddUser} onOpenChange={setShowAddUser} />
+      <EditOrgUserDialog orgId={id!} target={editUserTarget} onOpenChange={(open) => !open && setEditUserTarget(null)} />
+      <DeleteOrgUserDialog
+        target={deleteUserTarget}
+        onOpenChange={(open) => !open && setDeleteUserTarget(null)}
+        onConfirm={() => removeUser.mutate()}
+        isPending={removeUser.isPending}
+      />
       <SendOrgSmsDialog
         orgId={id!}
         churchName={org.churchName || 'this organization'}

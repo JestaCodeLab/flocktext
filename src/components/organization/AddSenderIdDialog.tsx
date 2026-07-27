@@ -90,9 +90,8 @@ export function AddSenderIdDialog({
           <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
             <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
             <div className="text-[13px] text-foreground/80">
-              <span className="font-semibold">Acceptable format</span> — 3 to 11 characters, uppercase letters and
-              numbers only. No spaces or special characters (e.g. <span className="font-semibold">GRACECHAPEL</span>,{' '}
-              <span className="font-semibold">SHOP24</span>).
+              3–11 uppercase letters/numbers, no spaces or symbols (e.g.{' '}
+              <span className="font-semibold">GRACECHAPEL</span>). Review takes under 24 hours.
             </div>
           </div>
         </div>

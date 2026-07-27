@@ -24,7 +24,6 @@ import { fetchMe, logout } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useEntityLabels, type EntityLabels } from '@/lib/terminology';
-import { senderIdStatusLabel } from '@/lib/senderIdStatus';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -109,14 +108,12 @@ export function AppShell() {
   const mainNavItems = getMainNavItems(entity);
   const { user, organization } = session;
   const bottomNavItems = getBottomNavItems(user.role);
-  const activeSenderIds = organization.senderIds.filter((s) => s.status !== 'deleted');
-  const senderId = activeSenderIds.find((s) => s.isPrimary) ?? activeSenderIds[0];
-  const senderStatusColor: Record<string, string> = {
-    approved: 'bg-success/15 text-success',
-    rejected: 'bg-destructive/15 text-destructive',
-    pending_review: 'bg-warning/15 text-warning',
-    processing: 'bg-warning/15 text-warning',
-  };
+  // Only an approved sender ID is actually usable for sending, so that's the only
+  // thing worth surfacing here - a rejected/pending one marked primary shouldn't
+  // make this look like there's a working sender ID when there isn't (matches
+  // ComposePage's approved-first selection, used for the send flow itself).
+  const approvedSenderIds = organization.senderIds.filter((s) => s.status === 'approved');
+  const senderId = approvedSenderIds.find((s) => s.isPrimary) ?? approvedSenderIds[0];
 
   async function handleLogout() {
     const { refreshToken } = useAuthStore.getState();
@@ -193,9 +190,9 @@ export function AppShell() {
         <header className="flex shrink-0 items-center justify-between gap-3.5 border-b border-border bg-card px-8 py-3.5">
           <div className="flex items-center gap-2.5">
             {senderId ? (
-              <div className={cn('flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold', senderStatusColor[senderId.status])}>
+              <div className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-bold text-success">
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {senderId.senderId} · {senderIdStatusLabel[senderId.status]}
+                {senderId.senderId}
               </div>
             ) : (
               <Link
