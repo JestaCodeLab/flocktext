@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { registerSenderId } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
+import { formatSenderIdInput } from '@/lib/senderId';
 import type { SessionOrganization } from '@/types';
 
 export function AddSenderIdDialog({
@@ -61,7 +63,7 @@ export function AddSenderIdDialog({
         if (!next) reset();
       }}
     >
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Add sender ID</DialogTitle>
         </DialogHeader>
@@ -73,7 +75,7 @@ export function AddSenderIdDialog({
               placeholder="GRACECHAPEL"
               maxLength={11}
               value={senderId}
-              onChange={(e) => setSenderId(e.target.value.toUpperCase())}
+              onChange={(e) => setSenderId(formatSenderIdInput(e.target.value))}
             />
           </div>
           <div className="space-y-2">
@@ -84,6 +86,14 @@ export function AddSenderIdDialog({
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
             />
+          </div>
+          <div className="flex items-start gap-2.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <div className="text-[13px] text-foreground/80">
+              <span className="font-semibold">Acceptable format</span> — 3 to 11 characters, uppercase letters and
+              numbers only. No spaces or special characters (e.g. <span className="font-semibold">GRACECHAPEL</span>,{' '}
+              <span className="font-semibold">SHOP24</span>).
+            </div>
           </div>
         </div>
         <DialogFooter>

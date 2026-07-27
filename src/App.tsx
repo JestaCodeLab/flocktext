@@ -22,6 +22,7 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminOrganizationsPage } from '@/pages/admin/AdminOrganizationsPage';
 import { AdminOrganizationDetailPage } from '@/pages/admin/AdminOrganizationDetailPage';
+import { AdminDeliveryReportPage } from '@/pages/admin/AdminDeliveryReportPage';
 import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
 import { AdminSenderIdsPage } from '@/pages/admin/AdminSenderIdsPage';
 import { AdminAddonsPage } from '@/pages/admin/AdminAddonsPage';
@@ -82,6 +83,7 @@ function App() {
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="organizations/:id" element={<AdminOrganizationDetailPage />} />
+          <Route path="delivery-report" element={<AdminDeliveryReportPage />} />
           <Route path="packages" element={<AdminPackagesPage />} />
           <Route path="sender-ids" element={<AdminSenderIdsPage />} />
           <Route path="addons" element={<AdminAddonsPage />} />

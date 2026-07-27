@@ -12,6 +12,7 @@ import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingBackLink } from '@/pages/onboarding/OnboardingBackLink';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
+import { formatSenderIdInput } from '@/lib/senderId';
 
 export function SenderIdStep() {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ export function SenderIdStep() {
               placeholder="GRACECHAPEL"
               maxLength={11}
               value={senderId}
-              onChange={(e) => setSenderId(e.target.value.toUpperCase())}
+              onChange={(e) => setSenderId(formatSenderIdInput(e.target.value))}
             />
           </div>
 

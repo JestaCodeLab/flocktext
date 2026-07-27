@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Ban, CheckCircle2, Send, X, RefreshCw, ShieldCheck, Plus, Users as UsersIcon } from 'lucide-react';
+import { ArrowLeft, Ban, CheckCircle2, MessageSquareText, Pencil, Send, X, RefreshCw, ShieldCheck, Plus, Users as UsersIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
+import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
 import { AdminAddUserDialog } from '@/components/admin/AdminAddUserDialog';
 import { DeleteOrganizationDialog } from '@/components/admin/DeleteOrganizationDialog';
+import { SendOrgSmsDialog } from '@/components/admin/SendOrgSmsDialog';
 import {
   fetchAdminOrganizationDetail,
   updateAdminOrganizationProfile,
@@ -20,7 +22,7 @@ import {
   adjustOrganizationWallet,
   deleteOrganization,
 } from '@/api/adminOrganizations';
-import { registerSenderId, approveSenderId, rejectSenderId, checkBmsStatus } from '@/api/adminSenderIds';
+import { registerSenderId, approveSenderId, rejectSenderId, editSenderId, checkBmsStatus } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import type { AdminSenderId } from '@/types/admin';
@@ -64,8 +66,10 @@ export function AdminOrganizationDetailPage() {
   const [walletCredits, setWalletCredits] = useState('');
   const [walletReason, setWalletReason] = useState('');
   const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
+  const [editTarget, setEditTarget] = useState<EditSenderIdTarget | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
+  const [showSendSms, setShowSendSms] = useState(false);
 
   useEffect(() => {
     if (detail.data) {
@@ -139,6 +143,17 @@ export function AdminOrganizationDetailPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const edit = useMutation({
+    mutationFn: ({ senderId, purpose }: { senderId: string; purpose: string }) =>
+      editSenderId(id!, editTarget!.senderIdId, { senderId, purpose }),
+    onSuccess: () => {
+      toast.success('Sender ID updated and resubmitted for review.');
+      setEditTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const syncBms = useMutation({
     mutationFn: (senderIdId: string) => checkBmsStatus(id!, senderIdId),
     onSuccess: () => invalidate(),
@@ -187,21 +202,26 @@ export function AdminOrganizationDetailPage() {
           </div>
           <div className="mt-0.5 text-sm text-muted-foreground">Joined {new Date(org.createdAt).toLocaleDateString()}</div>
         </div>
-        <Button
-          variant={org.status === 'active' ? 'destructive' : 'default'}
-          disabled={toggleSuspend.isPending}
-          onClick={() => toggleSuspend.mutate()}
-        >
-          {org.status === 'active' ? (
-            <>
-              <Ban className="h-4 w-4" /> Suspend
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="h-4 w-4" /> Reactivate
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setShowSendSms(true)}>
+            <MessageSquareText className="h-4 w-4" /> Send SMS
+          </Button>
+          <Button
+            variant={org.status === 'active' ? 'destructive' : 'default'}
+            disabled={toggleSuspend.isPending}
+            onClick={() => toggleSuspend.mutate()}
+          >
+            {org.status === 'active' ? (
+              <>
+                <Ban className="h-4 w-4" /> Suspend
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-4 w-4" /> Reactivate
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       <div className="mb-6 grid grid-cols-4 gap-3.5">
@@ -297,8 +317,21 @@ export function AdminOrganizationDetailPage() {
                 <TableCell className="text-muted-foreground">{s.bmsStatus || '—'}</TableCell>
                 <TableCell>
                   {s.status === 'pending_review' && (
-                    <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
-                      <Send className="h-3.5 w-3.5" /> Register
+                    <div className="flex items-center gap-1.5">
+                      <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
+                        <Send className="h-3.5 w-3.5" /> Register
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
+                        <X className="h-3.5 w-3.5" /> Reject
+                      </Button>
+                    </div>
+                  )}
+                  {s.status === 'rejected' && (
+                    <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
                     </Button>
                   )}
                   {s.status === 'processing' && (
@@ -379,6 +412,12 @@ export function AdminOrganizationDetailPage() {
         </Button>
       </div>
 
+      <EditSenderIdDialog
+        target={editTarget}
+        onOpenChange={(open) => !open && setEditTarget(null)}
+        onConfirm={(senderId, purpose) => edit.mutate({ senderId, purpose })}
+        isPending={edit.isPending}
+      />
       <RejectSenderIdDialog
         target={rejectTarget}
         onOpenChange={(open) => !open && setRejectTarget(null)}
@@ -386,6 +425,13 @@ export function AdminOrganizationDetailPage() {
         isPending={reject.isPending}
       />
       <AdminAddUserDialog orgId={id!} open={showAddUser} onOpenChange={setShowAddUser} />
+      <SendOrgSmsDialog
+        orgId={id!}
+        churchName={org.churchName || 'this organization'}
+        admins={org.users.filter((u) => u.role === 'admin')}
+        open={showSendSms}
+        onOpenChange={setShowSendSms}
+      />
       <DeleteOrganizationDialog
         org={{
           churchName: org.churchName,
