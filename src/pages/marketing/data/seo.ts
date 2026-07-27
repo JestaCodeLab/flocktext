@@ -40,4 +40,11 @@ export const routeSeo: Record<string, RouteSeo> = {
     imageWidth: 1734,
     imageHeight: 907,
   },
+  '/support': {
+    title: 'FlockText | Support',
+    description: 'Get help with your FlockText account, messages, and billing — contact us by email, phone, or WhatsApp.',
+    image: '/og/og-home.png',
+    imageWidth: 1734,
+    imageHeight: 907,
+  },
 };

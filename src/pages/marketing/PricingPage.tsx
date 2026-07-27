@@ -26,11 +26,11 @@ export function PricingPage() {
 
         <div className="relative mx-auto w-full max-w-7xl px-5 pt-16 pb-20 sm:px-8 lg:pt-24 lg:pb-24">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-3 text-xs font-bold tracking-widest text-primary uppercase">Pricing</div>
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Pricing</div>
             <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
               Simple, pay-as-you-go pricing
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
+            <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
               Buy SMS credits once and spend them on your own schedule. No monthly contracts, no locked features —
               everything FlockText offers is available the moment you sign up.
             </p>
@@ -43,13 +43,13 @@ export function PricingPage() {
           <div className="mx-auto mt-20 max-w-4xl rounded-2xl bg-card p-8 ring-1 ring-foreground/10 sm:p-10">
             <div className="text-center">
               <h2 className="text-xl font-bold text-foreground">Everything included, on every plan</h2>
-              <p className="mt-2 text-sm text-muted-foreground">
+              <p className="mt-2 text-base text-muted-foreground">
                 No locked features, no upgrade walls — credits are the only thing you pay for.
               </p>
             </div>
             <div className="mt-8 grid gap-x-8 gap-y-3.5 sm:grid-cols-2">
               {includedFeatures.map((item) => (
-                <div key={item} className="flex items-start gap-2.5 text-sm text-foreground/80">
+                <div key={item} className="flex items-start gap-2.5 text-base text-foreground/80">
                   <span className="mt-0.5 flex size-4.5 shrink-0 items-center justify-center rounded-full bg-success/15 text-success">
                     <Check className="size-3" />
                   </span>

@@ -62,7 +62,9 @@ export function PackageGrid() {
                 </div>
 
                 <div className="mt-3 flex items-baseline gap-1.5">
-                  <span className="text-[40px] leading-none font-bold tracking-tight">GHS {pkg.ghs}</span>
+                  <span className="text-[40px] leading-none font-medium tracking-tight">
+                    GHS {pkg.ghs.toLocaleString()}
+                  </span>
                 </div>
 
                 <div className={cn('mt-3 text-sm', popular ? 'text-sidebar-foreground/70' : 'text-muted-foreground')}>
