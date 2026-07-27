@@ -55,6 +55,8 @@ export interface AdminOrgDetail {
   messagesTotal: number;
   sentThisMonth: number;
   deliveredThisMonth: number;
+  onboardingCompletedAt: string | null;
+  firstMessageSentAt: string | null;
 }
 
 export interface AdminPackage {

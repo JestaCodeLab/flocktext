@@ -66,7 +66,14 @@ export function AdminOrganizationsPage() {
                 <TableCell className="text-muted-foreground">{org.memberCount}</TableCell>
                 <TableCell className="text-muted-foreground">{org.messageCount}</TableCell>
                 <TableCell className="text-muted-foreground">{org.walletBalanceCredits.toLocaleString()} credits</TableCell>
-                <TableCell className="text-muted-foreground">{new Date(org.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  <div className="font-medium text-foreground">
+                    {new Date(org.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(org.createdAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
             {orgs.data?.organizations.length === 0 && (

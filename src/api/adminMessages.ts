@@ -26,7 +26,12 @@ export interface AdminMessageListResponse {
   pageSize: number;
 }
 
-export async function fetchAdminMessages(params?: { search?: string; page?: number; pageSize?: number }) {
+export async function fetchAdminMessages(params?: {
+  search?: string;
+  status?: 'delivered' | 'failed';
+  page?: number;
+  pageSize?: number;
+}) {
   const { data } = await adminApi.get<AdminMessageListResponse>('/admin/messages', { params });
   return data;
 }
