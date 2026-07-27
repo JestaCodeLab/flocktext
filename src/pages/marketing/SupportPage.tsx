@@ -1,7 +1,8 @@
-import { Mail, MessageCircle, Phone } from 'lucide-react';
-import { CONTACT_PHONE, CONTACT_PHONE_DISPLAY, SUPPORT_EMAIL, WHATSAPP_URL } from '@/pages/marketing/data/contact';
+import { Mail } from 'lucide-react';
+import { SUPPORT_EMAIL, WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { LegalLayout, LegalSection } from '@/pages/marketing/components/LegalLayout';
+import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
 import { routeSeo } from '@/pages/marketing/data/seo';
 
 const faqs = [
@@ -59,7 +60,7 @@ export function SupportPage() {
         title="Support"
         subtitle="Get help with your FlockText account, messages, and billing. Our team typically responds within one business day."
       >
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="mx-auto grid max-w-md gap-4 sm:grid-cols-2">
           <a
             href={`mailto:${SUPPORT_EMAIL}`}
             className="flex flex-col items-center gap-2 rounded-2xl bg-card p-6 text-center ring-1 ring-foreground/10 transition-colors hover:ring-foreground/20"
@@ -69,20 +70,12 @@ export function SupportPage() {
             <span className="text-xs text-muted-foreground">{SUPPORT_EMAIL}</span>
           </a>
           <a
-            href={`tel:${CONTACT_PHONE}`}
-            className="flex flex-col items-center gap-2 rounded-2xl bg-card p-6 text-center ring-1 ring-foreground/10 transition-colors hover:ring-foreground/20"
-          >
-            <Phone className="size-5 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Phone</span>
-            <span className="text-xs text-muted-foreground">{CONTACT_PHONE_DISPLAY}</span>
-          </a>
-          <a
             href={WHATSAPP_URL}
             target="_blank"
             rel="noreferrer"
             className="flex flex-col items-center gap-2 rounded-2xl bg-card p-6 text-center ring-1 ring-foreground/10 transition-colors hover:ring-foreground/20"
           >
-            <MessageCircle className="size-5 text-success" />
+            <WhatsAppIcon className="size-5 text-success" />
             <span className="text-sm font-semibold text-foreground">WhatsApp</span>
             <span className="text-xs text-muted-foreground">Chat with support</span>
           </a>

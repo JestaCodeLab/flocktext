@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { SUPPORT_EMAIL, CONTACT_PHONE_DISPLAY } from '@/pages/marketing/data/contact';
+import { SUPPORT_EMAIL } from '@/pages/marketing/data/contact';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { LegalLayout, LegalSection } from '@/pages/marketing/components/LegalLayout';
 import { routeSeo } from '@/pages/marketing/data/seo';
@@ -150,8 +150,8 @@ export function PrivacyPage() {
             Questions about this Privacy Policy or how we handle your data can be sent to{' '}
             <a href={`mailto:${SUPPORT_EMAIL}`} className="text-foreground underline underline-offset-2">
               {SUPPORT_EMAIL}
-            </a>{' '}
-            or by phone at {CONTACT_PHONE_DISPLAY}. See also our{' '}
+            </a>
+            . See also our{' '}
             <Link to="/terms" className="text-foreground underline underline-offset-2">
               Terms & Conditions
             </Link>
