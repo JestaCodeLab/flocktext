@@ -76,7 +76,7 @@ export function GroupsPage() {
 
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[26px] font-extrabold">Groups</div>
           <div className="mt-0.5 text-sm text-muted-foreground">{groups.data?.length ?? 0} groups</div>
@@ -86,8 +86,8 @@ export function GroupsPage() {
         </Button>
       </div>
 
-      <div className="mb-4.5 flex items-center gap-2.5">
-        <div className="relative flex-1">
+      <div className="mb-4.5 flex flex-wrap items-center gap-2.5">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search groups…"
@@ -126,7 +126,7 @@ export function GroupsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {filtered.map((g, i) => (
           <div
             key={g.id}

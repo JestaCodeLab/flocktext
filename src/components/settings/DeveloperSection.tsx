@@ -125,7 +125,7 @@ export function DeveloperSection() {
       </SettingsCard>
 
       <div className="mt-5 rounded-2xl border border-border bg-card p-6">
-        <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div className="text-[16px] font-medium text-foreground/80">Reference</div>
           <Button size="sm" variant="outline" render={<Link to="/app/developer-docs" />}>
             <BookOpen className="h-[15px] w-[15px]" /> Full API docs

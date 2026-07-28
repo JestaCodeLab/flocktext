@@ -18,6 +18,7 @@ import {
   SendIcon,
   Sun,
   Moon,
+  Menu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchMe, logout } from '@/api/auth';
@@ -35,6 +36,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { NotificationsSheet } from '@/components/layout/NotificationsSheet';
 import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
 import type { LucideIcon } from 'lucide-react';
@@ -87,10 +89,15 @@ export function AppShell() {
   const setThemeMode = useThemeStore((s) => s.setMode);
   const [contactsManualOpen, setContactsManualOpen] = useState<boolean | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const entity = useEntityLabels();
 
   useEffect(() => {
     setContactsManualOpen(null);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
   }, [location.pathname]);
 
   // The cached session (localStorage) can drift from the server - e.g. a role
@@ -128,69 +135,94 @@ export function AppShell() {
     navigate('/login', { replace: true });
   }
 
+  const navContent = (
+    <>
+      <nav className="flex flex-1 flex-col gap-0.5">
+        {mainNavItems.map((item) => {
+          if ('children' in item) {
+            const routeOpen = location.pathname.startsWith('/app/contacts');
+            const isOpen = contactsManualOpen ?? routeOpen;
+            return (
+              <Collapsible key={item.label} open={isOpen} onOpenChange={(open) => setContactsManualOpen(open)}>
+                <CollapsibleTrigger className={navLinkClass(isOpen)}>
+                  <span className="flex items-center gap-3">
+                    <item.icon className="h-[15px] w-[15px]" />
+                    {item.label}
+                  </span>
+                  <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="flex flex-col gap-0.5 pt-0.5">
+                    {item.children.map((child) => (
+                      <NavLink
+                        key={child.to}
+                        to={child.to}
+                        end
+                        className={({ isActive }) => cn(navLinkClass(isActive), 'pl-8 text-[13px]')}
+                      >
+                        <child.icon className="h-4 w-4" />
+                        {child.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          }
+          return (
+            <NavLink key={item.to} to={item.to} className={({ isActive }) => navLinkClass(isActive)}>
+              <item.icon className="h-[15px] w-[15px]" />
+              {item.label}
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3.5">
+        {bottomNavItems.map((item) => (
+          <NavLink key={item.to} to={item.to} className={({ isActive }) => navLinkClass(isActive)}>
+            <item.icon className="h-4 w-4" />
+            {item.label}
+          </NavLink>
+        ))}
+      </div>
+    </>
+  );
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
-      <aside className="flex w-[236px] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground">
+      <aside className="hidden w-[236px] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground md:flex">
         <div className="mb-7 px-2">
           <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-8 w-auto" />
         </div>
-
-        <nav className="flex flex-1 flex-col gap-0.5">
-          {mainNavItems.map((item) => {
-            if ('children' in item) {
-              const routeOpen = location.pathname.startsWith('/app/contacts');
-              const isOpen = contactsManualOpen ?? routeOpen;
-              return (
-                <Collapsible key={item.label} open={isOpen} onOpenChange={(open) => setContactsManualOpen(open)}>
-                  <CollapsibleTrigger className={navLinkClass(isOpen)}>
-                    <span className="flex items-center gap-3">
-                      <item.icon className="h-[15px] w-[15px]" />
-                      {item.label}
-                    </span>
-                    <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="flex flex-col gap-0.5 pt-0.5">
-                      {item.children.map((child) => (
-                        <NavLink
-                          key={child.to}
-                          to={child.to}
-                          end
-                          className={({ isActive }) => cn(navLinkClass(isActive), 'pl-8 text-[13px]')}
-                        >
-                          <child.icon className="h-4 w-4" />
-                          {child.label}
-                        </NavLink>
-                      ))}
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            }
-            return (
-              <NavLink key={item.to} to={item.to} className={({ isActive }) => navLinkClass(isActive)}>
-                <item.icon className="h-[15px] w-[15px]" />
-                {item.label}
-              </NavLink>
-            );
-          })}
-        </nav>
-
-        <div className="flex flex-col gap-1 border-t border-sidebar-border pt-3.5">
-          {bottomNavItems.map((item) => (
-            <NavLink key={item.to} to={item.to} className={({ isActive }) => navLinkClass(isActive)}>
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </NavLink>
-          ))}
-        </div>
+        {navContent}
       </aside>
 
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent
+          side="left"
+          className="w-[236px] max-w-[80vw] flex-col gap-0 overflow-y-auto border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground"
+        >
+          <div className="mb-7 shrink-0 px-2">
+            <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-8 w-auto" />
+          </div>
+          {navContent}
+        </SheetContent>
+      </Sheet>
+
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-3.5 border-b border-border bg-card px-8 py-3.5">
-          <div className="flex items-center gap-2.5">
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-3 py-2.5 sm:gap-3.5 sm:px-5 sm:py-3.5 md:px-8">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground md:hidden"
+          >
+            <Menu className="h-[15px] w-[15px]" />
+          </button>
+
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto sm:gap-2.5">
             {senderId ? (
-              <div className="flex items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-bold text-success">
+              <div className="hidden shrink-0 items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-success sm:flex">
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
                 {senderId.senderId}
               </div>
@@ -198,19 +230,19 @@ export function AppShell() {
               <Link
                 to="/app/settings"
                 state={{ tab: 'sender-ids' }}
-                className="flex items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
+                className="hidden shrink-0 items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-bold whitespace-nowrap text-muted-foreground hover:text-foreground sm:flex"
               >
                 <BadgeCheck className="h-3.5 w-3.5" /> No Sender ID
               </Link>
             )}
 
-            <div className="flex items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-bold">
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-bold whitespace-nowrap">
               <Wallet className="h-[15px] w-[15px] text-primary" />
-              {organization.walletBalanceCredits.toLocaleString()} Credits
+              {organization.walletBalanceCredits.toLocaleString()} credits
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex shrink-0 items-center gap-1.5 sm:gap-2.5">
             <button
               type="button"
               onClick={() => setThemeMode(themeResolved === 'dark' ? 'light' : 'dark')}
@@ -222,11 +254,11 @@ export function AppShell() {
             <NotificationsSheet />
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-3">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-2 sm:pr-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium">{user.name.split(' ')[0]}</span>
+                <span className="hidden text-sm font-medium sm:inline">{user.name.split(' ')[0]}</span>
                 <ChevronDown className="h-[15px] w-[15px] text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64 p-2">
@@ -290,7 +322,7 @@ export function AppShell() {
           </DialogContent>
         </Dialog>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-9 py-7">
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-9 lg:py-7">
           <Outlet />
         </main>
       </div>

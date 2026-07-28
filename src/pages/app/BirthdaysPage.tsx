@@ -58,14 +58,14 @@ export function BirthdaysPage() {
     <div className={cn('relative', !birthdayUnlocked && 'min-h-[70vh]')}>
       {!birthdayUnlocked && <BirthdayPaywall priceGhs={birthdayAddonGhs} />}
       <div className={cn(!birthdayUnlocked && 'pointer-events-none select-none blur-sm')}>
-        <div className="mb-5 flex items-center justify-between">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-[26px] font-bold">Birthdays</div>
             <div className="mt-0.5 text-sm text-muted-foreground">
               {birthdays.data?.length ?? 0} {entity.plural} with a birthday on file
             </div>
           </div>
-          <Button variant="outline" onClick={() => setShowAutomation(true)}>
+          <Button variant="outline" className="self-start sm:self-auto" onClick={() => setShowAutomation(true)}>
             <Bell className="h-[15px] w-[15px]" /> Birthday automation
             {automation.data && (
               <span
@@ -82,7 +82,7 @@ export function BirthdaysPage() {
 
         <BirthdayAutomationDialog open={showAutomation} onOpenChange={setShowAutomation} />
 
-        <div className="mb-4.5 grid grid-cols-12 gap-2">
+        <div className="no-scrollbar mb-4.5 flex gap-2 overflow-x-auto sm:grid sm:grid-cols-6 sm:overflow-visible lg:grid-cols-12">
           {MONTH_SHORT.map((label, month) => {
             const count = months[month].length;
             const isActive = month === selectedMonth;
@@ -92,7 +92,7 @@ export function BirthdaysPage() {
                 type="button"
                 onClick={() => setSelectedMonth(month)}
                 className={cn(
-                  'flex flex-col items-center gap-0.5 rounded-xl border px-2 py-2.5 text-center transition-colors',
+                  'flex w-16 shrink-0 flex-col items-center gap-0.5 rounded-xl border px-2 py-2.5 text-center transition-colors sm:w-auto',
                   isActive ? 'border-primary bg-accent/40' : 'border-border bg-card hover:border-primary/40'
                 )}
               >
@@ -126,14 +126,14 @@ export function BirthdaysPage() {
             )}
             {selectedContacts.map((c) => (
               <div key={c.id} className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 last:border-b-0">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
                     {formatDay(c.dateOfBirth!)}
                   </div>
-                  <div className="text-sm font-semibold">{c.name}</div>
+                  <div className="truncate text-sm font-semibold">{c.name}</div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-sm text-muted-foreground">{c.phone}</div>
+                <div className="flex shrink-0 items-center gap-3">
+                  <div className="hidden text-sm text-muted-foreground sm:block">{c.phone}</div>
                   <Button
                     size="icon-sm"
                     variant="outline"

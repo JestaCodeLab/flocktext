@@ -67,7 +67,7 @@ export function MessageReportPage() {
         <ArrowLeft className="h-4 w-4" /> Delivery Reports
       </button>
 
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
           <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>

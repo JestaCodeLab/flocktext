@@ -62,6 +62,7 @@ function StatCard({
   highlight,
   onIconClick,
   iconTitle,
+  className,
 }: {
   icon: LucideIcon;
   label: string;
@@ -71,6 +72,7 @@ function StatCard({
   highlight?: boolean;
   onIconClick?: () => void;
   iconTitle?: string;
+  className?: string;
 }) {
   const iconClassName = cn(
     'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
@@ -81,7 +83,8 @@ function StatCard({
     <div
       className={cn(
         'rounded-2xl border p-5',
-        highlight ? 'border-transparent bg-stat-highlight text-stat-highlight-foreground' : 'border-border bg-card'
+        highlight ? 'border-transparent bg-stat-highlight text-stat-highlight-foreground' : 'border-border bg-card',
+        className
       )}
     >
       <div className="mb-4 flex items-start justify-between">
@@ -462,7 +465,7 @@ export function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-1 text-[26px] font-bold">Dashboard</div>
           <div className="text-sm text-muted-foreground">{summary.data?.churchName ?? <Skeleton className="h-4 w-40" />}</div>
@@ -474,18 +477,18 @@ export function DashboardPage() {
           <Button variant="outline" onClick={() => navigate('/app/contacts')}>
             <Users className="h-[15px] w-[15px]" /> Add {entity.plural}
           </Button>
-          <DateRangeFilter range={range} onChange={setRange} />
+          <DateRangeFilter range={range} onChange={setRange} compactOnMobile />
         </div>
       </div>
 
       {summary.isLoading ? (
-        <div className="mb-6 grid grid-cols-5 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-[126px] rounded-2xl" />
+            <Skeleton key={i} className={cn('h-[126px] rounded-2xl', i === 0 && 'col-span-2 sm:col-span-1')} />
           ))}
         </div>
       ) : (
-        <div className="mb-6 grid grid-cols-5 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
             icon={Plus}
             label="Wallet Balance"
@@ -494,6 +497,7 @@ export function DashboardPage() {
             onIconClick={() => navigate('/app/wallet')}
             iconTitle="Buy credit"
             sub='Credits left'
+            className="col-span-2 sm:col-span-1"
           />
           <StatCard icon={Users} label={`Total ${entity.pluralCap}`} value={summary.data?.contactsCount ?? 0} accent="blue" sub={'Over time'} />
           <StatCard icon={Send} label="Messages Sent" value={summary.data?.messagesSent ?? 0} sub={rangeLabel(range)} accent="violet" />
@@ -514,8 +518,8 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-3 gap-4">
-        <div className="col-span-2">
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <ActivityChartCard range={range} label={rangeLabel(range)} />
         </div>
         <SenderIdCard />
@@ -543,13 +547,13 @@ export function DashboardPage() {
         )}
         {activity.data?.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 last:border-b-0">
-            <div>
-              <div className="text-sm font-semibold">{item.preview}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold">{item.preview}</div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">
                 {item.group} · {new Date(item.date).toLocaleString()}
               </div>
             </div>
-            <div className="text-[13px] font-bold text-success">{item.deliveredText}</div>
+            <div className="shrink-0 text-[13px] font-bold text-success">{item.deliveredText}</div>
           </div>
         ))}
       </div>

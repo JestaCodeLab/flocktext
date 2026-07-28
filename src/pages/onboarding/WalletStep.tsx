@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
-import { CreditPackageGrid } from '@/components/wallet/CreditPackageGrid';
+import { CreditSlider } from '@/components/wallet/CreditSlider';
 import { fetchWallet, initializeTopup, verifyTopup } from '@/api/wallet';
 import { skipOnboardingStep } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
@@ -72,12 +72,7 @@ export function WalletStep() {
       </div>
 
       {wallet.data && (
-        <CreditPackageGrid
-          packages={wallet.data.packages}
-          onBuy={(ghs) => topup.mutate(ghs)}
-          buying={topup.isPending}
-          variant="compact"
-        />
+        <CreditSlider packages={wallet.data.packages} onBuy={(ghs) => topup.mutate(ghs)} buying={topup.isPending} />
       )}
 
       <Button

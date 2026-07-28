@@ -59,7 +59,7 @@ export function AccountSection() {
         tint="primary"
       >
         <div className="space-y-3.5">
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="settings-church-name">Organization name</Label>
               <Input id="settings-church-name" value={churchName} onChange={(e) => setChurchName(e.target.value)} />
@@ -81,7 +81,7 @@ export function AccountSection() {
 
       <SettingsCard icon={UserRound} title="Your details" description="Your personal name and email on this account." tint="blue">
         <div className="space-y-3.5">
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="settings-name">Full name</Label>
               <Input id="settings-name" value={name} onChange={(e) => setName(e.target.value)} />

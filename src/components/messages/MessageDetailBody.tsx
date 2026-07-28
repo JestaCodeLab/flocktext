@@ -123,7 +123,7 @@ function RecipientsPaginationControls({ page, total, onPageChange }: { page: num
   const end = Math.min(page * RECIPIENTS_PAGE_SIZE, total);
 
   return (
-    <div className="flex items-center justify-between border-t border-border px-3.5 py-2.5">
+    <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-3.5 py-2.5">
       <div className="text-xs text-muted-foreground">
         Showing {start}–{end} of {total}
       </div>
@@ -214,7 +214,7 @@ export function MessageDetailBody({
           <MessageCard detail={detail} />
         </div>
 
-        <div className="mb-0 flex items-end justify-between gap-3">
+        <div className="mb-0 flex flex-wrap items-end justify-between gap-3">
           <div className="text-[15px] font-semibold text-foreground/80">Showing ({detail.stats.total}) recipients</div>
           <Button size="sm" variant="outline" onClick={onExportCsv}>
             <Download className="h-[15px] w-[15px]" /> Export CSV

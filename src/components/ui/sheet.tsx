@@ -36,13 +36,20 @@ function SheetOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
   )
 }
 
+const sheetSideClass = {
+  right: "inset-y-0 right-0 max-w-sm border-l data-open:slide-in-from-right data-closed:slide-out-to-right",
+  left: "inset-y-0 left-0 max-w-sm border-r data-open:slide-in-from-left data-closed:slide-out-to-left",
+}
+
 function SheetContent({
   className,
   children,
   showCloseButton = true,
+  side = "right",
   ...props
 }: DialogPrimitive.Popup.Props & {
   showCloseButton?: boolean
+  side?: "left" | "right"
 }) {
   return (
     <SheetPortal>
@@ -50,7 +57,8 @@ function SheetContent({
       <DialogPrimitive.Popup
         data-slot="sheet-content"
         className={cn(
-          "fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-sm flex-col gap-4 border-l border-border bg-card p-5 text-sm text-card-foreground shadow-xl duration-200 outline-none data-open:animate-in data-open:slide-in-from-right data-open:fade-in-0 data-closed:animate-out data-closed:slide-out-to-right data-closed:fade-out-0",
+          "fixed z-50 flex h-full w-full flex-col gap-4 border-border bg-card p-5 text-sm text-card-foreground shadow-xl duration-200 outline-none data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+          sheetSideClass[side],
           className
         )}
         {...props}

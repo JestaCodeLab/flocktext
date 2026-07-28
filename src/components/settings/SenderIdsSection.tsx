@@ -69,8 +69,8 @@ export function SenderIdsSection() {
             <div className="divide-y divide-border">
               {senderIds.map((s) => (
                 <div key={s.id} className="py-4 first:pt-0 last:pb-0">
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <div className="text-[15px] font-bold">{s.senderId}</div>
                       {s.isPrimary && <Badge className='text-white'>Primary</Badge>}
                       <Badge className={senderIdStatusVariant[s.status] === 'default' ? 'text-white' : 'text-black'} variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
