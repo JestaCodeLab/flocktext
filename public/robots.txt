@@ -4,3 +4,5 @@ Allow: /
 Disallow: /app
 Disallow: /admin
 Disallow: /onboarding
+
+Sitemap: https://www.flocktext.com/sitemap.xml

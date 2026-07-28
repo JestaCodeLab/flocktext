@@ -62,7 +62,7 @@ export function ChurchesPage() {
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">For Churches</div>
-              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
                 SMS Platform for Churches in Ghana
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
@@ -95,7 +95,7 @@ export function ChurchesPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Built for ministries</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Every message that keeps your congregation connected
             </h2>
           </div>
@@ -126,7 +126,7 @@ export function ChurchesPage() {
             />
             <div className="lg:order-1">
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Why SMS works</div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
                 Reach members who may not check email or social media
               </h2>
               <p className="mt-5 text-base leading-relaxed text-muted-foreground">
@@ -151,7 +151,7 @@ export function ChurchesPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">FAQ</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Common Questions</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">Common Questions</h2>
           </div>
           <FaqList items={churchFaqs} />
         </div>
@@ -163,7 +163,7 @@ export function ChurchesPage() {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-6 px-5 py-14 text-center sm:px-8 lg:flex-row lg:text-left">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
+            <h2 className="text-2xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
               Connect with your congregation
             </h2>
             <p className="mt-2 max-w-xl text-base text-sidebar-foreground/60">

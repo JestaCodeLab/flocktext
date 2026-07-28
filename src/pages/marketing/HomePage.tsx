@@ -228,7 +228,7 @@ export function HomePage() {
         </div>
 
         <div className="px-5 pt-6 pb-20">
-          <h1 className="text-[28px] leading-[1.1] font-bold tracking-tight text-foreground">
+          <h1 className="text-[24px] leading-[1.1] font-bold tracking-tight text-foreground">
             Bulk SMS for
             <span className="block text-primary">Businesses & Churches</span> in Ghana
           </h1>
@@ -331,7 +331,7 @@ export function HomePage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Built for every business</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Flexible Solutions for Every Industry
             </h2>
           </div>
@@ -404,7 +404,7 @@ export function HomePage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Powerful features</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Everything you need to reach more people
             </h2>
           </div>
@@ -449,7 +449,7 @@ export function HomePage() {
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
           <div className="max-w-xl text-center sm:text-left lg:max-w-md xl:max-w-xl">
             <div className="mb-3 text-sm font-bold tracking-widest text-sidebar-primary uppercase">Mobile app</div>
-            <h2 className="text-4xl leading-[1.05] font-bold tracking-tight text-sidebar-foreground sm:text-5xl lg:text-4xl xl:text-6xl">
+            <h2 className="text-3xl leading-[1.05] font-bold tracking-tight text-sidebar-foreground sm:text-5xl lg:text-4xl xl:text-6xl">
               Manage Everything On The Go
             </h2>
             <p className="mx-auto mt-6 max-w-md text-lg leading-relaxed text-sidebar-foreground/70 sm:mx-0">
@@ -491,7 +491,7 @@ export function HomePage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Pricing</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Simple, pay-as-you-go pricing
             </h2>
             <p className="mt-4 text-xl text-muted-foreground">
@@ -521,7 +521,7 @@ export function HomePage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">What our customers say</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Loved by businesses, trusted for results
             </h2>
           </div>
@@ -548,7 +548,7 @@ export function HomePage() {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-6 px-5 py-14 text-center sm:px-8 lg:flex-row lg:text-left">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
+            <h2 className="text-2xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
               Start communicating better today
             </h2>
             <p className="mt-2 max-w-xl text-base text-sidebar-foreground/60">

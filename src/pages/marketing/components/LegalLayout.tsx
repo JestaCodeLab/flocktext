@@ -16,7 +16,7 @@ export function LegalLayout({ eyebrow = 'Legal', title, effectiveDate, subtitle,
       <div className="relative mx-auto w-full max-w-3xl px-5 pt-16 pb-24 sm:px-8 lg:pt-24">
         <div className="text-center">
           <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">{eyebrow}</div>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">{title}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">{title}</h1>
           {effectiveDate ? <p className="mt-4 text-base text-muted-foreground">Effective {effectiveDate}</p> : null}
           {subtitle ? <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">{subtitle}</p> : null}
         </div>
