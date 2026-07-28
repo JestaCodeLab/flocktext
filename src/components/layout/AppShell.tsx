@@ -39,6 +39,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { NotificationsSheet } from '@/components/layout/NotificationsSheet';
 import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
+import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
+import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import type { LucideIcon } from 'lucide-react';
 
 type NavItem =
@@ -285,6 +287,12 @@ export function AppShell() {
                   onClick={() => navigate('/app/settings', { state: { tab: 'security' } })}
                 >
                   <KeyRound className="h-4 w-4" /> Change Password
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"
+                  render={<a href={WHATSAPP_URL} target="_blank" rel="noreferrer" />}
+                >
+                  <WhatsAppIcon className="h-4 w-4" /> Quick Support
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="my-1.5" />
                 <DropdownMenuItem
