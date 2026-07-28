@@ -74,13 +74,13 @@ export function GroupDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Groups
       </Link>
 
-      <div className="mb-5 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2.5">
           {editing ? (
             <>
               <Input
                 autoFocus
-                className="h-auto w-64 py-1 text-[26px] font-extrabold"
+                className="h-auto w-40 py-1 text-[26px] font-extrabold sm:w-64"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -97,14 +97,14 @@ export function GroupDetailPage() {
             </>
           ) : (
             <>
-              <div className="text-[26px] font-extrabold">{detail.data?.name ?? '—'}</div>
-              <Button size="icon-sm" variant="ghost" onClick={startEditing}>
+              <div className="truncate text-[26px] font-extrabold">{detail.data?.name ?? '—'}</div>
+              <Button size="icon-sm" variant="ghost" className="shrink-0" onClick={startEditing}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>
             </>
           )}
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Button onClick={() => setShowAddContacts(true)}>
             <UserPlus className="h-[15px] w-[15px]" /> Add {entity.singular}
           </Button>

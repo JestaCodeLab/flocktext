@@ -373,7 +373,7 @@ function PaginationControls({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="mt-3 flex items-center justify-between">
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
       <div className="text-xs text-muted-foreground">
         Showing {start}–{end} of {total}
       </div>
@@ -500,9 +500,9 @@ export function ReportsPage() {
 
       {!isLoading && (
         <>
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex w-fit rounded-lg border border-border p-0.5">
-              
+
               <button
                 type="button"
                 onClick={() => setActiveTab('delivered')}
@@ -535,7 +535,7 @@ export function ReportsPage() {
               </button>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               <Button
                 size="sm"
                 variant="outline"

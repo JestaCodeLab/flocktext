@@ -31,14 +31,14 @@ export function ContactsPage() {
 
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[26px] font-bold">{entity.pluralCap}</div>
           <div className="mt-0.5 text-sm text-muted-foreground">
             Showing {contacts.data?.length ?? 0} {entity.plural}
           </div>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <Button variant={"outline"} onClick={() => setShowImport(true)}>
             <Upload className="h-[15px] w-[15px]" /> Import
           </Button>
@@ -57,8 +57,8 @@ export function ContactsPage() {
         }}
       />
 
-      <div className="mb-4 flex items-center gap-2.5">
-        <div className="relative flex-1">
+      <div className="mb-4 flex flex-wrap items-center gap-2.5">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name or number…"

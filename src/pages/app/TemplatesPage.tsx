@@ -72,12 +72,12 @@ export function TemplatesPage() {
 
   return (
     <div>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="text-[26px] font-bold">Templates</div>
           <div className="mt-0.5 text-sm text-muted-foreground">Pre-built and custom message templates.</div>
         </div>
-        <Button onClick={openCreate}>
+        <Button className="self-start sm:self-auto" onClick={openCreate}>
           <Plus className="h-[15px] w-[15px]" /> New template
         </Button>
       </div>
@@ -140,7 +140,7 @@ export function TemplatesPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
         {templates.isLoading &&
           Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-[164px] rounded-xl" />)}
         {templates.data?.map((t) => (

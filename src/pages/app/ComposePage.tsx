@@ -221,7 +221,7 @@ export function ComposePage() {
         <div className="text-sm text-muted-foreground">Compose and deliver messages to your {entity.plural}.</div>
       </div>
 
-      <div className="mb-6 flex gap-2">
+      <div className="mb-6 flex flex-wrap gap-2">
         <button
           type="button"
           onClick={() => setScheduleMode('now')}
@@ -254,10 +254,10 @@ export function ComposePage() {
         </button>
       </div>
 
-      <div className="flex items-start gap-6">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col items-start gap-6 lg:flex-row">
+        <div className="min-w-0 w-full flex-1">
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
-            <div className="mb-3.5 flex items-center justify-between">
+            <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
               <div className="text-[15px] font-medium text-foreground/80">Send To</div>
               <div className="flex rounded-lg border border-border p-0.5">
                 <button
@@ -414,7 +414,7 @@ export function ComposePage() {
 
             {scheduleMode === 'recurring' && (
               <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="recurring-freq">Frequency</Label>
                     <select
@@ -509,7 +509,7 @@ export function ComposePage() {
           </div>
         </div>
 
-        <div className="w-[340px] shrink-0">
+        <div className="w-full shrink-0 lg:w-[340px]">
           <div className="mb-4 rounded-2xl bg-foreground dark:bg-foreground/10 p-5.5">
             <div className="mb-3.5 text-xs font-bold uppercase tracking-wide text-white/50">Preview</div>
             <div className="overflow-hidden rounded-xl bg-secondary">

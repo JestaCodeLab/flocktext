@@ -32,7 +32,7 @@ export function SettingsCard({
 }) {
   return (
     <div className={cn('rounded-2xl border border-border bg-card p-6', className)}>
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3.5">
           <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl', TINT_CLASS[tint])}>
             <Icon className="h-5 w-5" />

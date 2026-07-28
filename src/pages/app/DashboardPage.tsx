@@ -462,7 +462,7 @@ export function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-1 text-[26px] font-bold">Dashboard</div>
           <div className="text-sm text-muted-foreground">{summary.data?.churchName ?? <Skeleton className="h-4 w-40" />}</div>
@@ -479,13 +479,13 @@ export function DashboardPage() {
       </div>
 
       {summary.isLoading ? (
-        <div className="mb-6 grid grid-cols-5 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-[126px] rounded-2xl" />
           ))}
         </div>
       ) : (
-        <div className="mb-6 grid grid-cols-5 gap-4">
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
             icon={Plus}
             label="Wallet Balance"
@@ -514,8 +514,8 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-3 gap-4">
-        <div className="col-span-2">
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <ActivityChartCard range={range} label={rangeLabel(range)} />
         </div>
         <SenderIdCard />
@@ -543,13 +543,13 @@ export function DashboardPage() {
         )}
         {activity.data?.map((item) => (
           <div key={item.id} className="flex items-center justify-between gap-3 border-b border-border px-5 py-3.5 last:border-b-0">
-            <div>
-              <div className="text-sm font-semibold">{item.preview}</div>
-              <div className="mt-0.5 text-xs text-muted-foreground">
+            <div className="min-w-0">
+              <div className="truncate text-sm font-semibold">{item.preview}</div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">
                 {item.group} · {new Date(item.date).toLocaleString()}
               </div>
             </div>
-            <div className="text-[13px] font-bold text-success">{item.deliveredText}</div>
+            <div className="shrink-0 text-[13px] font-bold text-success">{item.deliveredText}</div>
           </div>
         ))}
       </div>
