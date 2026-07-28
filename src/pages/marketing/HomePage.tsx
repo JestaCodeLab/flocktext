@@ -228,9 +228,9 @@ export function HomePage() {
         </div>
 
         <div className="px-5 pt-6 pb-20">
-          <h1 className="text-[34px] leading-[1.1] font-bold tracking-tight text-foreground">
-            Bulk SMS For
-            <span className="block text-primary">Businesses & Churches</span> In Ghana
+          <h1 className="text-[28px] leading-[1.1] font-bold tracking-tight text-foreground">
+            Bulk SMS for
+            <span className="block text-primary">Businesses & Churches</span> in Ghana
           </h1>
 
           <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
