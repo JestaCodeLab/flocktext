@@ -9,6 +9,7 @@ import {
   MessageSquareText,
   Pencil,
   Rocket,
+  RotateCcw,
   Send,
   Trash2,
   UserPlus,
@@ -32,6 +33,7 @@ import { AdminAddUserDialog } from '@/components/admin/AdminAddUserDialog';
 import { EditOrgUserDialog } from '@/components/admin/EditOrgUserDialog';
 import { DeleteOrgUserDialog } from '@/components/admin/DeleteOrgUserDialog';
 import { DeleteOrganizationDialog } from '@/components/admin/DeleteOrganizationDialog';
+import { DeleteSenderIdPermanentlyDialog } from '@/components/admin/DeleteSenderIdPermanentlyDialog';
 import { SendOrgSmsDialog } from '@/components/admin/SendOrgSmsDialog';
 import { OrgProgressTimeline, type OrgProgressStep } from '@/components/admin/OrgProgressTimeline';
 import {
@@ -43,7 +45,15 @@ import {
   deleteOrganization,
   deleteOrganizationUser,
 } from '@/api/adminOrganizations';
-import { registerSenderId, approveSenderId, rejectSenderId, editSenderId, checkBmsStatus } from '@/api/adminSenderIds';
+import {
+  registerSenderId,
+  approveSenderId,
+  rejectSenderId,
+  editSenderId,
+  checkBmsStatus,
+  restoreSenderId,
+  permanentlyDeleteSenderId,
+} from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
@@ -87,6 +97,7 @@ export function AdminOrganizationDetailPage() {
   const [walletCredits, setWalletCredits] = useState('');
   const [walletReason, setWalletReason] = useState('');
   const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<AdminSenderId | null>(null);
   const [editTarget, setEditTarget] = useState<EditSenderIdTarget | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [editUserTarget, setEditUserTarget] = useState<AdminOrgUser | null>(null);
@@ -183,6 +194,25 @@ export function AdminOrganizationDetailPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const restore = useMutation({
+    mutationFn: (senderIdId: string) => restoreSenderId(id!, senderIdId),
+    onSuccess: () => {
+      toast.success('Sender ID restored — the organization can send with it again.');
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const permanentlyDelete = useMutation({
+    mutationFn: () => permanentlyDeleteSenderId(id!, permanentDeleteTarget!.id),
+    onSuccess: () => {
+      toast.success('Sender ID permanently deleted.');
+      setPermanentDeleteTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const removeUser = useMutation({
     mutationFn: () => deleteOrganizationUser(id!, deleteUserTarget!.id),
     onSuccess: () => {
@@ -254,6 +284,15 @@ export function AdminOrganizationDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            title="Refresh"
+            disabled={detail.isFetching}
+            onClick={() => detail.refetch()}
+          >
+            <RefreshCw className={`h-4 w-4 ${detail.isFetching ? 'animate-spin' : ''}`} />
+          </Button>
           <Button variant="outline" onClick={() => setShowSendSms(true)}>
             <MessageSquareText className="h-4 w-4" /> Send SMS
           </Button>
@@ -411,6 +450,16 @@ export function AdminOrganizationDetailPage() {
                       </Button>
                     </div>
                   )}
+                  {s.status === 'deleted' && (
+                    <div className="flex items-center gap-1.5">
+                      <Button size="sm" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
+                        <RotateCcw className="h-3.5 w-3.5" /> Restore
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => setPermanentDeleteTarget(s)}>
+                        <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+                      </Button>
+                    </div>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -504,6 +553,12 @@ export function AdminOrganizationDetailPage() {
         onOpenChange={(open) => !open && setRejectTarget(null)}
         onConfirm={(reason) => reject.mutate(reason)}
         isPending={reject.isPending}
+      />
+      <DeleteSenderIdPermanentlyDialog
+        target={permanentDeleteTarget}
+        onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}
+        onConfirm={() => permanentlyDelete.mutate()}
+        isPending={permanentlyDelete.isPending}
       />
       <AdminAddUserDialog orgId={id!} open={showAddUser} onOpenChange={setShowAddUser} />
       <EditOrgUserDialog orgId={id!} target={editUserTarget} onOpenChange={(open) => !open && setEditUserTarget(null)} />

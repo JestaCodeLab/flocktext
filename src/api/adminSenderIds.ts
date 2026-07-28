@@ -48,3 +48,15 @@ export async function checkBmsStatus(orgId: string, senderIdId: string) {
   const { data } = await adminApi.post<{ bmsStatus: string }>(`/admin/sender-ids/${orgId}/${senderIdId}/check-bms`);
   return data;
 }
+
+// Only allowed while the request is "deleted" - restores straight to "approved".
+export async function restoreSenderId(orgId: string, senderIdId: string) {
+  const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/restore`);
+  return data;
+}
+
+// Only allowed while the request is "deleted" - removes the record outright.
+export async function permanentlyDeleteSenderId(orgId: string, senderIdId: string) {
+  const { data } = await adminApi.delete<{ deleted: boolean }>(`/admin/sender-ids/${orgId}/${senderIdId}`);
+  return data;
+}
