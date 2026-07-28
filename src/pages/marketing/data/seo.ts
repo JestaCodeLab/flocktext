@@ -47,4 +47,20 @@ export const routeSeo: Record<string, RouteSeo> = {
     imageWidth: 1734,
     imageHeight: 907,
   },
+  '/businesses': {
+    title: 'FlockText | Bulk SMS for Businesses — SMS Marketing Ghana',
+    description:
+      'Business text messaging for retail, restaurants, salons, clinics, SMEs, and real estate in Ghana. Send promotions, order updates, and appointment reminders customers actually open. Pay-as-you-go.',
+    image: '/og/og-home.png',
+    imageWidth: 1734,
+    imageHeight: 907,
+  },
+  '/churches': {
+    title: 'FlockText | SMS Software for Churches & Congregations in Ghana',
+    description:
+      'Stay connected with your congregation between Sundays. Service reminders, event announcements, and automated birthday texts.',
+    image: '/og/og-home.png',
+    imageWidth: 1734,
+    imageHeight: 907,
+  },
 };

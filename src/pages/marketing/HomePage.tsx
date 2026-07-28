@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Users,
@@ -8,33 +8,35 @@ import {
   Send,
   Stethoscope,
   Church,
-  Briefcase,
+  ShoppingBag,
   UtensilsCrossed,
   CircleCheck,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   Quote,
   Download,
   CalendarClock,
   Gift,
   UserPlus,
+  Scissors,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
+import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator';
 import { APP_STORE_URL, PLAY_STORE_URL } from '@/pages/marketing/data/contact';
 import { routeSeo } from '@/pages/marketing/data/seo';
 import heroImage from '@/assets/images/flocktext_home_banner.png';
 import churchImage from '@/assets/images/church.png';
 import healthcareImage from '@/assets/images/healthcare.png';
-import businessImage from '@/assets/images/business.png';
 import restaurantImage from '@/assets/images/restaurant.png';
 import handPhoneImage from '@/assets/images/phone.png';
 import pastorsImage from '@/assets/images/pastors.png';
-import shopsImage from '@/assets/images/shops.png';
+import shopsImage from '@/assets/images/retail-depot.png';
+import fashionImage from '@/assets/images/fashion.png';
 import appStoreBadge from '@/assets/images/Appstore-download.webp';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
-
-const trustPoints = ['No credit card required', 'Instant delivery', '99%+ delivery rate'];
 
 const heroSlides = [
   { image: heroImage, caption: 'Delivered to 2,481 contacts', focus: 'object-[60%_20%]' },
@@ -102,37 +104,41 @@ const appHighlights = [
   'Get notified the moment a campaign finishes sending',
 ];
 
-const steps = [
-  { icon: Users, step: 1, title: 'Add Contacts', description: 'Upload your contacts or import from existing lists.' },
-  { icon: FileText, step: 2, title: 'Create Message', description: 'Type your message and personalize it.' },
-  { icon: Send, step: 3, title: 'Send', description: 'Choose your recipients and hit send.' },
-  { icon: BarChart3, step: 4, title: 'Track Results', description: 'View delivery reports and measure performance.' },
-];
-
 const industries = [
   {
     icon: Church,
     title: 'Churches',
     description: 'Sunday reminders, event announcements, and congregation updates.',
     image: churchImage,
+    link: '/churches',
   },
   {
-    icon: Stethoscope,
-    title: 'Healthcare',
-    description: 'Appointment reminders, health tips, and patient engagement.',
-    image: healthcareImage,
+    icon: Scissors,
+    title: 'Fashion & Lifestyle',
+    description: 'Promote new collections, seasonal sales, and exclusive offers to your audience.',
+    image: fashionImage,
+    link: '/businesses',
   },
   {
-    icon: Briefcase,
-    title: 'Business',
-    description: 'Promotions, customer updates, and team announcements.',
-    image: businessImage,
+    icon: ShoppingBag,
+    title: 'Retail & E-commerce',
+    description: 'Flash sales, restock alerts, and loyalty offers sent straight to customers.',
+    image: shopsImage,
+    link: '/businesses',
   },
   {
     icon: UtensilsCrossed,
     title: 'Restaurants',
     description: 'Daily specials, order updates, and customer promotions.',
     image: restaurantImage,
+    link: '/businesses',
+  },
+  {
+    icon: Stethoscope,
+    title: 'Healthcare',
+    description: 'Appointment reminders, health tips, and patient engagement.',
+    image: healthcareImage,
+    link: '/businesses',
   },
 ];
 
@@ -157,11 +163,20 @@ const testimonials = [
 
 export function HomePage() {
   const [heroSlide, setHeroSlide] = useState(0);
+  const industriesTrackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = setInterval(() => setHeroSlide((i) => (i + 1) % heroSlides.length), 6000);
     return () => clearInterval(id);
   }, []);
+
+  function scrollIndustries(direction: 1 | -1) {
+    const track = industriesTrackRef.current;
+    const card = track?.firstElementChild as HTMLElement | null;
+    if (!track || !card) return;
+    const gap = parseFloat(getComputedStyle(track).columnGap || '0');
+    track.scrollBy({ left: (card.offsetWidth + gap) * direction, behavior: 'smooth' });
+  }
 
   return (
     <>
@@ -214,8 +229,8 @@ export function HomePage() {
 
         <div className="px-5 pt-6 pb-20">
           <h1 className="text-[34px] leading-[1.1] font-bold tracking-tight text-foreground">
-            Business Communication
-            <span className="block text-primary">Made Simple</span>
+            Bulk SMS For
+            <span className="block text-primary">Businesses & Churches</span> In Ghana
           </h1>
 
           <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
@@ -258,16 +273,14 @@ export function HomePage() {
 
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
           <div className="max-w-xl lg:max-w-lg">
-            <h1 className="text-[52px] leading-[1] font-bold tracking-tight text-foreground lg:text-[62px]">
-              Business
-              <br />
-              Communication
-              <br />
-              <span className="text-primary">Made Simple</span>
+            <h1 className="text-[48px] leading-[1] font-bold tracking-tight text-foreground lg:text-[52px]">
+              Bulk SMS for 
+              <span className="text-primary"> Businesses & Churches </span> 
+              in Ghana
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Send bulk SMS, manage contacts, and engage your audience effectively with FlockText.
+              Reach every customer or member instantly, manage contacts, and engage your audience effectively with FlockText.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -285,14 +298,14 @@ export function HomePage() {
               </Button>
             </div>
 
-            <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
+            {/* <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2">
               {trustPoints.map((point) => (
                 <div key={point} className="flex items-center gap-2 text-base text-foreground/80">
                   <CircleCheck className="size-4 text-success" />
                   {point}
                 </div>
               ))}
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
@@ -317,31 +330,71 @@ export function HomePage() {
       <section id="industries" className="border-t border-border bg-card/60">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Built for every industry</div>
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Built for every business</div>
             <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              One platform. Many possibilities.
+              Flexible Solutions for Every Industry
             </h2>
           </div>
 
-          <div className="no-scrollbar -mx-5 mt-14 flex snap-x snap-mandatory gap-5 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-            {industries.map((industry) => (
-              <div
-                key={industry.title}
-                className="w-[78%] shrink-0 snap-center overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5 sm:w-auto sm:shrink sm:snap-align-none"
-              >
-                <img
-                  src={industry.image}
-                  alt=""
-                  width={1536}
-                  height={1024}
-                  className="aspect-[4/3] w-full object-cover"
-                />
-                <div className="p-5">
-                  <div className="text-lg font-bold text-foreground">{industry.title}</div>
-                  <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{industry.description}</p>
-                </div>
-              </div>
-            ))}
+          <div className="relative mt-14">
+            <div
+              ref={industriesTrackRef}
+              className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-2"
+            >
+              {industries.map((industry) => {
+                const content = (
+                  <>
+                    <img
+                      src={industry.image}
+                      alt=""
+                      width={1536}
+                      height={1024}
+                      className="aspect-[4/3] w-full object-cover"
+                    />
+                    <div className="p-5">
+                      <div className="text-lg font-bold text-foreground">{industry.title}</div>
+                      <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{industry.description}</p>
+                      {industry.link ? (
+                        <div className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-primary">
+                          Learn more
+                          <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
+                        </div>
+                      ) : null}
+                    </div>
+                  </>
+                );
+
+                const cardClassName =
+                  'group w-[78%] shrink-0 snap-start overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/5 sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]';
+
+                return industry.link ? (
+                  <Link key={industry.title} to={industry.link} className={cardClassName}>
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={industry.title} className={cardClassName}>
+                    {content}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              type="button"
+              aria-label="Previous"
+              onClick={() => scrollIndustries(-1)}
+              className="absolute top-1/2 -left-4 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-card text-foreground shadow-md ring-1 ring-foreground/10 transition-colors hover:bg-secondary sm:flex"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next"
+              onClick={() => scrollIndustries(1)}
+              className="absolute top-1/2 -right-4 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-card text-foreground shadow-md ring-1 ring-foreground/10 transition-colors hover:bg-secondary sm:flex"
+            >
+              <ChevronRight className="size-5" />
+            </button>
           </div>
         </div>
       </section>
@@ -415,10 +468,10 @@ export function HomePage() {
 
             <div className="mt-9 -mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
               <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
-                <img src={appStoreBadge} alt="Download on the App Store" className="h-16 w-auto lg:h-20 lg:-ml-3 sm:-ml-3" />
+                <img src={appStoreBadge} alt="Download on the App Store" className="h-16 w-auto lg:h-20" />
               </a>
               <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
-                <img src={playStoreBadge} alt="Get it on Google Play" className="h-16 w-auto lg:h-20 lg:-ml-6 sm:-ml-3" />
+                <img src={playStoreBadge} alt="Get it on Google Play" className="h-16 w-auto lg:h-20 " />
               </a>
             </div>
           </div>
@@ -429,36 +482,6 @@ export function HomePage() {
               alt="Hand holding a phone showing the FlockText create account screen"
               className="w-[112%] translate-y-20 max-w-none object-contain sm:w-auto sm:max-w-sm"
             />
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="hidden sm:block">
-        <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">How it works</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-              Send your message in 4 simple steps
-            </h2>
-          </div>
-
-          <div className="mx-auto mt-14 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {steps.map((item, i) => (
-              <div key={item.title} className="relative text-center">
-                {i < steps.length - 1 ? (
-                  <div className="absolute top-8 left-1/2 hidden h-px w-full border-t border-dashed border-border lg:block" />
-                ) : null}
-                <div className="relative mx-auto flex size-16 items-center justify-center rounded-full bg-primary/10">
-                  <item.icon className="size-6 text-primary" />
-                  <span className="absolute -bottom-1 -right-1 flex size-6 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
-                    {item.step}
-                  </span>
-                </div>
-                <div className="mt-4 text-lg font-bold text-foreground">{item.title}</div>
-                <p className="mt-1.5 text-base leading-relaxed text-muted-foreground">{item.description}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -476,7 +499,11 @@ export function HomePage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-14 max-w-6xl">
+          <div className="mt-10 md:hidden">
+            <CreditCalculator />
+          </div>
+
+          <div className="mx-auto mt-14 hidden max-w-6xl md:block">
             <PackageGrid />
           </div>
 

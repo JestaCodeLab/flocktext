@@ -18,11 +18,9 @@ import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
 
 const navLinks = [{ to: '/pricing', label: 'Pricing', end: false }];
 
-// Sections live on the homepage only — plain anchor links, not routes, so no NavLink active-state.
-const anchorLinks = [
-  { to: '/#features', label: 'Features' },
-  { to: '/#download-app', label: 'Download App' },
-];
+// "Download App" scrolls to a section on the homepage only, not a route — a
+// plain anchor link, so no NavLink active-state.
+const downloadAppLink = { to: '/#download-app', label: 'Download App' };
 
 function Logo({ dark = false }: { dark?: boolean }) {
   return (
@@ -38,7 +36,7 @@ export function MarketingLayout() {
   const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
   const location = useLocation();
 
-  // Features/Download App are anchors within the homepage, not routes — scroll to them on navigation.
+  // Download App is an anchor within the homepage, not a route — scroll to it on navigation.
   // Route changes without a hash (e.g. Home -> Pricing) don't reset scroll position on their own, so scroll to top instead.
   useEffect(() => {
     if (!location.hash) {
@@ -72,18 +70,26 @@ export function MarketingLayout() {
           <Logo />
 
           <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-border/70 bg-card/80 p-1 md:flex">
-            <Link
-              to={anchorLinks[0].to}
-              className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              {anchorLinks[0].label}
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex cursor-pointer items-center gap-1 rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground aria-expanded:text-foreground">
+                Solutions
+                <ChevronDown className="size-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" sideOffset={10} className="min-w-44 rounded-xl p-1.5">
+                <DropdownMenuItem className="cursor-pointer rounded-lg px-2.5 py-2" render={<Link to="/businesses" />}>
+                  <span className="text-sm font-medium">For Businesses</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer rounded-lg px-2.5 py-2" render={<Link to="/churches" />}>
+                  <span className="text-sm font-medium">For Churches</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Link
-              to={anchorLinks[1].to}
+              to={downloadAppLink.to}
               className="rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              {anchorLinks[1].label}
+              {downloadAppLink.label}
             </Link>
 
             {navLinks.map((link) => (
@@ -105,13 +111,13 @@ export function MarketingLayout() {
             ))}
 
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground aria-expanded:text-foreground">
+              <DropdownMenuTrigger className="flex cursor-pointer items-center gap-1 rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground aria-expanded:text-foreground">
                 Contact
                 <ChevronDown className="size-3.5" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="center" sideOffset={10} className="min-w-44 rounded-xl p-1.5">
                 <DropdownMenuItem
-                  className="gap-2.5 rounded-lg px-2.5 py-2"
+                  className="cursor-pointer gap-2.5 rounded-lg px-2.5 py-2"
                   render={<a href={`mailto:${SUPPORT_EMAIL}`} />}
                 >
                   <Mail className="size-4 text-primary" />
@@ -121,7 +127,7 @@ export function MarketingLayout() {
                   </span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  className="gap-2.5 rounded-lg px-2.5 py-2"
+                  className="cursor-pointer gap-2.5 rounded-lg px-2.5 py-2"
                   render={<a href={WHATSAPP_URL} target="_blank" rel="noreferrer" />}
                 >
                   <WhatsAppIcon className="size-4 text-success" />
@@ -170,20 +176,38 @@ export function MarketingLayout() {
           )}
         >
           <nav className="mx-auto flex w-full max-w-7xl flex-col px-5 py-3 sm:px-8">
-            <Link
-              to={anchorLinks[0].to}
+            <NavLink
+              to="/businesses"
               onClick={() => setMenuOpen(false)}
-              className="rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium text-muted-foreground"
+              className={({ isActive }) =>
+                cn(
+                  'rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium',
+                  isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                )
+              }
             >
-              {anchorLinks[0].label}
-            </Link>
+              For Businesses
+            </NavLink>
+
+            <NavLink
+              to="/churches"
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) =>
+                cn(
+                  'rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium',
+                  isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                )
+              }
+            >
+              For Churches
+            </NavLink>
 
             <Link
-              to={anchorLinks[1].to}
+              to={downloadAppLink.to}
               onClick={() => setMenuOpen(false)}
               className="rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium text-muted-foreground"
             >
-              {anchorLinks[1].label}
+              {downloadAppLink.label}
             </Link>
 
             {navLinks.map((link) => (
@@ -239,10 +263,10 @@ export function MarketingLayout() {
       </main>
 
       <footer className="bg-sidebar text-sidebar-foreground">
-        <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[1.6fr_1fr_1fr]">
+        <div className="mx-auto grid w-full max-w-7xl gap-10 px-5 py-14 sm:px-8 md:grid-cols-[2fr_1fr_1fr_1fr]">
           <div className="space-y-4">
             <Logo dark />
-            <p className="max-w-sm text-sm leading-relaxed text-sidebar-foreground/60">
+            <p className=" mt-3 max-w-sm text-sm leading-relaxed text-sidebar-foreground/60">
               Bulk SMS for businesses, churches, and institutions — reach everyone you serve, automate birthdays, and
               keep every group in sync.
             </p>
@@ -259,6 +283,18 @@ export function MarketingLayout() {
               </Link>
               <Link to="/signup" className="w-fit transition-colors hover:text-sidebar-foreground">
                 Get started
+              </Link>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="text-xs font-bold tracking-wider text-sidebar-primary uppercase">Solutions</div>
+            <div className="flex flex-col gap-2.5 text-sm text-sidebar-foreground/70">
+              <Link to="/businesses" className="w-fit transition-colors hover:text-sidebar-foreground">
+                For Businesses
+              </Link>
+              <Link to="/churches" className="w-fit transition-colors hover:text-sidebar-foreground">
+                For Churches
               </Link>
             </div>
           </div>

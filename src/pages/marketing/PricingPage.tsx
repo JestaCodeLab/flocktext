@@ -3,6 +3,7 @@ import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { Button } from '@/components/ui/button';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
+import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator';
 import { routeSeo } from '@/pages/marketing/data/seo';
 
 const includedFeatures = [
@@ -36,7 +37,11 @@ export function PricingPage() {
             </p>
           </div>
 
-          <div className="mx-auto mt-14 max-w-6xl">
+          <div className="mt-10 md:hidden">
+            <CreditCalculator />
+          </div>
+
+          <div className="mx-auto mt-14 hidden max-w-6xl md:block">
             <PackageGrid />
           </div>
 
