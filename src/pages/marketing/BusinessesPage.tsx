@@ -121,10 +121,10 @@ export function BusinessesPage() {
           <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
             <div>
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">For Businesses</div>
-              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
                 Bulk SMS Platform for Ghanaian Businesses
               </h1>
-              <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
                 Turn one-time buyers into repeat customers with SMS marketing in Ghana. FlockText helps SMEs send
                 promotions, order updates, and appointment reminders that customers actually open — SMS has open
                 rates text and email marketing can't match.
@@ -154,7 +154,7 @@ export function BusinessesPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Every industry</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Built for every kind of business in Ghana
             </h2>
           </div>
@@ -202,7 +202,7 @@ export function BusinessesPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Built for SMEs</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Every message that keeps customers coming back
             </h2>
           </div>
@@ -233,7 +233,7 @@ export function BusinessesPage() {
             />
             <div>
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Why SMS works</div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-4xl">
                 Reach customers who don't check email or social media
               </h2>
               <p className="mt-5 text-base leading-relaxed text-muted-foreground">
@@ -258,7 +258,7 @@ export function BusinessesPage() {
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">FAQ</div>
-            <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Common Questions</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">Common Questions</h2>
           </div>
           <FaqList items={businessFaqs} />
         </div>
@@ -270,7 +270,7 @@ export function BusinessesPage() {
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-6 px-5 py-14 text-center sm:px-8 lg:flex-row lg:text-left">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
+            <h2 className="text-2xl font-bold tracking-tight text-sidebar-foreground sm:text-4xl">
               Grow your business with SMS
             </h2>
             <p className="mt-2 max-w-xl text-base text-sidebar-foreground/60">

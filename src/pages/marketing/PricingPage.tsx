@@ -28,7 +28,7 @@ export function PricingPage() {
         <div className="relative mx-auto w-full max-w-7xl px-5 pt-16 pb-20 sm:px-8 lg:pt-24 lg:pb-24">
           <div className="mx-auto max-w-2xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Pricing</div>
-            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Simple, pay-as-you-go pricing
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
