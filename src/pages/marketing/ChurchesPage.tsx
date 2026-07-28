@@ -65,7 +65,7 @@ export function ChurchesPage() {
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
                 SMS Platform for Churches in Ghana
               </h1>
-              <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
                 Stay connected with your congregation between Sundays. FlockText helps churches, ministries, and
                 religious organizations in Ghana send service reminders, event announcements, and encouragement
                 texts — reaching members who may not check email or social media.

@@ -124,7 +124,7 @@ export function BusinessesPage() {
               <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
                 Bulk SMS Platform for Ghanaian Businesses
               </h1>
-              <p className="mt-6 max-w-lg text-lg leading-relaxed text-muted-foreground">
+              <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
                 Turn one-time buyers into repeat customers with SMS marketing in Ghana. FlockText helps SMEs send
                 promotions, order updates, and appointment reminders that customers actually open — SMS has open
                 rates text and email marketing can't match.
