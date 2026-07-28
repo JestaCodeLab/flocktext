@@ -201,9 +201,9 @@ export function AppShell() {
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent
           side="left"
-          className="w-[236px] max-w-[80vw] gap-0 border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground"
+          className="w-[236px] max-w-[80vw] flex-col gap-0 overflow-y-auto border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground"
         >
-          <div className="mb-7 px-2">
+          <div className="mb-7 shrink-0 px-2">
             <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-8 w-auto" />
           </div>
           {navContent}
@@ -222,7 +222,7 @@ export function AppShell() {
 
           <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto sm:gap-2.5">
             {senderId ? (
-              <div className="flex shrink-0 items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-success">
+              <div className="hidden shrink-0 items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-success sm:flex">
                 <span className="h-1.5 w-1.5 rounded-full bg-current" />
                 {senderId.senderId}
               </div>
@@ -230,7 +230,7 @@ export function AppShell() {
               <Link
                 to="/app/settings"
                 state={{ tab: 'sender-ids' }}
-                className="flex shrink-0 items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-bold whitespace-nowrap text-muted-foreground hover:text-foreground"
+                className="hidden shrink-0 items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-bold whitespace-nowrap text-muted-foreground hover:text-foreground sm:flex"
               >
                 <BadgeCheck className="h-3.5 w-3.5" /> No Sender ID
               </Link>
@@ -238,7 +238,7 @@ export function AppShell() {
 
             <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-bold whitespace-nowrap">
               <Wallet className="h-[15px] w-[15px] text-primary" />
-              {organization.walletBalanceCredits.toLocaleString()} <span className="hidden sm:inline">Credits</span>
+              {organization.walletBalanceCredits.toLocaleString()} credits
             </div>
           </div>
 

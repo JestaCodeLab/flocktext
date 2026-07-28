@@ -88,12 +88,16 @@ export function DateRangeFilter({
   includeAllTime = false,
   size = 'default',
   className,
+  compactOnMobile = false,
 }: {
   range: DateRangeParams;
   onChange: (range: DateRangeParams) => void;
   includeAllTime?: boolean;
   size?: 'default' | 'sm';
   className?: string;
+  /** Shrinks the trigger to icon-only below sm, so it doesn't crowd out
+   * neighboring controls on narrow screens - full label returns at sm+. */
+  compactOnMobile?: boolean;
 }) {
   const [showCustom, setShowCustom] = useState(false);
 
@@ -102,9 +106,14 @@ export function DateRangeFilter({
       <DropdownMenu>
         <DropdownMenuTrigger
           render={
-            <Button variant="outline" size={size} className={cn('bg-white', className)}>
-              <CalendarRange className="h-[15px] w-[15px]" /> {rangeLabel(range)}
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <Button
+              variant="outline"
+              size={size}
+              className={cn('bg-white', compactOnMobile && 'px-2.5 sm:px-3', className)}
+            >
+              <CalendarRange className="h-[15px] w-[15px]" />
+              <span className={cn(compactOnMobile && 'hidden sm:inline')}>{rangeLabel(range)}</span>
+              <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground', compactOnMobile && 'hidden sm:block')} />
             </Button>
           }
         />

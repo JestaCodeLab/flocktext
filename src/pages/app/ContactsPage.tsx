@@ -38,12 +38,19 @@ export function ContactsPage() {
             Showing {contacts.data?.length ?? 0} {entity.plural}
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2.5">
-          <Button variant={"outline"} onClick={() => setShowImport(true)}>
-            <Upload className="h-[15px] w-[15px]" /> Import
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <Button
+            variant={"outline"}
+            className="gap-1 px-2.5 py-1.5 text-xs sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
+            onClick={() => setShowImport(true)}
+          >
+            <Upload className="h-3.5 w-3.5 sm:h-[15px] sm:w-[15px]" /> Import
           </Button>
-          <Button onClick={() => setShowAdd((v) => !v)}>
-            <UserPlus className="h-[15px] w-[15px]" /> Add {entity.singular}
+          <Button
+            className="gap-1 px-2.5 py-1.5 text-xs sm:gap-1.5 sm:px-4 sm:py-2 sm:text-sm"
+            onClick={() => setShowAdd((v) => !v)}
+          >
+            <UserPlus className="h-3.5 w-3.5 sm:h-[15px] sm:w-[15px]" /> Add {entity.singular}
           </Button>
         </div>
       </div>
@@ -57,8 +64,8 @@ export function ContactsPage() {
         }}
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2.5">
-        <div className="relative min-w-[200px] flex-1">
+      <div className="mb-4 flex items-center gap-1.5 sm:flex-wrap sm:gap-2.5">
+        <div className="relative min-w-0 flex-1 sm:min-w-[200px]">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name or number…"
@@ -70,19 +77,20 @@ export function ContactsPage() {
             }}
           />
         </div>
-        <Button variant="outline" onClick={() => setSearch(searchInput)}>
-          <Search className="h-[15px] w-[15px]" /> Search
+        <Button variant="outline" className="shrink-0 px-2.5 sm:px-4" onClick={() => setSearch(searchInput)}>
+          <Search className="h-[15px] w-[15px]" /> <span className="hidden sm:inline">Search</span>
         </Button>
-        <DateRangeFilter range={range} onChange={setRange} includeAllTime />
+        <DateRangeFilter range={range} onChange={setRange} includeAllTime compactOnMobile />
         {search && (
           <Button
             variant="ghost"
+            className="shrink-0 px-2.5 sm:px-4"
             onClick={() => {
               setSearch('');
               setSearchInput('');
             }}
           >
-            <X className="h-[15px] w-[15px]" /> Reset
+            <X className="h-[15px] w-[15px]" /> <span className="hidden sm:inline">Reset</span>
           </Button>
         )}
       </div>

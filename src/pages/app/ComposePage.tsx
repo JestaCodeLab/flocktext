@@ -226,31 +226,31 @@ export function ComposePage() {
           type="button"
           onClick={() => setScheduleMode('now')}
           className={cn(
-            'flex items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors',
+            'flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm',
             scheduleMode === 'now' ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:text-foreground'
           )}
         >
-          <Send className="h-4 w-4" /> Send Now
+          <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Send Now
         </button>
         <button
           type="button"
           onClick={() => setScheduleMode('once')}
           className={cn(
-            'flex items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors',
+            'flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm',
             scheduleMode === 'once' ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:text-foreground'
           )}
         >
-          <CalendarClock className="h-4 w-4" /> Schedule
+          <CalendarClock className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Schedule
         </button>
         <button
           type="button"
           onClick={() => setScheduleMode('recurring')}
           className={cn(
-            'flex items-center justify-center gap-1.5 rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors',
+            'flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm',
             scheduleMode === 'recurring' ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:text-foreground'
           )}
         >
-          <Repeat className="h-4 w-4" /> Recurring
+          <Repeat className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Recurring
         </button>
       </div>
 
