@@ -241,12 +241,12 @@ export function ImportContactsPanel({
             onDrop={handleDrop}
             onClick={() => fileInput.current?.click()}
             className={cn(
-              'flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
+              'flex min-h-[180px] cursor-pointer flex-col justify-center gap-2.5 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
               dragging ? 'border-primary bg-accent/40' : 'border-border bg-secondary/40 hover:border-primary/50'
             )}
           >
             <input ref={fileInput} type="file" accept=".csv,.vcf,.vcard" className="hidden" onChange={handleFileInput} />
-            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
               <UploadCloud className="h-5 w-5" />
             </div>
             <div className="text-sm font-semibold">Drag and drop a CSV or vCard here</div>
@@ -256,7 +256,7 @@ export function ImportContactsPanel({
           </div>
 
           {pickerSupported && (
-            <Button type="button" variant="outline" className="w-full" onClick={importFromDevice}>
+            <Button type="button" variant="outline" onClick={importFromDevice}>
               <Smartphone className="h-3.5 w-3.5" />
               Import from phone contacts
             </Button>
@@ -266,25 +266,25 @@ export function ImportContactsPanel({
 
       {source && rawRows && !result && (
         <div>
-          <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-3.5 py-2.5">
-            <div className="flex items-center gap-2 text-sm font-semibold">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              {source.label}
-              <span className="font-normal text-muted-foreground">· {totalRows} row{totalRows === 1 ? '' : 's'}</span>
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary/40 px-3.5 py-2.5">
+            <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="truncate">{source.label}</span>
+              <span className="shrink-0 font-normal text-muted-foreground">· {totalRows} row{totalRows === 1 ? '' : 's'}</span>
             </div>
-            <button type="button" onClick={reset} className="text-muted-foreground hover:text-foreground">
+            <button type="button" onClick={reset} className="shrink-0 text-muted-foreground hover:text-foreground">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {duplicateCount > 0 && (
-            <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-2.5">
-              <div className="flex items-center gap-2 text-xs font-medium text-warning">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning/10 px-3.5 py-2.5">
+              <div className="flex min-w-0 items-center gap-2 text-xs font-medium text-warning">
                 <TriangleAlert className="h-4 w-4 shrink-0" />
                 {duplicateCount} duplicate phone number{duplicateCount === 1 ? '' : 's'} found — repeated in the file or already in your{' '}
                 {entity.plural}.
               </div>
-              <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={removeDuplicates}>
+              <Button type="button" variant="outline" size="sm" onClick={removeDuplicates}>
                 Remove duplicates
               </Button>
             </div>
@@ -330,11 +330,11 @@ export function ImportContactsPanel({
             )}
           </div>
 
-          <div className="flex gap-2.5">
+          <div className="flex flex-wrap gap-2.5">
             <Button variant="outline" onClick={reset} disabled={upload.isPending}>
               Choose a different source
             </Button>
-            <Button className="flex-1" disabled={upload.isPending || totalRows === 0} onClick={submitImport}>
+            <Button disabled={upload.isPending || totalRows === 0} onClick={submitImport}>
               {upload.isPending ? 'Importing…' : `Import ${totalRows} ${totalRows === 1 ? entity.singular : entity.plural}`}
             </Button>
           </div>
@@ -358,7 +358,7 @@ export function ImportContactsPanel({
               ))}
             </div>
           )}
-          <Button variant="outline" className="w-full" onClick={reset}>
+          <Button variant="outline" onClick={reset}>
             Import another file
           </Button>
         </div>
