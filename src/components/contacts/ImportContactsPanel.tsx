@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import Papa from 'papaparse';
-import { UploadCloud, FileText, X, Download, TriangleAlert } from 'lucide-react';
+import { UploadCloud, FileText, X, Download, TriangleAlert, Smartphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { importContactsCsv, fetchContactPhones, type ImportResult } from '@/api/
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
+import { parseVCard, type PreviewRow } from '@/lib/vcard';
 
 const HEADER_ALIASES: Record<string, string[]> = {
   name: ['name', 'full name'],
@@ -19,19 +20,18 @@ const HEADER_ALIASES: Record<string, string[]> = {
   dateOfBirth: ['date of birth', 'dob', 'birthday'],
 };
 
-interface PreviewRow {
-  name: string;
-  phone: string;
-  dateOfBirth: string;
-}
-
 type DuplicateType = 'file' | 'existing' | null;
 
 interface ImportRow extends PreviewRow {
   duplicateType: DuplicateType;
 }
 
-function mapRow(row: Record<string, string>): PreviewRow {
+interface Source {
+  label: string;
+  kind: 'csv' | 'vcard' | 'picker';
+}
+
+function mapCsvRow(row: Record<string, string>): PreviewRow {
   const normalized: Record<string, string> = {};
   for (const [key, value] of Object.entries(row)) {
     const headerKey = key.trim().toLowerCase();
@@ -75,9 +75,16 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+// Feature-detected: Chrome/Edge/Samsung Internet on Android only. Safari
+// (iOS/macOS) and Firefox have no implementation, so this button simply
+// never renders there - vCard upload is the universal fallback.
+function isContactPickerSupported() {
+  return typeof navigator !== 'undefined' && 'contacts' in navigator && 'ContactsManager' in window;
+}
+
 const PREVIEW_LIMIT = 20;
 
-export function CsvImportPanel({
+export function ImportContactsPanel({
   onImported,
   groupId,
 }: {
@@ -86,15 +93,16 @@ export function CsvImportPanel({
 }) {
   const entity = useEntityLabels();
   const fileInput = useRef<HTMLInputElement>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [source, setSource] = useState<Source | null>(null);
   const [rawRows, setRawRows] = useState<PreviewRow[] | null>(null);
   const [dragging, setDragging] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const pickerSupported = useMemo(isContactPickerSupported, []);
 
   const existingPhones = useQuery({
     queryKey: ['contacts', 'phones'],
     queryFn: fetchContactPhones,
-    enabled: !!file,
+    enabled: !!source,
     staleTime: 60_000,
   });
 
@@ -121,19 +129,58 @@ export function CsvImportPanel({
   });
 
   function parseFile(picked: File) {
-    setFile(picked);
     setResult(null);
+    const isVCard = /\.(vcf|vcard)$/i.test(picked.name);
+
+    if (isVCard) {
+      setSource({ label: picked.name, kind: 'vcard' });
+      picked
+        .text()
+        .then((text) => {
+          const parsed = parseVCard(text).filter((r) => r.name || r.phone);
+          if (!parsed.length) {
+            toast.error('No contacts found in that vCard file.');
+            setSource(null);
+            return;
+          }
+          setRawRows(parsed);
+        })
+        .catch(() => {
+          toast.error('Could not read that file. Make sure it is a valid vCard (.vcf).');
+          setSource(null);
+        });
+      return;
+    }
+
+    setSource({ label: picked.name, kind: 'csv' });
     Papa.parse<Record<string, string>>(picked, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        setRawRows(results.data.map(mapRow).filter((r) => r.name || r.phone));
+        setRawRows(results.data.map(mapCsvRow).filter((r) => r.name || r.phone));
       },
       error: () => {
         toast.error('Could not read that file. Make sure it is a valid CSV.');
-        setFile(null);
+        setSource(null);
       },
     });
+  }
+
+  async function importFromDevice() {
+    if (!navigator.contacts) return;
+    setResult(null);
+    try {
+      const picked = await navigator.contacts.select(['name', 'tel'], { multiple: true });
+      const parsed: PreviewRow[] = picked
+        .map((c) => ({ name: c.name?.[0] ?? '', phone: c.tel?.[0] ?? '', dateOfBirth: '' }))
+        .filter((r) => r.name || r.phone);
+      if (!parsed.length) return;
+      setSource({ label: 'phone-contacts.csv', kind: 'picker' });
+      setRawRows(parsed);
+    } catch {
+      // User cancelled the picker, or the browser denied the request - either
+      // way there's nothing to report as an error.
+    }
   }
 
   function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
@@ -150,7 +197,7 @@ export function CsvImportPanel({
   }
 
   function reset() {
-    setFile(null);
+    setSource(null);
     setRawRows(null);
     setResult(null);
   }
@@ -162,18 +209,19 @@ export function CsvImportPanel({
   }
 
   function submitImport() {
-    if (!file) return;
+    if (!source) return;
     const csv = Papa.unparse(rows.map((r) => ({ Name: r.name, Phone: r.phone, 'Date of Birth': r.dateOfBirth })));
-    upload.mutate(new File([csv], file.name, { type: 'text/csv' }));
+    const filename = source.kind === 'csv' ? source.label : source.label.replace(/\.(vcf|vcard)$/i, '.csv');
+    upload.mutate(new File([csv], filename, { type: 'text/csv' }));
   }
 
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <div className="mb-1 text-[13px] font-bold text-foreground/80">Upload a CSV</div>
+          <div className="mb-1 text-[13px] font-bold text-foreground/80">Import contacts</div>
           <div className="text-xs text-muted-foreground">
-            Columns: name (or first/last name), phone, and optionally date of birth.
+            Upload a CSV or vCard (.vcf) file{pickerSupported ? ', or pull from your phone.' : '.'}
           </div>
         </div>
         <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={downloadTemplate}>
@@ -182,35 +230,46 @@ export function CsvImportPanel({
         </Button>
       </div>
 
-      {!file && (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={handleDrop}
-          onClick={() => fileInput.current?.click()}
-          className={cn(
-            'flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
-            dragging ? 'border-primary bg-accent/40' : 'border-border bg-secondary/40 hover:border-primary/50'
-          )}
-        >
-          <input ref={fileInput} type="file" accept=".csv" className="hidden" onChange={handleFileInput} />
-          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
-            <UploadCloud className="h-5 w-5" />
+      {!source && (
+        <div className="space-y-2.5">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragging(true);
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInput.current?.click()}
+            className={cn(
+              'flex min-h-[180px] cursor-pointer flex-col items-center justify-center gap-2.5 rounded-xl border-2 border-dashed p-6 text-center transition-colors',
+              dragging ? 'border-primary bg-accent/40' : 'border-border bg-secondary/40 hover:border-primary/50'
+            )}
+          >
+            <input ref={fileInput} type="file" accept=".csv,.vcf,.vcard" className="hidden" onChange={handleFileInput} />
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-accent-foreground">
+              <UploadCloud className="h-5 w-5" />
+            </div>
+            <div className="text-sm font-semibold">Drag and drop a CSV or vCard here</div>
+            <div className="text-xs text-muted-foreground">
+              or click to browse files — on iPhone, export contacts from the Contacts app as a vCard first
+            </div>
           </div>
-          <div className="text-sm font-semibold">Drag and drop your CSV here</div>
-          <div className="text-xs text-muted-foreground">or click to browse files</div>
+
+          {pickerSupported && (
+            <Button type="button" variant="outline" className="w-full" onClick={importFromDevice}>
+              <Smartphone className="h-3.5 w-3.5" />
+              Import from phone contacts
+            </Button>
+          )}
         </div>
       )}
 
-      {file && rawRows && !result && (
+      {source && rawRows && !result && (
         <div>
           <div className="mb-3 flex items-center justify-between rounded-lg border border-border bg-secondary/40 px-3.5 py-2.5">
             <div className="flex items-center gap-2 text-sm font-semibold">
               <FileText className="h-4 w-4 text-muted-foreground" />
-              {file.name}
+              {source.label}
               <span className="font-normal text-muted-foreground">· {totalRows} row{totalRows === 1 ? '' : 's'}</span>
             </div>
             <button type="button" onClick={reset} className="text-muted-foreground hover:text-foreground">
@@ -273,7 +332,7 @@ export function CsvImportPanel({
 
           <div className="flex gap-2.5">
             <Button variant="outline" onClick={reset} disabled={upload.isPending}>
-              Choose a different file
+              Choose a different source
             </Button>
             <Button className="flex-1" disabled={upload.isPending || totalRows === 0} onClick={submitImport}>
               {upload.isPending ? 'Importing…' : `Import ${totalRows} ${totalRows === 1 ? entity.singular : entity.plural}`}

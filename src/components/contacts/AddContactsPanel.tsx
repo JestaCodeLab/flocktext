@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DialogFooter } from '@/components/ui/dialog';
-import { CsvImportPanel } from '@/components/contacts/CsvImportPanel';
+import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
 import { addContactsToGroup, fetchContacts } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
@@ -127,7 +127,7 @@ export function AddContactsPanel({
         </>
       ) : (
         <>
-          <CsvImportPanel groupId={groupId} onImported={() => onAdded?.()} />
+          <ImportContactsPanel groupId={groupId} onImported={() => onAdded?.()} />
           <DialogFooter>
             <Button className="w-full" variant="outline" onClick={onFinish}>
               Done

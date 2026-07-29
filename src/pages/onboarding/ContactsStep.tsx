@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
-import { CsvImportPanel } from '@/components/contacts/CsvImportPanel';
+import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
 import { skipOnboardingStep } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
@@ -38,7 +38,7 @@ export function ContactsStep() {
       </div>
 
       <div className="mb-4 space-y-3.5">
-        <CsvImportPanel onImported={handleImported} />
+        <ImportContactsPanel onImported={handleImported} />
         <ShareLinkPanel />
       </div>
 
