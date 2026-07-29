@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { fetchPublicPackages } from '@/api/public';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
 function PackageCardSkeleton() {
@@ -21,6 +22,7 @@ function PackageCardSkeleton() {
 /** SMS credit package cards, fetched from the public packages API — shared by the
  * homepage pricing teaser and the full /pricing page so they can't drift apart. */
 export function PackageGrid() {
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
   const { data: packages, isLoading } = useQuery({
     queryKey: ['public', 'packages'],
     queryFn: fetchPublicPackages,
@@ -76,6 +78,15 @@ export function PackageGrid() {
                 <div className={cn('mt-1 text-xs', popular ? 'text-sidebar-foreground/50' : 'text-muted-foreground')}>
                   ≈ GHS {perCredit.toFixed(3)} per credit
                 </div>
+                <div
+                  className={cn(
+                    'mt-2 flex items-center gap-1 text-xs',
+                    popular ? 'text-sidebar-foreground/70' : 'text-muted-foreground'
+                  )}
+                >
+                  <Check className={cn('h-3 w-3', popular ? 'text-sidebar-primary' : 'text-success')} />
+                  No expiry
+                </div>
 
                 <Button
                   size="lg"
@@ -83,9 +94,9 @@ export function PackageGrid() {
                     'mt-7 h-12 w-full rounded-full text-base',
                     !popular && 'bg-foreground text-background hover:bg-foreground/85'
                   )}
-                  render={<Link to="/signup" />}
+                  render={<Link to={isAuthed ? '/app' : '/signup'} />}
                 >
-                  Get started
+                  {isAuthed ? 'Go to dashboard' : 'Get started'}
                   <ArrowRight data-icon="inline-end" className="size-4" />
                 </Button>
               </div>

@@ -40,7 +40,7 @@ export function AuthLayout({ children, contentClassName }: { children: React.Rea
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-background p-4 sm:p-8">
+    <div className="flex min-h-screen w-full flex-col items-center justify-center gap-4 bg-background p-4 sm:p-8">
       <div className="flex min-h-[680px] w-full max-w-[1040px] overflow-hidden rounded-[28px] bg-card shadow-xl ring-1 ring-foreground/5">
         <div className="relative hidden w-[46%] min-w-[360px] overflow-hidden bg-foreground lg:block">
           {slides.map((slide, i) => (
@@ -102,6 +102,8 @@ export function AuthLayout({ children, contentClassName }: { children: React.Rea
           </div>
         </div>
       </div>
+
+      <p className="mt-4 text-sm text-muted-foreground">© 2026 FlockText. All rights reserved.</p>
     </div>
   );
 }

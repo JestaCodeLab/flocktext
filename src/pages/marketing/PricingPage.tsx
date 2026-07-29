@@ -7,6 +7,7 @@ import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator'
 import { routeSeo } from '@/pages/marketing/data/seo';
 
 const includedFeatures = [
+  'No expiry',
   'REST API access',
   'Contact groups & birthday automation',
   'Scheduled & recurring sends',

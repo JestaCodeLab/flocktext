@@ -22,6 +22,7 @@ import {
   Scissors,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
 import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator';
@@ -164,6 +165,9 @@ const testimonials = [
 export function HomePage() {
   const [heroSlide, setHeroSlide] = useState(0);
   const industriesTrackRef = useRef<HTMLDivElement>(null);
+  // A logged-in user landing here via direct URL should get routed back to
+  // their dashboard instead of being re-prompted to sign up.
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
 
   useEffect(() => {
     const id = setInterval(() => setHeroSlide((i) => (i + 1) % heroSlides.length), 6000);
@@ -238,8 +242,8 @@ export function HomePage() {
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
-            <Button size="lg" className="h-[52px] w-full rounded-full text-base" render={<Link to="/signup" />}>
-              Start sending today
+            <Button size="lg" className="h-[52px] w-full rounded-full text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+              {isAuthed ? 'Go to dashboard' : 'Start sending today'}
               <ArrowRight data-icon="inline-end" className="size-4" />
             </Button>
             <Button
@@ -284,8 +288,8 @@ export function HomePage() {
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to="/signup" />}>
-                Start sending for free
+              <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+                {isAuthed ? 'Go to dashboard' : 'Start sending for free'}
                 <ArrowRight data-icon="inline-end" className="size-4" />
               </Button>
               <Button
@@ -425,8 +429,8 @@ export function HomePage() {
           </div>
 
           <div className="mt-10 text-center">
-            <Button className="rounded-full px-6" render={<Link to="/signup" />}>
-              Explore all features
+            <Button className="rounded-full px-6" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+              {isAuthed ? 'Go to dashboard' : 'Explore all features'}
               <ArrowRight data-icon="inline-end" className="size-4" />
             </Button>
           </div>
@@ -556,8 +560,8 @@ export function HomePage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to="/signup" />}>
-              Sign up free
+            <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+              {isAuthed ? 'Go to dashboard' : 'Sign up free'}
             </Button>
             <Button
               size="lg"

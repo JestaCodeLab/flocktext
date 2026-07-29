@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, CalendarClock, CircleCheck, Gift, HandCoins, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { FaqList } from '@/pages/marketing/components/FaqList';
 import { routeSeo } from '@/pages/marketing/data/seo';
@@ -51,6 +52,8 @@ const churchFaqs = [
 ];
 
 export function ChurchesPage() {
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
+
   return (
     <>
       <Seo {...routeSeo['/churches']} />
@@ -71,8 +74,8 @@ export function ChurchesPage() {
                 texts — reaching members who may not check email or social media.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to="/signup" />}>
-                  Connect With Your Congregation
+                <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+                  {isAuthed ? 'Go to dashboard' : 'Connect With Your Congregation'}
                   <ArrowRight data-icon="inline-end" className="size-4" />
                 </Button>
                 <Button size="lg" variant="outline" className="h-12 rounded-full px-7 text-base" render={<Link to="/pricing" />}>
@@ -170,8 +173,8 @@ export function ChurchesPage() {
               Join churches across Ghana using FlockText to stay connected between Sundays.
             </p>
           </div>
-          <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to="/signup" />}>
-            Connect With Your Congregation
+          <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+            {isAuthed ? 'Go to dashboard' : 'Connect With Your Congregation'}
             <ArrowRight data-icon="inline-end" className="size-4" />
           </Button>
         </div>
