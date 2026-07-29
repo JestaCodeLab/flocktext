@@ -19,7 +19,7 @@ export function ShareLinkPanel() {
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="mb-1 text-[13px] font-bold text-foreground/80">Share a sign-up link</div>
       <div className="mb-4 text-xs text-muted-foreground">Members can add themselves — name, phone, and date of birth.</div>
-      <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+      <div className="flex max-w-[260px] items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 sm:max-w-full">
         <LinkIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{link.data?.url ?? 'Loading…'}</div>
         <Button type="button" size="icon-sm" variant="ghost" onClick={copy} disabled={!link.data}>
