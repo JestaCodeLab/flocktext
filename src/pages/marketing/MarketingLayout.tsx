@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SUPPORT_EMAIL, WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
+import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
 
 const navLinks = [{ to: '/pricing', label: 'Pricing', end: false }];
 
@@ -321,6 +322,8 @@ export function MarketingLayout() {
           </nav>
         </div>
       </header>
+
+      {isAuthed && <SessionTimeoutModal />}
 
       <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
         <DialogContent className="sm:max-w-sm">
