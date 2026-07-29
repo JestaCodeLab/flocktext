@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowRight } from 'lucide-react';
 import { fetchPublicPackages } from '@/api/public';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/authStore';
 
 // Piecewise-linear interpolation between real package price points, clamped to
 // the cheapest/priciest tier at the ends - same shape as a lookup-table
@@ -27,6 +28,7 @@ function interpolateCredits(points: [number, number][], amount: number) {
  * Shares PackageGrid's query cache (same key), so mounting both on this page
  * costs one network request, not two. */
 export function CreditCalculator() {
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
   const { data: packages } = useQuery({
     queryKey: ['public', 'packages'],
     queryFn: fetchPublicPackages,
@@ -92,9 +94,9 @@ export function CreditCalculator() {
       <Button
         size="lg"
         className="mt-5 h-12 w-full rounded-full bg-foreground text-base text-background hover:bg-foreground/85"
-        render={<Link to="/signup" />}
+        render={<Link to={isAuthed ? '/app' : '/signup'} />}
       >
-        Get started
+        {isAuthed ? 'Go to dashboard' : 'Get started'}
         <ArrowRight data-icon="inline-end" className="size-4" />
       </Button>
     </div>

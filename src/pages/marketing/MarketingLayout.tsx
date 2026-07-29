@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
-import { ArrowRight, ChevronDown, Mail, Menu, X } from 'lucide-react';
+import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
+import { ChevronDown, LayoutDashboard, Mail, Menu, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
+import { logout } from '@/api/auth';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const logo = '/logo/flocktext-logo.png';
 const logoWhite = '/logo/flocktext-logo-white.png';
@@ -12,6 +15,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { SUPPORT_EMAIL, WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
@@ -33,8 +37,26 @@ function Logo({ dark = false }: { dark?: boolean }) {
 export function MarketingLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const session = useAuthStore((s) => s.session);
+  const accessToken = useAuthStore((s) => s.accessToken);
+  const clear = useAuthStore((s) => s.clear);
+  const isAuthed = Boolean(session && accessToken);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  async function handleLogout() {
+    const { refreshToken } = useAuthStore.getState();
+    if (refreshToken) {
+      try {
+        await logout(refreshToken);
+      } catch {
+        // best-effort - proceed with local logout regardless
+      }
+    }
+    clear();
+    navigate('/login', { replace: true });
+  }
 
   // Download App is an anchor within the homepage, not a route — scroll to it on navigation.
   // Route changes without a hash (e.g. Home -> Pricing) don't reset scroll position on their own, so scroll to top instead.
@@ -141,11 +163,53 @@ export function MarketingLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {isAuthed ? (
-              <Button className="rounded-full px-5" render={<Link to="/app" />}>
-                Dashboard
-                <ArrowRight data-icon="inline-end" className="size-4" />
-              </Button>
+            {isAuthed && session ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex cursor-pointer items-center gap-2 rounded-full border border-border bg-card/80 py-1 pl-1 pr-2 sm:pr-3">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">
+                    {session.user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="hidden text-sm font-medium sm:inline">{session.user.name.split(' ')[0]}</span>
+                  <ChevronDown className="h-[15px] w-[15px] text-muted-foreground" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64 p-2">
+                  <div className="flex items-center gap-3 px-2 py-2.5">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-background">
+                      {session.user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <div className="truncate text-sm font-medium">{session.user.name}</div>
+                        <Badge variant={session.user.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 text-white capitalize">
+                          {session.user.role}
+                        </Badge>
+                      </div>
+                      <div className="mt-0.5 truncate text-xs text-muted-foreground">{session.organization.churchName}</div>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator className="my-1.5" />
+                  <DropdownMenuItem className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]" render={<Link to="/app" />}>
+                    <LayoutDashboard className="h-4 w-4" /> Go to Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]" render={<Link to="/app/settings" />}>
+                    <Settings className="h-4 w-4" /> Account
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"
+                    render={<a href={WHATSAPP_URL} target="_blank" rel="noreferrer" />}
+                  >
+                    <WhatsAppIcon className="h-4 w-4" /> Quick Support
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="my-1.5" />
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"
+                    variant="destructive"
+                    onClick={() => setShowLogoutConfirm(true)}
+                  >
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <>
                 <Button variant="ghost" className="hidden rounded-full sm:inline-flex" render={<Link to="/login" />}>
@@ -257,6 +321,29 @@ export function MarketingLayout() {
           </nav>
         </div>
       </header>
+
+      <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Log out?</DialogTitle>
+            <DialogDescription>Are you sure you want to log out of FlockText? </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowLogoutConfirm(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setShowLogoutConfirm(false);
+                handleLogout();
+              }}
+            >
+              Log out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <main className="flex-1">
         <Outlet />

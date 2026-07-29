@@ -13,7 +13,7 @@ import {
   BadgeCheck,
   Settings,
   History,
-  KeyRound,
+  Home,
   ChevronDown,
   SendIcon,
   Sun,
@@ -194,9 +194,9 @@ export function AppShell() {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <aside className="hidden w-[236px] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground md:flex">
-        <div className="mb-7 px-2">
+        <Link to="/" className="mb-7 block px-2">
           <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-8 w-auto" />
-        </div>
+        </Link>
         {navContent}
       </aside>
 
@@ -205,9 +205,9 @@ export function AppShell() {
           side="left"
           className="w-[236px] max-w-[80vw] flex-col gap-0 overflow-y-auto border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground"
         >
-          <div className="mb-7 shrink-0 px-2">
+          <Link to="/" className="mb-7 block shrink-0 px-2">
             <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-8 w-auto" />
-          </div>
+          </Link>
           {navContent}
         </SheetContent>
       </Sheet>
@@ -279,14 +279,11 @@ export function AppShell() {
                   </div>
                 </div>
                 <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]" render={<Link to="/" />}>
+                  <Home className="h-4 w-4" /> Go to Homepage
+                </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]" onClick={() => navigate('/app/settings')}>
                   <Settings className="h-4 w-4" /> Account
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"
-                  onClick={() => navigate('/app/settings', { state: { tab: 'security' } })}
-                >
-                  <KeyRound className="h-4 w-4" /> Change Password
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="cursor-pointer gap-2.5 px-2.5 py-2.5 text-[13px]"

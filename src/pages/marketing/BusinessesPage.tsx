@@ -17,6 +17,7 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { FaqList } from '@/pages/marketing/components/FaqList';
 import { routeSeo } from '@/pages/marketing/data/seo';
@@ -101,6 +102,7 @@ const businessFaqs = [
 
 export function BusinessesPage() {
   const verticalsTrackRef = useRef<HTMLDivElement>(null);
+  const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
 
   function scrollVerticals(direction: 1 | -1) {
     const track = verticalsTrackRef.current;
@@ -130,8 +132,8 @@ export function BusinessesPage() {
                 rates text and email marketing can't match.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to="/signup" />}>
-                  Grow Your Business with SMS
+                <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+                  {isAuthed ? 'Go to dashboard' : 'Grow Your Business with SMS'}
                   <ArrowRight data-icon="inline-end" className="size-4" />
                 </Button>
                 <Button size="lg" variant="outline" className="h-12 rounded-full px-7 text-base" render={<Link to="/pricing" />}>
@@ -277,8 +279,8 @@ export function BusinessesPage() {
               Join Ghanaian businesses using FlockText to reach customers and grow revenue.
             </p>
           </div>
-          <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to="/signup" />}>
-            Grow Your Business with SMS
+          <Button size="lg" className="h-11 rounded-full px-6 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>
+            {isAuthed ? 'Go to dashboard' : 'Grow Your Business with SMS'}
             <ArrowRight data-icon="inline-end" className="size-4" />
           </Button>
         </div>
