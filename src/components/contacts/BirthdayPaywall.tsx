@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { initializeAddonPurchase, verifyAddonPurchase } from '@/api/addons';
 import { apiErrorMessage } from '@/api/client';
+import { addonsQueryKey } from '@/lib/addons';
 import { openPaystackPopup } from '@/lib/paystack';
 
 const FEATURE_BADGES = ['Retention', 'Automation'];
@@ -12,10 +13,10 @@ export function BirthdayPaywall({ priceGhs }: { priceGhs: number }) {
   const queryClient = useQueryClient();
 
   const verify = useMutation({
-    mutationFn: verifyAddonPurchase,
+    mutationFn: (reference: string) => verifyAddonPurchase(reference),
     onSuccess: () => {
       toast.success('Payment confirmed — Birthday Automation unlocked.');
-      queryClient.invalidateQueries({ queryKey: ['addons'] });
+      queryClient.invalidateQueries({ queryKey: addonsQueryKey() });
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -25,7 +26,7 @@ export function BirthdayPaywall({ priceGhs }: { priceGhs: number }) {
     onSuccess: async (data) => {
       if (data.mode === 'stub') {
         toast.success('Birthday Automation unlocked.');
-        queryClient.invalidateQueries({ queryKey: ['addons'] });
+        queryClient.invalidateQueries({ queryKey: addonsQueryKey() });
         return;
       }
       try {

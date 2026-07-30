@@ -9,9 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InviteTeamMemberDialog } from '@/components/organization/InviteTeamMemberDialog';
 import { fetchTeam, updateTeamMemberRole, revokeTeamMember, restoreTeamMember, removeTeamMember } from '@/api/team';
-import { initializeAddonPurchase, verifyAddonPurchase } from '@/api/addons';
 import { apiErrorMessage } from '@/api/client';
-import { openPaystackPopup } from '@/lib/paystack';
 import { useAuthStore } from '@/store/authStore';
 import { useAddonEntitlements } from '@/lib/addons';
 import { SettingsCard } from './SettingsCard';
@@ -38,43 +36,6 @@ export function TeamSection() {
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['team', 'active'] });
   }
-
-  // The webhook is the authoritative confirmation, but this gives immediate
-  // feedback - both paths call the same idempotent credit logic, so whichever
-  // lands first wins.
-  const verify = useMutation({
-    mutationFn: verifyAddonPurchase,
-    onSuccess: () => {
-      toast.success('Payment confirmed — seat added.');
-      queryClient.invalidateQueries({ queryKey: ['addons'] });
-    },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
-
-  const buySeat = useMutation({
-    mutationFn: () => initializeAddonPurchase('extra_team_seat'),
-    onSuccess: async (data) => {
-      if (data.mode === 'stub') {
-        toast.success('Seat added.');
-        queryClient.invalidateQueries({ queryKey: ['addons'] });
-        return;
-      }
-      try {
-        await openPaystackPopup({
-          email: data.email,
-          amountGHS: data.amountGHS,
-          reference: data.reference,
-          subaccountCode: data.subaccountCode,
-          metadata: { organizationId: data.organizationId, addonKey: data.addonKey, kind: 'addon' },
-          onSuccess: (reference) => verify.mutate(reference),
-          onClose: () => toast('Payment cancelled.'),
-        });
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Could not open checkout.');
-      }
-    },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
 
   // Revoked members hold no seat, so they don't count against the purchased
   // total - matching how the server counts seats when inviting or restoring.
@@ -127,23 +88,18 @@ export function TeamSection() {
         description={isAdmin ? 'Invite teammates and manage their access.' : 'Everyone with access to this account.'}
         tint="green"
         action={
-          isAdmin &&
-          (remainingSeats > 0 ? (
+          isAdmin && (
             <Button size="sm" onClick={() => setShowInvite(true)}>
               <UserPlus className="h-[15px] w-[15px]" /> Invite
             </Button>
-          ) : (
-            <Button size="sm" disabled={buySeat.isPending} onClick={() => buySeat.mutate()}>
-              <UserPlus className="h-[15px] w-[15px]" /> {buySeat.isPending ? 'Starting checkout…' : `Buy seat — GHS ${seatAddonGhs}`}
-            </Button>
-          ))
+          )
         }
       >
         {isAdmin && (
           <div className="mb-4 text-xs font-semibold text-muted-foreground">
             {remainingSeats > 0
               ? `${remainingSeats} additional seat${remainingSeats === 1 ? '' : 's'} available.`
-              : 'No additional seats available — purchase a seat to invite another member.'}
+              : `No free seats — inviting adds one for GHS ${seatAddonGhs}.`}
           </div>
         )}
         {team.isLoading && (
@@ -241,7 +197,12 @@ export function TeamSection() {
         )}
       </SettingsCard>
 
-      <InviteTeamMemberDialog open={showInvite} onOpenChange={setShowInvite} />
+      <InviteTeamMemberDialog
+        open={showInvite}
+        onOpenChange={setShowInvite}
+        needsSeat={remainingSeats <= 0}
+        seatPriceGhs={seatAddonGhs}
+      />
     </>
   );
 }

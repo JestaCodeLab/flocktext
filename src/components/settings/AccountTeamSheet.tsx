@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { InviteTeamMemberDialog } from '@/components/organization/InviteTeamMemberDialog';
 import { fetchTeam, updateTeamMemberRole, revokeTeamMember, restoreTeamMember, removeTeamMember, type TeamMember } from '@/api/team';
 import { apiErrorMessage } from '@/api/client';
+import { useAddonEntitlements } from '@/lib/addons';
 import { useAuthStore } from '@/store/authStore';
 import type { Account } from '@/types';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,10 @@ export function AccountTeamSheet({
     queryFn: () => fetchTeam(organizationId),
     enabled: open && !!organizationId,
   });
+
+  // Seats are billed per organization, so this reads the entitlements of the
+  // account being viewed - not the one the app happens to be switched into.
+  const entitlements = useAddonEntitlements(organizationId);
 
   function invalidate() {
     queryClient.invalidateQueries({ queryKey: ['team', organizationId ?? 'active'] });
@@ -100,6 +105,13 @@ export function AccountTeamSheet({
   const activeCount = team.data?.filter((m) => m.status === 'active').length ?? 0;
   const revokedCount = team.data?.filter((m) => m.status === 'revoked').length ?? 0;
 
+  // Revoked members hold no seat, matching how the server counts them when
+  // inviting or restoring.
+  const additionalMemberCount = team.data?.filter((m) => !m.isFounder && m.status === 'active').length ?? 0;
+  const purchasedSeats = entitlements.data?.purchasedSeats ?? 0;
+  const remainingSeats = purchasedSeats - additionalMemberCount;
+  const seatAddonGhs = entitlements.data?.addons.find((a) => a.key === 'extra_team_seat')?.ghs ?? 0;
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -121,11 +133,19 @@ export function AccountTeamSheet({
               </span>
             </div>
             {isAdmin && (
-              <Button size="sm" onClick={() => setShowInvite(true)}>
+              <Button size="sm" disabled={entitlements.isLoading} onClick={() => setShowInvite(true)}>
                 <UserPlus className="h-[15px] w-[15px]" /> Invite
               </Button>
             )}
           </div>
+
+          {isAdmin && (
+            <div className="text-xs font-semibold text-muted-foreground">
+              {remainingSeats > 0
+                ? `${remainingSeats} additional seat${remainingSeats === 1 ? '' : 's'} available on this account.`
+                : `No free seats on this account — inviting adds one for GHS ${seatAddonGhs}.`}
+            </div>
+          )}
 
           {team.isLoading && (
             <div className="space-y-2">
@@ -232,7 +252,13 @@ export function AccountTeamSheet({
       </Sheet>
 
       {organizationId && (
-        <InviteTeamMemberDialog open={showInvite} onOpenChange={setShowInvite} organizationId={organizationId} />
+        <InviteTeamMemberDialog
+          open={showInvite}
+          onOpenChange={setShowInvite}
+          organizationId={organizationId}
+          needsSeat={remainingSeats <= 0}
+          seatPriceGhs={seatAddonGhs}
+        />
       )}
 
       <Dialog open={!!pendingDelete} onOpenChange={(next) => !next && setPendingDelete(null)}>
