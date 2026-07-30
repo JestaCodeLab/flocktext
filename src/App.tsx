@@ -36,7 +36,6 @@ import { WelcomeStep } from '@/pages/onboarding/WelcomeStep';
 import { OrganizationStep } from '@/pages/onboarding/OrganizationStep';
 import { SenderIdStep } from '@/pages/onboarding/SenderIdStep';
 import { ContactsStep } from '@/pages/onboarding/ContactsStep';
-import { WalletStep } from '@/pages/onboarding/WalletStep';
 import { DashboardPage } from '@/pages/app/DashboardPage';
 import { ContactsPage } from '@/pages/app/ContactsPage';
 import { GroupsPage } from '@/pages/app/GroupsPage';
@@ -105,7 +104,6 @@ function App() {
             <Route path="organization" element={<OrganizationStep />} />
             <Route path="sender-id" element={<SenderIdStep />} />
             <Route path="contacts" element={<ContactsStep />} />
-            <Route path="wallet" element={<WalletStep />} />
           </Route>
         </Route>
 

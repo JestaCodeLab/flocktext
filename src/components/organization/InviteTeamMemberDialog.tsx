@@ -11,7 +11,18 @@ import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
 import { useEntityLabels } from '@/lib/terminology';
 
-export function InviteTeamMemberDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function InviteTeamMemberDialog({
+  open,
+  onOpenChange,
+  // Omitted for the account the user is currently switched into. Passed when
+  // inviting into one of their other accounts from Settings, which also decides
+  // which cached roster gets invalidated afterwards.
+  organizationId,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId?: string;
+}) {
   const queryClient = useQueryClient();
   const entity = useEntityLabels();
   const [name, setName] = useState('');
@@ -27,10 +38,10 @@ export function InviteTeamMemberDialog({ open, onOpenChange }: { open: boolean; 
   }
 
   const invite = useMutation({
-    mutationFn: () => inviteTeamMember({ name, email, phone: normalizePhone(phone), role }),
+    mutationFn: () => inviteTeamMember({ name, email, phone: normalizePhone(phone), role }, organizationId),
     onSuccess: () => {
       toast.success(`Invited ${name} — they'll get an email with login instructions.`);
-      queryClient.invalidateQueries({ queryKey: ['team'] });
+      queryClient.invalidateQueries({ queryKey: ['team', organizationId ?? 'active'] });
       onOpenChange(false);
       reset();
     },
@@ -83,8 +94,8 @@ export function InviteTeamMemberDialog({ open, onOpenChange }: { open: boolean; 
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin — full access, including billing and team management</SelectItem>
-                <SelectItem value="user">User — can manage {entity.plural}, sends, and settings</SelectItem>
+                <SelectItem value="admin">Admin — full access, including billing, team management, and the activity log</SelectItem>
+                <SelectItem value="user">User — can manage {entity.plural}, sends, and settings, but can't view the activity log</SelectItem>
               </SelectContent>
             </Select>
           </div>

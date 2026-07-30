@@ -164,7 +164,7 @@ export function MarketingLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {isAuthed && session ? (
+            {isAuthed && session?.membership ? (
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex cursor-pointer items-center gap-2 rounded-full border border-border bg-card/80 py-1 pl-1 pr-2 sm:pr-3">
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-background">
@@ -181,8 +181,8 @@ export function MarketingLayout() {
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <div className="truncate text-sm font-medium">{session.user.name}</div>
-                        <Badge variant={session.user.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 text-white capitalize">
-                          {session.user.role}
+                        <Badge variant={session.membership.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 text-white capitalize">
+                          {session.membership.role}
                         </Badge>
                       </div>
                       <div className="mt-0.5 truncate text-xs text-muted-foreground">{session.organization.churchName}</div>

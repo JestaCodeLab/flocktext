@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Users, UserPlus, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Trash2, Undo2, ShieldOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { InviteTeamMemberDialog } from '@/components/organization/InviteTeamMemberDialog';
-import { fetchTeam, updateTeamMemberRole, removeTeamMember } from '@/api/team';
+import { fetchTeam, updateTeamMemberRole, revokeTeamMember, restoreTeamMember, removeTeamMember } from '@/api/team';
 import { initializeAddonPurchase, verifyAddonPurchase } from '@/api/addons';
 import { apiErrorMessage } from '@/api/client';
 import { openPaystackPopup } from '@/lib/paystack';
@@ -26,13 +26,17 @@ function getInitials(name: string) {
 export function TeamSection() {
   const queryClient = useQueryClient();
   const currentUser = useAuthStore((s) => s.session?.user);
-  const isAdmin = currentUser?.role === 'admin';
+  const membership = useAuthStore((s) => s.session?.membership);
+  const isAdmin = membership?.role === 'admin';
   const [showInvite, setShowInvite] = useState(false);
-  const team = useQuery({ queryKey: ['team'], queryFn: fetchTeam });
+  // 'active' rather than an id: this section always follows whichever account
+  // the app is switched into, so it must not collide with the per-account
+  // rosters Settings > Account loads for the user's other organizations.
+  const team = useQuery({ queryKey: ['team', 'active'], queryFn: () => fetchTeam() });
   const entitlements = useAddonEntitlements();
 
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ['team'] });
+    queryClient.invalidateQueries({ queryKey: ['team', 'active'] });
   }
 
   // The webhook is the authoritative confirmation, but this gives immediate
@@ -72,7 +76,9 @@ export function TeamSection() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const additionalMemberCount = team.data?.filter((m) => !m.isFounder).length ?? 0;
+  // Revoked members hold no seat, so they don't count against the purchased
+  // total - matching how the server counts seats when inviting or restoring.
+  const additionalMemberCount = team.data?.filter((m) => !m.isFounder && m.status === 'active').length ?? 0;
   const purchasedSeats = entitlements.data?.purchasedSeats ?? 0;
   const remainingSeats = purchasedSeats - additionalMemberCount;
   const seatAddonGhs = entitlements.data?.addons.find((a) => a.key === 'extra_team_seat')?.ghs ?? 0;
@@ -86,10 +92,28 @@ export function TeamSection() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const revoke = useMutation({
+    mutationFn: (id: string) => revokeTeamMember(id),
+    onSuccess: (member) => {
+      toast.success(`${member.name}'s access revoked — you can restore it any time.`);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const restore = useMutation({
+    mutationFn: (id: string) => restoreTeamMember(id),
+    onSuccess: (member) => {
+      toast.success(`${member.name}'s access restored.`);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const remove = useMutation({
-    mutationFn: removeTeamMember,
+    mutationFn: (id: string) => removeTeamMember(id),
     onSuccess: () => {
-      toast.success('Team member removed.');
+      toast.success('Team member deleted.');
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -138,47 +162,80 @@ export function TeamSection() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {team.data.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground">
-                        {getInitials(member.name)}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold">{member.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">{member.email}</div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {isAdmin && member.id !== currentUser?.id ? (
-                      <Select value={member.role} onValueChange={(v) => changeRole.mutate({ id: member.id, role: v as 'admin' | 'user' })}>
-                        <SelectTrigger size="sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="user">User</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
-                        {member.role}
-                      </Badge>
-                    )}
-                  </TableCell>
-                  {isAdmin && (
+              {team.data.map((member) => {
+                const isSelf = member.id === currentUser?.id;
+                const isRevoked = member.status === 'revoked';
+                return (
+                  <TableRow key={member.id}>
                     <TableCell>
-                      {member.id !== currentUser?.id && (
-                        <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(member.id)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div
+                          className={
+                            isRevoked
+                              ? 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground'
+                              : 'flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-accent-foreground'
+                          }
+                        >
+                          {getInitials(member.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className={isRevoked ? 'truncate text-sm font-semibold text-muted-foreground' : 'truncate text-sm font-semibold'}>
+                              {member.name}
+                            </span>
+                            {isRevoked && <Badge variant="secondary">Revoked</Badge>}
+                          </div>
+                          <div className="truncate text-xs text-muted-foreground">{member.email}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {isAdmin && !isSelf && !isRevoked ? (
+                        <Select value={member.role} onValueChange={(v) => changeRole.mutate({ id: member.id, role: v as 'admin' | 'user' })}>
+                          <SelectTrigger size="sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="user">User</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
+                          {member.role}
+                        </Badge>
                       )}
                     </TableCell>
-                  )}
-                </TableRow>
-              ))}
+                    {isAdmin && (
+                      <TableCell>
+                        {!isSelf && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isRevoked ? (
+                              <Button size="sm" variant="outline" disabled={restore.isPending} onClick={() => restore.mutate(member.id)}>
+                                <Undo2 className="h-3.5 w-3.5" /> Restore
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled={revoke.isPending} onClick={() => revoke.mutate(member.id)}>
+                                <ShieldOff className="h-3.5 w-3.5" /> Revoke
+                              </Button>
+                            )}
+                            <Button
+                              size="icon-sm"
+                              variant="ghost"
+                              className="text-destructive"
+                              aria-label={`Delete ${member.name}`}
+                              disabled={remove.isPending}
+                              onClick={() => remove.mutate(member.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}

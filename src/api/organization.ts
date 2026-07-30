@@ -31,8 +31,13 @@ export async function deleteSenderId(id: string) {
   return data;
 }
 
-export async function skipOnboardingStep(step: 'sender_id' | 'contacts' | 'wallet') {
+export async function skipOnboardingStep(step: 'sender_id' | 'contacts') {
   const { data } = await api.post<SessionOrganization>('/organization/onboarding/skip', { step });
+  return data;
+}
+
+export async function completeOnboarding() {
+  const { data } = await api.post<SessionOrganization>('/organization/onboarding/complete');
   return data;
 }
 

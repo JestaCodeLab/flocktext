@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, Send, CalendarClock, Repeat, Plus, Check, Info } from 'lucide-react';
+import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +26,22 @@ import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import { Badge } from '@/components/ui/badge';
-import { formatPhoneInput } from '@/lib/phone';
+import { formatPhoneInput, normalizePhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+interface ReadinessCheck {
+  key: string;
+  /** 'blocked' prevents sending; 'warning' is advisory and still lets it through. */
+  status: 'ok' | 'warning' | 'blocked';
+  message: string;
+  /** Shown on the send button itself when this is the first unmet requirement. */
+  buttonLabel?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}
 
 function countSegments(body: string) {
   return Math.max(1, Math.ceil(body.length / 160));
@@ -92,20 +103,155 @@ export function ComposePage() {
   // preselected value and "use system default" isn't offered as a choice.
   const senderSelectValue = selectedSenderId ?? approvedSenderId?.id ?? '';
 
+  // Matches the server's own rule (validators/shared.js requires 9+ digits), so
+  // a half-typed number isn't counted as a deliverable recipient.
+  const singlePhoneValid = normalizePhone(singlePhone).length >= 9;
+
   const recipientCount = useMemo(() => {
-    if (recipientMode === 'single') return singlePhone.trim() ? 1 : 0;
+    if (recipientMode === 'single') return singlePhoneValid ? 1 : 0;
     if (recipientMode === 'all') return contactsCount.data ?? 0;
     return groups.data?.find((g) => g.id === selectedGroupId)?.count ?? 0;
-  }, [recipientMode, singlePhone, groups.data, selectedGroupId, contactsCount.data]);
+  }, [recipientMode, singlePhoneValid, groups.data, selectedGroupId, contactsCount.data]);
 
   const segments = countSegments(body);
   const estimatedCost = segments * recipientCount;
+
+  const walletBalance = session?.organization.walletBalanceCredits ?? 0;
 
   const recurringSummary = useMemo(() => {
     if (recurringFreq === 'daily') return `Daily at ${recurringTime}`;
     if (recurringFreq === 'weekly') return `Weekly on ${WEEKDAYS[recurringDayOfWeek]} at ${recurringTime}`;
     return `Monthly on the ${ordinal(recurringDayOfMonth)} at ${recurringTime}`;
   }, [recurringFreq, recurringTime, recurringDayOfWeek, recurringDayOfMonth]);
+
+  // Everything that has to be true before this send can go out, evaluated live
+  // so the panel explains what's missing instead of the button failing on click.
+  // 'blocked' disables sending; 'warning' is advisory only.
+  const checks = useMemo<ReadinessCheck[]>(() => {
+    const result: ReadinessCheck[] = [];
+
+    // Recipients. The "no contacts" cases only fire once the relevant query has
+    // actually resolved - an in-flight count reads as 0 and would otherwise
+    // block the button for a moment on every page load.
+    if (recipientMode === 'single') {
+      if (!singlePhone.trim()) {
+        result.push({ key: 'recipients', status: 'blocked', buttonLabel: 'Add a recipient', message: 'Enter a phone number to send to.' });
+      } else if (!singlePhoneValid) {
+        result.push({ key: 'recipients', status: 'blocked', buttonLabel: 'Check the number', message: "That number looks incomplete — it needs at least 9 digits." });
+      } else {
+        result.push({ key: 'recipients', status: 'ok', message: 'Sending to 1 number' });
+      }
+    } else if (recipientMode === 'all') {
+      if (contactsCount.isSuccess && recipientCount === 0) {
+        result.push({
+          key: 'recipients',
+          status: 'blocked',
+          buttonLabel: `No ${entity.plural} to send to`,
+          message: `You have no ${entity.plural} yet.`,
+          actionLabel: `Add ${entity.plural}`,
+          onAction: () => navigate('/app/contacts'),
+        });
+      } else {
+        result.push({ key: 'recipients', status: 'ok', message: `Sending to all ${recipientCount} ${entity.plural}` });
+      }
+    } else if (!selectedGroupId) {
+      result.push({ key: 'recipients', status: 'blocked', buttonLabel: 'Choose a group', message: 'Choose a group to send to.' });
+    } else if (groups.isSuccess && recipientCount === 0) {
+      result.push({
+        key: 'recipients',
+        status: 'blocked',
+        buttonLabel: 'Group is empty',
+        message: `That group has no ${entity.plural} in it yet.`,
+        actionLabel: `Add ${entity.plural}`,
+        onAction: () => navigate('/app/contacts/groups'),
+      });
+    } else {
+      result.push({ key: 'recipients', status: 'ok', message: `Sending to ${recipientCount} ${entity.plural}` });
+    }
+
+    // Message
+    if (!body.trim()) {
+      result.push({ key: 'message', status: 'blocked', buttonLabel: 'Write a message', message: 'Write the message you want to send.' });
+    } else {
+      result.push({ key: 'message', status: 'ok', message: `Message written — ${segments} segment${segments === 1 ? '' : 's'}` });
+    }
+
+    // Schedule timing
+    if (scheduleMode === 'once') {
+      const when = scheduleDate && scheduleTime ? new Date(`${scheduleDate}T${scheduleTime}`) : null;
+      if (!when) {
+        result.push({ key: 'schedule', status: 'blocked', buttonLabel: 'Pick a date and time', message: 'Choose when this should send.' });
+      } else if (when <= new Date()) {
+        result.push({ key: 'schedule', status: 'blocked', buttonLabel: 'Pick a future time', message: 'That time has already passed — choose a future one.' });
+      } else {
+        result.push({ key: 'schedule', status: 'ok', message: `Sends ${when.toLocaleString()}` });
+      }
+    } else if (scheduleMode === 'recurring') {
+      result.push({ key: 'schedule', status: 'ok', message: recurringSummary });
+    }
+
+    // Credits. Only "Send now" spends them immediately - scheduled and recurring
+    // sends reserve at fire time (services/scheduler.js), so a short balance
+    // there is a warning to top up in the meantime, not a reason to block.
+    const shortfall = estimatedCost - walletBalance;
+    if (scheduleMode === 'now') {
+      if (shortfall > 0) {
+        result.push({
+          key: 'credits',
+          status: 'blocked',
+          buttonLabel: 'Not enough credits',
+          message: `Need ${shortfall} more credit${shortfall === 1 ? '' : 's'} — you have ${walletBalance}.`,
+          actionLabel: 'Top up',
+          onAction: () => navigate('/app/wallet'),
+        });
+      } else {
+        result.push({ key: 'credits', status: 'ok', message: `${estimatedCost} of your ${walletBalance} credits` });
+      }
+    } else if (shortfall > 0) {
+      result.push({
+        key: 'credits',
+        status: 'warning',
+        message:
+          scheduleMode === 'recurring'
+            ? `Each run costs ~${estimatedCost} credits and you have ${walletBalance} — top up or runs will fail.`
+            : `This needs ${estimatedCost} credits and you have ${walletBalance} — top up before it sends.`,
+        actionLabel: 'Top up',
+        onAction: () => navigate('/app/wallet'),
+      });
+    } else {
+      result.push({
+        key: 'credits',
+        status: 'ok',
+        message:
+          scheduleMode === 'recurring'
+            ? `~${estimatedCost} credits per run, ${walletBalance} available`
+            : `${estimatedCost} of your ${walletBalance} credits`,
+      });
+    }
+
+    return result;
+  }, [
+    recipientMode,
+    singlePhone,
+    singlePhoneValid,
+    selectedGroupId,
+    recipientCount,
+    contactsCount.isSuccess,
+    groups.isSuccess,
+    body,
+    segments,
+    scheduleMode,
+    scheduleDate,
+    scheduleTime,
+    recurringSummary,
+    estimatedCost,
+    walletBalance,
+    entity,
+    navigate,
+  ]);
+
+  const blockers = checks.filter((c) => c.status === 'blocked');
+  const canSend = blockers.length === 0;
 
   function resetForm() {
     setBody('');
@@ -157,28 +303,11 @@ export function ComposePage() {
   }
 
   function handleOpenConfirm() {
-    if (!body.trim()) {
-      toast.error('Write a message first.');
+    // The button is disabled while anything is blocked, so this is just a
+    // backstop for state that changed between render and click.
+    if (blockers.length > 0) {
+      toast.error(blockers[0].message);
       return;
-    }
-    if (recipientMode === 'groups' && !selectedGroupId) {
-      toast.error('Choose a group to send to.');
-      return;
-    }
-    if (recipientMode === 'single' && !singlePhone.trim()) {
-      toast.error('Enter a phone number to send to.');
-      return;
-    }
-    if (scheduleMode === 'once') {
-      if (!scheduleDate || !scheduleTime) {
-        toast.error('Choose a date and time to send.');
-        return;
-      }
-      const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
-      if (scheduledDateTime <= new Date()) {
-        toast.error('Choose a future date and time.');
-        return;
-      }
     }
     setShowConfirm(true);
   }
@@ -530,13 +659,47 @@ export function ComposePage() {
               <div className="font-bold">{segments}</div>
             </div>
             <div className="flex justify-between border-t border-border pt-2.5 text-sm">
-              <div className="text-muted-foreground">Estimated cost</div>
+              <div className="text-muted-foreground">{scheduleMode === 'recurring' ? 'Cost per run' : 'Estimated cost'}</div>
               <div className="font-bold text-primary">{estimatedCost} credits</div>
+            </div>
+
+            <div className="mt-3.5 space-y-2 border-t border-border pt-3.5">
+              {checks.map((check) => (
+                <div key={check.key} className="flex items-start gap-2 text-xs">
+                  {check.status === 'ok' ? (
+                    <Check className="mt-px h-3.5 w-3.5 shrink-0 text-success" />
+                  ) : check.status === 'warning' ? (
+                    <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-warning" />
+                  ) : (
+                    <CircleAlert className="mt-px h-3.5 w-3.5 shrink-0 text-destructive" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <span
+                      className={cn(
+                        check.status === 'ok' && 'text-muted-foreground',
+                        check.status === 'warning' && 'font-medium text-warning',
+                        check.status === 'blocked' && 'font-medium text-destructive'
+                      )}
+                    >
+                      {check.message}
+                    </span>
+                    {check.actionLabel && check.onAction && (
+                      <button
+                        type="button"
+                        onClick={check.onAction}
+                        className="ml-1.5 font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        {check.actionLabel} →
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          <Button className="w-full" size="lg" onClick={handleOpenConfirm} disabled={isPending}>
-            {actionLabel}
+          <Button className="w-full" size="lg" onClick={handleOpenConfirm} disabled={isPending || !canSend}>
+            {isPending ? 'Working…' : canSend ? actionLabel : blockers[0].buttonLabel ?? actionLabel}
           </Button>
         </div>
       </div>
