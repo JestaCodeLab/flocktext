@@ -34,7 +34,11 @@ export function OtpPage() {
     setLoading(true);
     try {
       const data = await authApi.verifyOtp(normalizePhone(phone), code);
-      setSession({ user: data.user, organization: data.organization }, data.accessToken, data.refreshToken);
+      setSession(
+        { user: data.user, organization: data.organization, membership: data.membership },
+        data.accessToken,
+        data.refreshToken
+      );
       toast.success('Phone verified.');
       navigate('/app/dashboard');
     } catch (err) {
