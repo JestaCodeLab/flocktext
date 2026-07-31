@@ -252,13 +252,7 @@ export function AccountTeamSheet({
       </Sheet>
 
       {organizationId && (
-        <InviteTeamMemberDialog
-          open={showInvite}
-          onOpenChange={setShowInvite}
-          organizationId={organizationId}
-          needsSeat={remainingSeats <= 0}
-          seatPriceGhs={seatAddonGhs}
-        />
+        <InviteTeamMemberDialog open={showInvite} onOpenChange={setShowInvite} organizationId={organizationId} />
       )}
 
       <Dialog open={!!pendingDelete} onOpenChange={(next) => !next && setPendingDelete(null)}>

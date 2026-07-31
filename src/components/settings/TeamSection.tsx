@@ -197,12 +197,7 @@ export function TeamSection() {
         )}
       </SettingsCard>
 
-      <InviteTeamMemberDialog
-        open={showInvite}
-        onOpenChange={setShowInvite}
-        needsSeat={remainingSeats <= 0}
-        seatPriceGhs={seatAddonGhs}
-      />
+      <InviteTeamMemberDialog open={showInvite} onOpenChange={setShowInvite} allowAccountPicker />
     </>
   );
 }
