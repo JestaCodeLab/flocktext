@@ -56,3 +56,30 @@ export async function removeTeamMember(id: string, organizationId?: string) {
   const { data } = await api.delete<{ deleted: boolean }>(`${teamPath(organizationId)}/${id}`);
   return data;
 }
+
+export interface InviteMultiResultItem {
+  organizationId: string;
+  status: 'invited' | 'failed';
+  /** Only present when status is 'invited'. */
+  churchName?: string;
+  /** Only present when status is 'invited'. */
+  member?: TeamMember;
+  /** Only present when status is 'failed'. 'not_admin' also covers not being a member of that account at all. */
+  reason?: 'not_admin' | 'seat_unavailable' | 'already_member' | 'not_found' | 'other';
+  /** Only present when status is 'failed'. */
+  error?: string;
+}
+
+// Invites the same person into several of the caller's accounts in one request -
+// each account is authorized and invited into independently server-side, so the
+// response is a per-account result rather than one pass/fail (see api/routers/membershipRouter.js).
+export async function inviteTeamMemberAcrossAccounts(payload: {
+  name: string;
+  email: string;
+  phone: string;
+  role: 'admin' | 'user';
+  organizationIds: string[];
+}) {
+  const { data } = await api.post<{ results: InviteMultiResultItem[] }>('/memberships/invite', payload);
+  return data.results;
+}
