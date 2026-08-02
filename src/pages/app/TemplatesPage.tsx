@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, Pencil, LayoutTemplate, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,13 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { fetchTemplates, createTemplate, updateTemplate, deleteTemplate, type Template } from '@/api/templates';
 import { useNavigate } from 'react-router-dom';
 
+// Matches VARIABLE_PATTERN / personalize() in api/services/messageSender.js exactly -
+// these are the only tokens the backend actually replaces per recipient.
 const TEMPLATE_VARIABLES = [
-  { token: '{firstName}', description: "recipient's first name" },
-  { token: '{lastName}', description: "recipient's last name" },
-  { token: '{orgName}', description: 'your organization name' },
+  { token: '{firstName}', label: 'First name', description: "recipient's first name" },
+  { token: '{lastName}', label: 'Last name', description: "recipient's last name" },
+  { token: '{name}', label: 'Full name', description: "recipient's full name" },
+  { token: '{orgName}', label: 'Org name', description: 'your organization name' },
 ];
 
 export function TemplatesPage() {
@@ -23,8 +26,27 @@ export function TemplatesPage() {
   const [editing, setEditing] = useState<Template | null>(null);
   const [name, setName] = useState('');
   const [body, setBody] = useState('');
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   const templates = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates });
+
+  // Inserts at the cursor (not just appended) so this works mid-sentence too, then
+  // restores focus and places the cursor right after the inserted token.
+  function insertVariable(token: string) {
+    const el = bodyRef.current;
+    if (!el) {
+      setBody((b) => b + token);
+      return;
+    }
+    const start = el.selectionStart ?? body.length;
+    const end = el.selectionEnd ?? body.length;
+    setBody(body.slice(0, start) + token + body.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const cursor = start + token.length;
+      el.setSelectionRange(cursor, cursor);
+    });
+  }
 
   function closeForm() {
     setShowForm(false);
@@ -110,11 +132,24 @@ export function TemplatesPage() {
             <div className="space-y-1.5">
               <div className="text-[13px] font-semibold">Message body</div>
               <Textarea
-                placeholder="Use {firstName}, {lastName} or {orgName} to personalize"
+                ref={bodyRef}
+                placeholder="Type your message… or use the buttons below to personalize"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                className="min-h-[90px]"
+                className="min-h-[150px]"
               />
+              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                {TEMPLATE_VARIABLES.map((v) => (
+                  <button
+                    key={v.token}
+                    type="button"
+                    onClick={() => insertVariable(v.token)}
+                    className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                  >
+                    <Plus className="h-3 w-3" /> {v.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>

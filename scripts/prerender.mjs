@@ -15,18 +15,22 @@ function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// dist/index.html doubles as the SPA fallback shell for every non-marketing
-// route (/login, /app, etc. all rewrite to it) - so the "/" route's
-// prerendered output can't live there too, or those routes would flash the
-// marketing home page and inherit its <title>. It gets its own file instead,
-// with an explicit vercel.json rewrite mapping "/" to it.
+// Vercel serves a matching static file before it ever evaluates a rewrite
+// (see https://vercel.com/docs/project-configuration/vercel-json#rewrites -
+// "precedence is given to the filesystem prior to rewrites being applied").
+// dist/index.html is a static file at the root, so a rewrite with source
+// "/" is never reached - the prerendered "/" output must be index.html
+// itself. The pristine vite-built shell (used as the SPA fallback for
+// /login, /app, etc.) is preserved separately as app-shell.html before we
+// overwrite index.html.
 function outputPathFor(routePath) {
-  if (routePath === '/') return path.join(distDir, '__marketing-home.html');
+  if (routePath === '/') return path.join(distDir, 'index.html');
   return path.join(distDir, routePath.replace(/^\//, ''), 'index.html');
 }
 
 async function main() {
   const template = await readFile(path.join(distDir, 'index.html'), 'utf-8');
+  await writeFile(path.join(distDir, 'app-shell.html'), template);
 
   const vite = await createServer({
     root,
