@@ -9,11 +9,14 @@ import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
 import { AddContactDialog } from '@/components/contacts/AddContactDialog';
 import { ContactsTable } from '@/components/contacts/ContactsTable';
-import { fetchContacts } from '@/api/contacts';
+import { PaginationControls } from '@/components/ui/pagination-controls';
+import { fetchContactsPage } from '@/api/contacts';
 import { useAuthStore } from '@/store/authStore';
 import { useEntityLabels } from '@/lib/terminology';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
+
+const PAGE_SIZE = 20;
 
 export function ContactsPage() {
   const queryClient = useQueryClient();
@@ -22,13 +25,25 @@ export function ContactsPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [range, setRange] = useState<DateRangeParams>({ preset: 'all_time' });
+  const [page, setPage] = useState(1);
   const [showAdd, setShowAdd] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
   const contacts = useQuery({
-    queryKey: ['contacts', search, range],
-    queryFn: () => fetchContacts(search || undefined, range),
+    queryKey: ['contacts', search, range, page],
+    queryFn: () => fetchContactsPage({ page, pageSize: PAGE_SIZE, search: search || undefined, range }),
   });
+
+  // A new search/range changes the result set, so a page number from the old one may no
+  // longer exist - snap back to page 1 whenever either changes.
+  function applySearch(next: string) {
+    setSearch(next);
+    setPage(1);
+  }
+  function applyRange(next: DateRangeParams) {
+    setRange(next);
+    setPage(1);
+  }
 
   return (
     <div>
@@ -36,7 +51,7 @@ export function ContactsPage() {
         <div>
           <div className="text-[26px] font-bold">{entity.pluralCap}</div>
           <div className="mt-0.5 text-sm text-muted-foreground">
-            Showing {contacts.data?.length ?? 0} {entity.plural}
+            Showing {contacts.data?.total ?? 0} {entity.plural}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
@@ -70,6 +85,7 @@ export function ContactsPage() {
         open={showAdd}
         onOpenChange={setShowAdd}
         onCreated={() => {
+          setPage(1);
           queryClient.invalidateQueries({ queryKey: ['contacts'] });
           queryClient.invalidateQueries({ queryKey: ['groups'] });
         }}
@@ -84,20 +100,20 @@ export function ContactsPage() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') setSearch(searchInput);
+              if (e.key === 'Enter') applySearch(searchInput);
             }}
           />
         </div>
-        <Button variant="outline" className="shrink-0 px-2.5 sm:px-4" onClick={() => setSearch(searchInput)}>
+        <Button variant="outline" className="shrink-0 px-2.5 sm:px-4" onClick={() => applySearch(searchInput)}>
           <Search className="h-[15px] w-[15px]" /> <span className="hidden sm:inline">Search</span>
         </Button>
-        <DateRangeFilter range={range} onChange={setRange} includeAllTime compactOnMobile />
+        <DateRangeFilter range={range} onChange={applyRange} includeAllTime compactOnMobile />
         {search && (
           <Button
             variant="ghost"
             className="shrink-0 px-2.5 sm:px-4"
             onClick={() => {
-              setSearch('');
+              applySearch('');
               setSearchInput('');
             }}
           >
@@ -107,10 +123,13 @@ export function ContactsPage() {
       </div>
 
       <ContactsTable
-        contacts={contacts.data}
+        contacts={contacts.data?.rows}
         isLoading={contacts.isLoading}
         emptyMessage={`No ${entity.plural} yet. Add your first one above.`}
       />
+      {contacts.data && (
+        <PaginationControls page={page} total={contacts.data.total} pageSize={PAGE_SIZE} onPageChange={setPage} />
+      )}
 
       <Dialog open={showImport} onOpenChange={setShowImport}>
         <DialogContent className="sm:max-w-2xl">
@@ -121,6 +140,7 @@ export function ContactsPage() {
             <ImportContactsPanel
               onImported={(result) => {
                 if (result.imported > 0) {
+                  setPage(1);
                   updateOrganization({ contactsStatus: 'done' });
                   queryClient.invalidateQueries({ queryKey: ['contacts'] });
                   queryClient.invalidateQueries({ queryKey: ['groups'] });

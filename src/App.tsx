@@ -24,6 +24,8 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminOrganizationsPage } from '@/pages/admin/AdminOrganizationsPage';
 import { AdminOrganizationDetailPage } from '@/pages/admin/AdminOrganizationDetailPage';
+import { AdminOrgDeliveryReportPage } from '@/pages/admin/AdminOrgDeliveryReportPage';
+import { AdminOrgMessageReportPage } from '@/pages/admin/AdminOrgMessageReportPage';
 import { AdminDeliveryReportPage } from '@/pages/admin/AdminDeliveryReportPage';
 import { AdminTransactionsPage } from '@/pages/admin/AdminTransactionsPage';
 import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
@@ -36,7 +38,6 @@ import { WelcomeStep } from '@/pages/onboarding/WelcomeStep';
 import { OrganizationStep } from '@/pages/onboarding/OrganizationStep';
 import { SenderIdStep } from '@/pages/onboarding/SenderIdStep';
 import { ContactsStep } from '@/pages/onboarding/ContactsStep';
-import { WalletStep } from '@/pages/onboarding/WalletStep';
 import { DashboardPage } from '@/pages/app/DashboardPage';
 import { ContactsPage } from '@/pages/app/ContactsPage';
 import { GroupsPage } from '@/pages/app/GroupsPage';
@@ -88,6 +89,8 @@ function App() {
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="organizations/:id" element={<AdminOrganizationDetailPage />} />
+          <Route path="organizations/:id/delivery-report" element={<AdminOrgDeliveryReportPage />} />
+          <Route path="organizations/:id/delivery-report/:messageId" element={<AdminOrgMessageReportPage />} />
           <Route path="delivery-report" element={<AdminDeliveryReportPage />} />
           <Route path="transactions" element={<AdminTransactionsPage />} />
           <Route path="packages" element={<AdminPackagesPage />} />
@@ -105,7 +108,6 @@ function App() {
             <Route path="organization" element={<OrganizationStep />} />
             <Route path="sender-id" element={<SenderIdStep />} />
             <Route path="contacts" element={<ContactsStep />} />
-            <Route path="wallet" element={<WalletStep />} />
           </Route>
         </Route>
 

@@ -1,12 +1,11 @@
 {
   "rewrites": [
-    { "source": "/", "destination": "/__marketing-home.html" },
     { "source": "/pricing", "destination": "/pricing/index.html" },
     { "source": "/terms", "destination": "/terms/index.html" },
     { "source": "/privacy", "destination": "/privacy/index.html" },
     { "source": "/support", "destination": "/support/index.html" },
     { "source": "/businesses", "destination": "/businesses/index.html" },
     { "source": "/churches", "destination": "/churches/index.html" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/(.*)", "destination": "/app-shell.html" }
   ]
 }

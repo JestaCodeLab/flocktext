@@ -150,7 +150,7 @@ export function WalletPage() {
 
           <div className="flex items-center gap-2 text-[13px] text-muted-foreground">
             <CreditCard className="h-[15px] w-[15px] text-primary" />
-            Paid using — card or mobile money. Credit lands instantly and never expires.
+            Pay using — card or mobile money. Credit lands instantly and never expires.
           </div>
         </>
       )}

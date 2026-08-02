@@ -7,11 +7,11 @@ import { fetchActivityLog } from '@/api/activityLog';
 import { useAuthStore } from '@/store/authStore';
 
 export function ActivityLogPage() {
-  const currentUser = useAuthStore((s) => s.session?.user);
-  const log = useQuery({ queryKey: ['activity-log'], queryFn: fetchActivityLog, enabled: currentUser?.role === 'admin' });
+  const membership = useAuthStore((s) => s.session?.membership);
+  const log = useQuery({ queryKey: ['activity-log'], queryFn: fetchActivityLog, enabled: membership?.role === 'admin' });
 
   // Backend already 403s non-admins - this is just UX, no need to flash the page first.
-  if (currentUser && currentUser.role !== 'admin') return <Navigate to="/app/dashboard" replace />;
+  if (membership && membership.role !== 'admin') return <Navigate to="/app/dashboard" replace />;
 
   return (
     <div>

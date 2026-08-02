@@ -10,6 +10,7 @@ import { updateMe } from '@/api/auth';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useEntityLabels } from '@/lib/terminology';
+import { AccountsCard } from './AccountsCard';
 import { SettingsCard } from './SettingsCard';
 
 export function AccountSection() {
@@ -51,7 +52,8 @@ export function AccountSection() {
   });
 
   return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+    <div className="space-y-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <SettingsCard
         icon={Building2}
         title="Organization profile"
@@ -96,6 +98,9 @@ export function AccountSection() {
           </Button>
         </div>
       </SettingsCard>
+      </div>
+
+      <AccountsCard />
     </div>
   );
 }

@@ -22,6 +22,14 @@ export function sourceBadge(source: MessageDetail['source']) {
   return { variant: 'ghost' as const, label: 'Web' };
 }
 
+// Admin-only column (see `showProvider` below) - 'hubtel' means BMS Africa left this
+// recipient stuck pending 5+ minutes and services/deliveryEscalation.js resent it
+// through the backup provider.
+export function providerBadge(provider: 'bms' | 'hubtel' | undefined) {
+  if (provider === 'hubtel') return { variant: 'secondary' as const, label: 'Hubtel (backup)' };
+  return { variant: 'outline' as const, label: 'BMS' };
+}
+
 export function downloadCsv(filename: string, rows: string[][]) {
   const csv = rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -142,7 +150,7 @@ function RecipientsPaginationControls({ page, total, onPageChange }: { page: num
   );
 }
 
-function RecipientsTable({ recipients, page }: { recipients: MessageDetail['recipients']; page: number }) {
+function RecipientsTable({ recipients, page, showProvider }: { recipients: MessageDetail['recipients']; page: number; showProvider?: boolean }) {
   const pageRecipients = recipients.slice((page - 1) * RECIPIENTS_PAGE_SIZE, page * RECIPIENTS_PAGE_SIZE);
   return (
     <Table>
@@ -152,6 +160,7 @@ function RecipientsTable({ recipients, page }: { recipients: MessageDetail['reci
           <TableHead className="text-[13px]">Recipient</TableHead>
           <TableHead className="text-[13px]">Status</TableHead>
           <TableHead className="text-[13px]">Reason</TableHead>
+          {showProvider && <TableHead className="text-[13px]">Provider</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -163,6 +172,11 @@ function RecipientsTable({ recipients, page }: { recipients: MessageDetail['reci
               <Badge variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
             </TableCell>
             <TableCell className="text-muted-foreground">{r.reason || '—'}</TableCell>
+            {showProvider && (
+              <TableCell>
+                <Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>
+              </TableCell>
+            )}
           </TableRow>
         ))}
       </TableBody>
@@ -184,12 +198,16 @@ export function MessageDetailBody({
   onExportCsv,
   onResend,
   resending,
+  showProvider,
 }: {
   detail: MessageDetail;
   variant?: 'page' | 'modal';
   onExportCsv: () => void;
   onResend?: () => void;
   resending?: boolean;
+  // Admin-only: shows which SMS provider (BMS vs Hubtel backup) each recipient actually
+  // went out through. Omitted on org self-service surfaces, which share this component.
+  showProvider?: boolean;
 }) {
   const failedCount = detail.recipients.filter((r) => r.status === 'failed').length;
 
@@ -222,7 +240,7 @@ export function MessageDetailBody({
         </div>
 
         <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
-          <RecipientsTable recipients={detail.recipients} page={page} />
+          <RecipientsTable recipients={detail.recipients} page={page} showProvider={showProvider} />
           <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
         </div>
       </>

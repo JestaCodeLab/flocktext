@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   LayoutDashboard,
   Users,
@@ -10,11 +11,13 @@ import {
   LayoutTemplate,
   BarChart3,
   Wallet,
-  BadgeCheck,
+  Building2,
   Settings,
   History,
   Home,
   ChevronDown,
+  Check,
+  Plus,
   SendIcon,
   Sun,
   Moon,
@@ -22,6 +25,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchMe, logout } from '@/api/auth';
+import { fetchAccounts, createAccount, switchAccount } from '@/api/memberships';
+import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
 import { useEntityLabels, type EntityLabels } from '@/lib/terminology';
@@ -42,6 +47,7 @@ import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
 import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
 import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import type { LucideIcon } from 'lucide-react';
+import type { Account } from '@/types';
 
 type NavItem =
   | { to: string; label: string; icon: LucideIcon }
@@ -80,18 +86,29 @@ function navLinkClass(isActive: boolean) {
   );
 }
 
+// How many accounts the profile dropdown lists before deferring the rest to
+// Settings > Account.
+const ACCOUNT_MENU_LIMIT = 5;
+
 export function AppShell() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const session = useAuthStore((s) => s.session);
   const clear = useAuthStore((s) => s.clear);
+  const setSession = useAuthStore((s) => s.setSession);
   const updateUser = useAuthStore((s) => s.updateUser);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
+  const updateMembership = useAuthStore((s) => s.updateMembership);
   const themeResolved = useThemeStore((s) => s.resolved);
   const setThemeMode = useThemeStore((s) => s.setMode);
   const [contactsManualOpen, setContactsManualOpen] = useState<boolean | null>(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  // Switching swaps the whole app's data context and drops you on the
+  // dashboard, so it's confirmed rather than fired straight from the menu -
+  // a mis-click on a neighbouring row shouldn't silently move you accounts.
+  const [pendingSwitch, setPendingSwitch] = useState<Account | null>(null);
   const entity = useEntityLabels();
 
   useEffect(() => {
@@ -110,19 +127,60 @@ export function AppShell() {
     if (!freshSession) return;
     updateUser(freshSession.user);
     updateOrganization(freshSession.organization);
-  }, [freshSession, updateUser, updateOrganization]);
+    updateMembership(freshSession.membership);
+  }, [freshSession, updateUser, updateOrganization, updateMembership]);
 
-  if (!session) return null;
+  const accounts = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
+
+  // The header switcher is for switching, not managing - past a handful of
+  // accounts the menu grows taller than the viewport, so the rest live behind
+  // a link into Settings > Account, which lists them all in full. Active
+  // account sorted to the front so the cap can never hide the one the user is
+  // currently in.
+  const allAccounts = accounts.data ?? [];
+  const visibleAccounts = [...allAccounts]
+    .sort((a, b) => Number(b.isActive) - Number(a.isActive))
+    .slice(0, ACCOUNT_MENU_LIMIT);
+  const hiddenAccountCount = allAccounts.length - visibleAccounts.length;
+
+  function switchToSession(nextSession: typeof session) {
+    if (!nextSession) return;
+    const { accessToken, refreshToken } = useAuthStore.getState();
+    setSession(nextSession, accessToken ?? '', refreshToken ?? '');
+    queryClient.clear();
+    navigate('/app/dashboard', { replace: true });
+  }
+
+  const switchAccountMutation = useMutation({
+    mutationFn: switchAccount,
+    onSuccess: (nextSession) => {
+      setPendingSwitch(null);
+      switchToSession(nextSession);
+    },
+    onError: (err) => {
+      setPendingSwitch(null);
+      toast.error(apiErrorMessage(err));
+    },
+  });
+
+  const createAccountMutation = useMutation({
+    mutationFn: () => createAccount(),
+    onSuccess: (nextSession) => {
+      toast.success('New account created.');
+      switchToSession(nextSession);
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  // A session cached in localStorage from before accounts/memberships shipped
+  // only has {user, organization} - no membership key yet. Treat that as "not
+  // ready" rather than crashing; the /api/auth/me refresh above will populate
+  // it and this component re-renders once that lands.
+  if (!session || !session.membership) return null;
 
   const mainNavItems = getMainNavItems(entity);
-  const { user, organization } = session;
-  const bottomNavItems = getBottomNavItems(user.role);
-  // Only an approved sender ID is actually usable for sending, so that's the only
-  // thing worth surfacing here - a rejected/pending one marked primary shouldn't
-  // make this look like there's a working sender ID when there isn't (matches
-  // ComposePage's approved-first selection, used for the send flow itself).
-  const approvedSenderIds = organization.senderIds.filter((s) => s.status === 'approved');
-  const senderId = approvedSenderIds.find((s) => s.isPrimary) ?? approvedSenderIds[0];
+  const { user, organization, membership } = session;
+  const bottomNavItems = getBottomNavItems(membership.role);
 
   async function handleLogout() {
     const { refreshToken } = useAuthStore.getState();
@@ -223,22 +281,52 @@ export function AppShell() {
           </button>
 
           <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto sm:gap-2.5">
-            {senderId ? (
-              <div className="hidden shrink-0 items-center gap-1.5 rounded-full bg-success/15 px-3 py-1.5 text-xs font-bold whitespace-nowrap text-success sm:flex">
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {senderId.senderId}
-              </div>
-            ) : (
-              <Link
-                to="/app/settings"
-                state={{ tab: 'sender-ids' }}
-                className="hidden shrink-0 items-center gap-1.5 rounded-full border border-dashed border-border px-3 py-1.5 text-xs font-bold whitespace-nowrap text-muted-foreground hover:text-foreground sm:flex"
-              >
-                <BadgeCheck className="h-3.5 w-3.5" /> No Sender ID
-              </Link>
-            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-medium whitespace-nowrap">
+                <Building2 className="h-[15px] w-[15px] text-primary" />
+                <span className="max-w-[110px] truncate sm:max-w-[180px]">
+                  {organization.churchName || 'Untitled account'}
+                </span>
+                <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-[260px] p-1.5">
+                <div className="px-2.5 py-1 text-xs font-semibold text-muted-foreground">Switch account</div>
+                {visibleAccounts.map((account) => (
+                  <DropdownMenuItem
+                    key={account.organizationId}
+                    className="cursor-pointer gap-2.5 px-2.5 py-2 text-[13px]"
+                    disabled={switchAccountMutation.isPending || account.isActive}
+                    onClick={() => {
+                      if (!account.isActive) setPendingSwitch(account);
+                    }}
+                  >
+                    {account.isActive ? <Check className="h-4 w-4 shrink-0" /> : <span className="h-4 w-4 shrink-0" />}
+                    <span className="truncate">{account.churchName || 'Untitled account'}</span>
+                  </DropdownMenuItem>
+                ))}
+                {hiddenAccountCount > 0 && (
+                  <DropdownMenuItem
+                    className="cursor-pointer gap-2.5 px-2.5 py-2 text-[13px] text-muted-foreground"
+                    onClick={() => navigate('/app/settings', { state: { tab: 'account' } })}
+                  >
+                    <span className="h-4 w-4 shrink-0" />
+                    <span className="truncate">
+                      View all {allAccounts.length} accounts ({hiddenAccountCount} more)
+                    </span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator className="my-1.5" />
+                <DropdownMenuItem
+                  className="cursor-pointer gap-2.5 px-2.5 py-2 text-[13px]"
+                  disabled={createAccountMutation.isPending}
+                  onClick={() => createAccountMutation.mutate()}
+                >
+                  <Plus className="h-4 w-4 shrink-0" /> Add another account
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-bold whitespace-nowrap">
+            <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-medium whitespace-nowrap">
               <Wallet className="h-[15px] w-[15px] text-primary" />
               {organization.walletBalanceCredits.toLocaleString()} credits
             </div>
@@ -271,8 +359,8 @@ export function AppShell() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <div className="truncate text-sm font-medium">{user.name}</div>
-                      <Badge variant={user.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 text-white capitalize">
-                        {user.role}
+                      <Badge variant={membership.role === 'admin' ? 'default' : 'secondary'} className="shrink-0 text-white capitalize">
+                        {membership.role}
                       </Badge>
                     </div>
                     <div className="mt-0.5 truncate text-xs text-muted-foreground">{organization.churchName}</div>
@@ -303,6 +391,38 @@ export function AppShell() {
             </DropdownMenu>
           </div>
         </header>
+
+        <Dialog
+          open={!!pendingSwitch}
+          onOpenChange={(next) => {
+            if (!next && !switchAccountMutation.isPending) setPendingSwitch(null);
+          }}
+        >
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Switch to {pendingSwitch?.churchName || 'this account'}?</DialogTitle>
+              <DialogDescription>
+                FlockText will reload with {pendingSwitch?.churchName || 'that account'}'s contacts, messages, and wallet,
+                and you'll land on its dashboard. Anything unsaved on this page will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                disabled={switchAccountMutation.isPending}
+                onClick={() => setPendingSwitch(null)}
+              >
+                Stay here
+              </Button>
+              <Button
+                disabled={switchAccountMutation.isPending}
+                onClick={() => pendingSwitch && switchAccountMutation.mutate(pendingSwitch.organizationId)}
+              >
+                {switchAccountMutation.isPending ? 'Switching…' : 'Switch account'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Dialog open={showLogoutConfirm} onOpenChange={setShowLogoutConfirm}>
           <DialogContent className="sm:max-w-sm">

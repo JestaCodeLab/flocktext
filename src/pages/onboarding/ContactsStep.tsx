@@ -4,28 +4,41 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
-import { skipOnboardingStep } from '@/api/organization';
+import { completeOnboarding, skipOnboardingStep } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingBackLink } from '@/pages/onboarding/OnboardingBackLink';
 import { useEntityLabels } from '@/lib/terminology';
+import type { ImportResult } from '@/api/contacts';
 
 export function ContactsStep() {
   const navigate = useNavigate();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const entity = useEntityLabels();
 
-  const skip = useMutation({
-    mutationFn: () => skipOnboardingStep('contacts'),
+  // Contacts is the last step of the wizard, so both finishing and skipping it
+  // end onboarding - the server marks completedAt either way, which is what
+  // releases the OnboardingGate and sends the one-time welcome message.
+  const finish = useMutation({
+    mutationFn: completeOnboarding,
     onSuccess: (data) => {
       updateOrganization(data);
-      navigate('/onboarding/wallet');
+      navigate('/app/dashboard');
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  function handleImported() {
-    updateOrganization({ contactsStatus: 'done' });
+  const skip = useMutation({
+    mutationFn: () => skipOnboardingStep('contacts'),
+    onSuccess: (data) => {
+      updateOrganization(data);
+      navigate('/app/dashboard');
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  function handleImported(result: ImportResult) {
+    if (result.imported > 0) updateOrganization({ contactsStatus: 'done' });
   }
 
   return (
@@ -42,8 +55,13 @@ export function ContactsStep() {
         <ShareLinkPanel />
       </div>
 
-      <Button className="mb-3 h-12 w-full rounded-full" size="lg" onClick={() => navigate('/onboarding/wallet')}>
-        Continue
+      <Button
+        className="mb-3 h-12 w-full rounded-full"
+        size="lg"
+        disabled={finish.isPending}
+        onClick={() => finish.mutate()}
+      >
+        {finish.isPending ? 'Finishing…' : 'Finish setup'}
       </Button>
       <Button
         type="button"

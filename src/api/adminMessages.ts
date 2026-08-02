@@ -43,6 +43,7 @@ export interface AdminMessageRecipientRow {
   status: 'pending' | 'delivered' | 'failed';
   reason: string;
   deliveredAt: string | null;
+  provider: 'bms' | 'hubtel';
 }
 
 export interface AdminMessageDetail {

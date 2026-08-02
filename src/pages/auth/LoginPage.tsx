@@ -28,7 +28,11 @@ export function LoginPage() {
     setLoading(true);
     try {
       const data = await authApi.login(normalizePhone(phone), password);
-      setSession({ user: data.user, organization: data.organization }, data.accessToken, data.refreshToken);
+      setSession(
+        { user: data.user, organization: data.organization, membership: data.membership },
+        data.accessToken,
+        data.refreshToken
+      );
       navigate('/app/dashboard');
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 403) {

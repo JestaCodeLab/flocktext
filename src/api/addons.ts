@@ -16,8 +16,15 @@ export interface AddonsOverview extends AddonEntitlements {
   addons: AddonCatalogItem[];
 }
 
-export async function fetchAddons() {
-  const { data } = await api.get<AddonsOverview>('/addons');
+// Seats and addons are billed per organization, so every call can name one.
+// Omitting it targets whichever account the caller is switched into; passing
+// one targets another of their accounts (they must be an admin of it to buy).
+function addonPath(organizationId?: string) {
+  return organizationId ? `/memberships/${organizationId}/addons` : '/addons';
+}
+
+export async function fetchAddons(organizationId?: string) {
+  const { data } = await api.get<AddonsOverview>(addonPath(organizationId));
   return data;
 }
 
@@ -36,12 +43,14 @@ export type InitializeAddonPurchaseResult =
       authorization_url?: string;
     };
 
-export async function initializeAddonPurchase(key: string) {
-  const { data } = await api.post<InitializeAddonPurchaseResult>(`/addons/${key}/purchase/initialize`);
+export async function initializeAddonPurchase(key: string, organizationId?: string) {
+  const { data } = await api.post<InitializeAddonPurchaseResult>(`${addonPath(organizationId)}/${key}/purchase/initialize`);
   return data;
 }
 
-export async function verifyAddonPurchase(reference: string) {
-  const { data } = await api.get<AddonEntitlements>(`/addons/purchase/verify/${encodeURIComponent(reference)}`);
+export async function verifyAddonPurchase(reference: string, organizationId?: string) {
+  const { data } = await api.get<AddonEntitlements>(
+    `${addonPath(organizationId)}/purchase/verify/${encodeURIComponent(reference)}`
+  );
   return data;
 }

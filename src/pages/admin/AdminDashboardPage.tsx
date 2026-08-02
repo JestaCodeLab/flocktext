@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Building2, Send, BadgeCheck, Radio, BarChart3 } from 'lucide-react';
+import { Building2, Send, BadgeCheck, Radio, LifeBuoy, BarChart3 } from 'lucide-react';
 import { fetchAdminDashboardSummary, fetchAdminDashboardChart } from '@/api/adminDashboard';
-import { fetchBmsCredit } from '@/api/adminPackages';
+import { fetchBmsCredit, fetchHubtelWalletBalance } from '@/api/adminPackages';
 import { StatCard } from '@/components/admin/StatCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,6 +39,7 @@ export function AdminDashboardPage() {
   const [range, setRange] = useState<DateRangeParams>({ preset: 'this_month' });
   const summary = useQuery({ queryKey: ['admin-dashboard-summary', range], queryFn: () => fetchAdminDashboardSummary(range) });
   const bmsCredit = useQuery({ queryKey: ['admin-bms-credit'], queryFn: fetchBmsCredit });
+  const hubtelWallet = useQuery({ queryKey: ['admin-hubtel-wallet'], queryFn: fetchHubtelWalletBalance });
   const chart = useQuery({ queryKey: ['admin-dashboard-chart'], queryFn: fetchAdminDashboardChart });
   const d = summary.data;
   const buckets = chart.data?.buckets ?? [];
@@ -58,18 +59,24 @@ export function AdminDashboardPage() {
       </div>
 
       {summary.isLoading ? (
-        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-[104px] rounded-xl" />
           ))}
         </div>
       ) : (
-        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
             icon={Radio}
             label="BMS credit balance"
             value={bmsCredit.data?.balance != null ? bmsCredit.data.balance.toLocaleString() : '—'}
             tone={bmsCredit.data?.balance == null ? 'warning' : 'default'}
+          />
+          <StatCard
+            icon={LifeBuoy}
+            label="Hubtel wallet balance"
+            value={hubtelWallet.data ? hubtelWallet.data.balance.toLocaleString() : '—'}
+            tone={hubtelWallet.data && hubtelWallet.data.balance <= 0 ? 'warning' : 'default'}
           />
           <StatCard icon={Building2} label="Total organizations" value={d?.totalOrganizations ?? 0} accent="blue" />
           <StatCard icon={Send} label="Messages sent" value={(d?.messagesSent ?? 0).toLocaleString()} sub={rangeLabel(range)} accent="violet" />

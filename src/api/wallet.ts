@@ -33,8 +33,6 @@ export async function fetchWallet() {
 
 export interface TopupResult {
   walletBalanceCredits: number;
-  walletStatus: 'pending' | 'done' | 'skipped';
-  onboardingCompletedAt: string | null;
 }
 
 export type InitializeTopupResult =

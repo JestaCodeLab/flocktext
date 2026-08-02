@@ -19,6 +19,24 @@ export async function fetchContacts(search?: string, range?: DateRangeParams) {
   return data;
 }
 
+export interface ContactListResponse {
+  rows: Contact[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// Pagination is opt-in server-side (see api/controllers/contactController.js) - only this
+// function passes `page`, so only this function gets the paginated envelope back. Plain
+// fetchContacts() above (used by search pickers and the birthdays view) is untouched.
+export async function fetchContactsPage(params: { page: number; pageSize?: number; search?: string; range?: DateRangeParams }) {
+  const { page, pageSize, search, range } = params;
+  const { data } = await api.get<ContactListResponse>('/contacts', {
+    params: { page, pageSize, ...(search ? { search } : undefined), ...range },
+  });
+  return data;
+}
+
 export async function fetchContactsCount() {
   const { data } = await api.get<{ count: number }>('/contacts/count');
   return data.count;

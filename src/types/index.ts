@@ -5,7 +5,22 @@ export interface SessionUser {
   name: string;
   phone: string;
   email: string;
+}
+
+// Role/isFounder are scoped to the currently active organization, not the
+// person - the same user can be admin in one account and a plain member of
+// another, so this lives separately from SessionUser.
+export interface SessionMembership {
   role: Role;
+  isFounder: boolean;
+}
+
+export interface Account {
+  organizationId: string;
+  churchName: string;
+  role: Role;
+  isFounder: boolean;
+  isActive: boolean;
 }
 
 export interface SenderIdRequest {
@@ -36,11 +51,11 @@ export interface SessionOrganization {
   senderIds: SenderIdRequest[];
   onboardingStep: number;
   contactsStatus: 'pending' | 'done' | 'skipped';
-  walletStatus: 'pending' | 'done' | 'skipped';
   onboardingCompletedAt: string | null;
 }
 
 export interface Session {
   user: SessionUser;
   organization: SessionOrganization;
+  membership: SessionMembership;
 }

@@ -1,5 +1,14 @@
 import { api } from '@/api/client';
+import { useAuthStore } from '@/store/authStore';
 import type { DateRangeParams } from '@/lib/dateRange';
+
+// Message-sending endpoints validate this against the server-resolved active
+// membership - if it doesn't match (e.g. the account was switched in another
+// tab mid-flight), the server rejects the request rather than silently
+// sending under the now-active org's sender ID/wallet.
+function activeOrganizationId() {
+  return useAuthStore.getState().session?.organization.id;
+}
 
 export interface PageParams {
   page: number;
@@ -36,7 +45,7 @@ export interface SendMessageResult {
 }
 
 export async function sendMessage(payload: SendMessagePayload) {
-  const { data } = await api.post<SendMessageResult>('/messages/send', payload);
+  const { data } = await api.post<SendMessageResult>('/messages/send', { ...payload, organizationId: activeOrganizationId() });
   return data;
 }
 
@@ -50,7 +59,10 @@ export interface ScheduleMessagePayload extends SendMessagePayload {
 }
 
 export async function scheduleMessage(payload: ScheduleMessagePayload) {
-  const { data } = await api.post<{ id: string; scheduleDate: string }>('/messages/schedule', payload);
+  const { data } = await api.post<{ id: string; scheduleDate: string }>('/messages/schedule', {
+    ...payload,
+    organizationId: activeOrganizationId(),
+  });
   return data;
 }
 
@@ -112,6 +124,15 @@ export interface MessageRecipientRow {
   status: 'pending' | 'delivered' | 'failed';
   reason: string;
   deliveredAt: string | null;
+  // Only populated by the admin-facing recipients endpoints (see api/adminOrgMessages.ts) -
+  // undefined on the org self-service endpoint this type is also shared with.
+  provider?: 'bms' | 'hubtel';
+  // Set once services/deliveryEscalation.js resends this recipient through the backup
+  // provider - admin-only, same as provider above.
+  escalatedAt?: string | null;
+  // Last time this recipient's status changed - admin-only. Used to timestamp a failed
+  // recipient's resolution, since only `deliveredAt` is set for the delivered case.
+  updatedAt?: string;
 }
 
 export interface MessageDetail {
@@ -131,7 +152,7 @@ export async function fetchMessageRecipients(id: string) {
 }
 
 export async function resendFailedMessage(id: string) {
-  const { data } = await api.post<SendMessageResult>(`/messages/${id}/resend-failed`);
+  const { data } = await api.post<SendMessageResult>(`/messages/${id}/resend-failed`, { organizationId: activeOrganizationId() });
   return data;
 }
 
