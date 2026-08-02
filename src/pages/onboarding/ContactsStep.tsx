@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
-import { completeOnboarding, skipOnboardingStep } from '@/api/organization';
+import { completeOnboarding } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { OnboardingBackLink } from '@/pages/onboarding/OnboardingBackLink';
@@ -16,20 +16,10 @@ export function ContactsStep() {
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const entity = useEntityLabels();
 
-  // Contacts is the last step of the wizard, so both finishing and skipping it
-  // end onboarding - the server marks completedAt either way, which is what
-  // releases the OnboardingGate and sends the one-time welcome message.
+  // Contacts is the last step of the wizard - finishing it ends onboarding,
+  // which is what releases the OnboardingGate and sends the one-time welcome message.
   const finish = useMutation({
     mutationFn: completeOnboarding,
-    onSuccess: (data) => {
-      updateOrganization(data);
-      navigate('/app/dashboard');
-    },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
-
-  const skip = useMutation({
-    mutationFn: () => skipOnboardingStep('contacts'),
     onSuccess: (data) => {
       updateOrganization(data);
       navigate('/app/dashboard');
@@ -62,16 +52,6 @@ export function ContactsStep() {
         onClick={() => finish.mutate()}
       >
         {finish.isPending ? 'Finishing…' : 'Finish setup'}
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        className="h-12 w-full rounded-full"
-        size="lg"
-        disabled={skip.isPending}
-        onClick={() => skip.mutate()}
-      >
-        Skip for now
       </Button>
     </div>
   );
