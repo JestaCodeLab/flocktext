@@ -31,7 +31,7 @@ export async function deleteSenderId(id: string) {
   return data;
 }
 
-export async function skipOnboardingStep(step: 'sender_id' | 'contacts') {
+export async function skipOnboardingStep(step: 'sender_id') {
   const { data } = await api.post<SessionOrganization>('/organization/onboarding/skip', { step });
   return data;
 }
