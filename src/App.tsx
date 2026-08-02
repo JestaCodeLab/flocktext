@@ -24,6 +24,8 @@ import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage';
 import { AdminOrganizationsPage } from '@/pages/admin/AdminOrganizationsPage';
 import { AdminOrganizationDetailPage } from '@/pages/admin/AdminOrganizationDetailPage';
+import { AdminOrgDeliveryReportPage } from '@/pages/admin/AdminOrgDeliveryReportPage';
+import { AdminOrgMessageReportPage } from '@/pages/admin/AdminOrgMessageReportPage';
 import { AdminDeliveryReportPage } from '@/pages/admin/AdminDeliveryReportPage';
 import { AdminTransactionsPage } from '@/pages/admin/AdminTransactionsPage';
 import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
@@ -87,6 +89,8 @@ function App() {
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="organizations/:id" element={<AdminOrganizationDetailPage />} />
+          <Route path="organizations/:id/delivery-report" element={<AdminOrgDeliveryReportPage />} />
+          <Route path="organizations/:id/delivery-report/:messageId" element={<AdminOrgMessageReportPage />} />
           <Route path="delivery-report" element={<AdminDeliveryReportPage />} />
           <Route path="transactions" element={<AdminTransactionsPage />} />
           <Route path="packages" element={<AdminPackagesPage />} />

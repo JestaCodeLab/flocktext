@@ -124,6 +124,15 @@ export interface MessageRecipientRow {
   status: 'pending' | 'delivered' | 'failed';
   reason: string;
   deliveredAt: string | null;
+  // Only populated by the admin-facing recipients endpoints (see api/adminOrgMessages.ts) -
+  // undefined on the org self-service endpoint this type is also shared with.
+  provider?: 'bms' | 'hubtel';
+  // Set once services/deliveryEscalation.js resends this recipient through the backup
+  // provider - admin-only, same as provider above.
+  escalatedAt?: string | null;
+  // Last time this recipient's status changed - admin-only. Used to timestamp a failed
+  // recipient's resolution, since only `deliveredAt` is set for the delivered case.
+  updatedAt?: string;
 }
 
 export interface MessageDetail {

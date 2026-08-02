@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert } from 'lucide-react';
+import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import {
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
-import { fetchGroups, fetchContactsCount } from '@/api/contacts';
+import { fetchGroups, fetchContactsCount, fetchContacts, type Contact } from '@/api/contacts';
 import { fetchTemplates } from '@/api/templates';
 import { sendMessage, scheduleMessage, type RecurringFreq } from '@/api/messages';
 import { fetchEffectiveSenderId } from '@/api/organization';
@@ -31,6 +31,15 @@ import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Matches VARIABLE_PATTERN / personalize() in api/services/messageSender.js exactly -
+// these are the only tokens the backend actually replaces per recipient.
+const MESSAGE_VARIABLES = [
+  { token: '{firstName}', label: 'First name' },
+  { token: '{lastName}', label: 'Last name' },
+  { token: '{name}', label: 'Full name' },
+  { token: '{orgName}', label: 'Org name' },
+];
 
 interface ReadinessCheck {
   key: string;
@@ -72,6 +81,17 @@ export function ComposePage() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [singlePhone, setSinglePhone] = useState(preset?.phone ?? '');
   const [singleName, setSingleName] = useState(preset?.recipientName ?? '');
+  // Preset navigation (e.g. "Message this contact" elsewhere in the app) already hands
+  // us a resolved phone/name, so land on manual entry in that case rather than the
+  // search UI - otherwise default to searching existing contacts, the more common path.
+  const [singleEntryMode, setSingleEntryMode] = useState<'contact' | 'manual'>(preset?.phone ? 'manual' : 'contact');
+  // contactSearchInput updates on every keystroke (so the box itself feels responsive);
+  // contactSearch only catches up 300ms after typing pauses, and is what actually drives
+  // the query - without this, an org with hundreds of contacts fires one network request
+  // per keystroke, and an empty search fetches every contact unfiltered.
+  const [contactSearchInput, setContactSearchInput] = useState('');
+  const [contactSearch, setContactSearch] = useState('');
+  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [scheduleMode, setScheduleMode] = useState<'now' | 'once' | 'recurring'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
@@ -82,13 +102,30 @@ export function ComposePage() {
 
   const [templateId, setTemplateId] = useState(preset?.templateId ?? '');
   const [body, setBody] = useState(preset?.body ?? '');
+  const messageRef = useRef<HTMLTextAreaElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAddSenderId, setShowAddSenderId] = useState(false);
   const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
 
+  useEffect(() => {
+    const t = setTimeout(() => setContactSearch(contactSearchInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [contactSearchInput]);
+
   const groups = useQuery({ queryKey: ['groups'], queryFn: fetchGroups });
   const templates = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates });
   const contactsCount = useQuery({ queryKey: ['contacts-count'], queryFn: fetchContactsCount });
+  // Never fetches on an empty search - an org with hundreds of contacts would otherwise
+  // dump its entire, unfiltered contact list into a 220px scrollable box the moment this
+  // tab opens. contactSearch is already debounced (see effect above).
+  const contactResults = useQuery({
+    queryKey: ['contacts', contactSearch],
+    queryFn: () => fetchContacts(contactSearch),
+    enabled: recipientMode === 'single' && singleEntryMode === 'contact' && !selectedContact && contactSearch.length > 0,
+  });
+  const MAX_CONTACT_RESULTS = 50;
+  const shownContactResults = contactResults.data?.slice(0, MAX_CONTACT_RESULTS) ?? [];
+  const hiddenContactResultCount = Math.max(0, (contactResults.data?.length ?? 0) - MAX_CONTACT_RESULTS);
   const senderIds = (session?.organization.senderIds ?? []).filter((s) => s.status !== 'deleted');
   const approvedSenderIds = senderIds.filter((s) => s.status === 'approved');
   const approvedSenderId = approvedSenderIds.find((s) => s.isPrimary) ?? approvedSenderIds[0];
@@ -259,6 +296,9 @@ export function ComposePage() {
     setSelectedGroupId(null);
     setSinglePhone('');
     setSingleName('');
+    setSelectedContact(null);
+    setContactSearchInput('');
+    setContactSearch('');
     setScheduleDate('');
     setScheduleMode('now');
     setSelectedSenderId(null);
@@ -300,6 +340,24 @@ export function ComposePage() {
 
   function selectGroup(id: string) {
     setSelectedGroupId((current) => (current === id ? null : id));
+  }
+
+  // Inserts at the cursor (not just appended) so this works mid-sentence too, then
+  // restores focus and places the cursor right after the inserted token.
+  function insertVariable(token: string) {
+    const el = messageRef.current;
+    if (!el) {
+      setBody((b) => b + token);
+      return;
+    }
+    const start = el.selectionStart ?? body.length;
+    const end = el.selectionEnd ?? body.length;
+    setBody(body.slice(0, start) + token + body.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      const cursor = start + token.length;
+      el.setSelectionRange(cursor, cursor);
+    });
   }
 
   function handleOpenConfirm() {
@@ -460,25 +518,120 @@ export function ComposePage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="single-phone">Phone number</Label>
-                  <Input
-                    id="single-phone"
-                    placeholder="024 xxx xxxx"
-                    inputMode="numeric"
-                    value={singlePhone}
-                    onChange={(e) => setSinglePhone(formatPhoneInput(e.target.value))}
-                  />
+                <div className="flex w-fit rounded-lg border border-border p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setSingleEntryMode('contact')}
+                    className={cn(
+                      'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
+                      singleEntryMode === 'contact' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    From {entity.plural}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSingleEntryMode('manual')}
+                    className={cn(
+                      'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
+                      singleEntryMode === 'manual' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    Manual entry
+                  </button>
                 </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="single-name">Name (optional)</Label>
-                  <Input
-                    id="single-name"
-                    placeholder="Used for {firstName}/{lastName} personalization"
-                    value={singleName}
-                    onChange={(e) => setSingleName(e.target.value)}
-                  />
-                </div>
+
+                {singleEntryMode === 'contact' ? (
+                  selectedContact ? (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-primary bg-accent/40 p-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-sm font-semibold leading-tight">{selectedContact.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{selectedContact.phone}</div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedContact(null);
+                          setSinglePhone('');
+                          setSingleName('');
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5" /> Change
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          placeholder={`Search ${entity.plural} by name or phone…`}
+                          className="pl-10"
+                          value={contactSearchInput}
+                          onChange={(e) => setContactSearchInput(e.target.value)}
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-[220px] overflow-auto rounded-lg border border-border">
+                        {/* {contactSearchInput.trim().length === 0 && (
+                          <div className="p-4 text-sm text-muted-foreground">
+                            Start typing a name or phone number to search your {entity.plural}.
+                          </div>
+                        )} */}
+                        {contactSearchInput.trim().length > 0 && contactResults.isLoading && (
+                          <div className="p-4 text-sm text-muted-foreground">Searching {entity.plural}…</div>
+                        )}
+                        {contactSearchInput.trim().length > 0 && !contactResults.isLoading && shownContactResults.length === 0 && (
+                          <div className="p-4 text-sm text-muted-foreground">No {entity.plural} found.</div>
+                        )}
+                        {shownContactResults.map((c) => (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedContact(c);
+                              setSinglePhone(c.phone);
+                              setSingleName(c.name);
+                            }}
+                            className="flex w-full items-center gap-3 border-b border-border px-3.5 py-2.5 text-left last:border-b-0 hover:bg-secondary/60"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-semibold">{c.name}</div>
+                              <div className="truncate text-xs text-muted-foreground">{c.phone}</div>
+                            </div>
+                          </button>
+                        ))}
+                        {hiddenContactResultCount > 0 && (
+                          <div className="border-t border-border p-2.5 text-center text-xs text-muted-foreground">
+                            +{hiddenContactResultCount} more — keep typing to narrow it down
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="single-phone">Phone number</Label>
+                      <Input
+                        id="single-phone"
+                        placeholder="024 xxx xxxx"
+                        inputMode="numeric"
+                        value={singlePhone}
+                        onChange={(e) => setSinglePhone(formatPhoneInput(e.target.value))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="single-name">Name (optional)</Label>
+                      <Input
+                        id="single-name"
+                        placeholder="Used for {firstName}/{lastName} personalization"
+                        value={singleName}
+                        onChange={(e) => setSingleName(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -511,7 +664,7 @@ export function ComposePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setShowAddSenderId(true)} className="shrink-0">
+              <Button size="sm" variant="outline" onClick={() => setShowAddSenderId(true)} className="shrink-0 text-sm">
                 <Plus className="h-4 w-4" /> New
               </Button>
             </div>
@@ -625,15 +778,26 @@ export function ComposePage() {
           <div className="mb-5 rounded-xl border border-border bg-card p-5">
             <div className="mb-2.5 text-[15px] font-medium text-foreground/80">Message</div>
             <Textarea
-              placeholder="Type your message… use {firstName}, {lastName} or {orgName} to personalize"
+              ref={messageRef}
+              placeholder="Type your message… or use the buttons below to personalize"
               value={body}
               onChange={(e) => setBody(e.target.value)}
               className="min-h-[140px] resize-y border-none p-0 shadow-none focus-visible:ring-0"
             />
-            <div className="mt-2 border-t border-border pt-2.5 text-sm text-muted-foreground">
-              {body.length}/160 characters — {segments} SMS segment(s) · <b className="font-semibold text-foreground/80">{'{firstName}'}</b>,{' '}
-              <b className="font-semibold text-foreground/80">{'{lastName}'}</b> and <b className="font-semibold text-foreground/80">{'{orgName}'}</b>{' '}
-              personalize per recipient.
+            <div className="mt-2.5 flex flex-wrap gap-1.5 border-t border-border pt-2.5">
+              {MESSAGE_VARIABLES.map((v) => (
+                <button
+                  key={v.token}
+                  type="button"
+                  onClick={() => insertVariable(v.token)}
+                  className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                >
+                  <Plus className="h-3 w-3" /> {v.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2.5 text-sm text-muted-foreground">
+              {body.length}/160 characters — {segments} SMS segment(s)
             </div>
           </div>
         </div>

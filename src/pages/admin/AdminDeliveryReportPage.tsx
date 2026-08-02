@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { statusBadgeVariant, downloadCsv } from '@/components/messages/MessageDetailBody';
+import { statusBadgeVariant, providerBadge, downloadCsv } from '@/components/messages/MessageDetailBody';
 import { fetchAdminMessages, fetchAdminMessageRecipients, type AdminMessageStats, type AdminMessageSummary } from '@/api/adminMessages';
 import { cn } from '@/lib/utils';
 
@@ -166,8 +166,15 @@ export function AdminDeliveryReportPage() {
   function exportCsv() {
     if (!detail.data) return;
     const rows = [
-      ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
-      ...detail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
+      ['Name', 'Phone', 'Status', 'Reason', 'Delivered at', 'Provider'],
+      ...detail.data.recipients.map((r) => [
+        r.name,
+        r.phone,
+        r.status,
+        r.reason,
+        r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '',
+        r.provider === 'hubtel' ? 'Hubtel (backup)' : 'BMS',
+      ]),
     ];
     downloadCsv(`admin-broadcast-${viewingId}-recipients.csv`, rows);
   }
@@ -316,6 +323,7 @@ export function AdminDeliveryReportPage() {
                       <TableHead className="text-[13px]">Phone</TableHead>
                       <TableHead className="text-[13px]">Status</TableHead>
                       <TableHead className="text-[13px]">Reason</TableHead>
+                      <TableHead className="text-[13px]">Provider</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -327,6 +335,9 @@ export function AdminDeliveryReportPage() {
                           <Badge variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{r.reason || '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

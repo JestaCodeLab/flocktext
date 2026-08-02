@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Building2, Plus, ChevronRight, Check } from 'lucide-react';
+import { Building2, Plus, ChevronRight, Check, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AccountTeamSheet } from '@/components/settings/AccountTeamSheet';
-import { fetchAccounts, createAccount, switchAccount } from '@/api/memberships';
+import { DeleteAccountDialog } from '@/components/settings/DeleteAccountDialog';
+import { fetchAccounts, createAccount, switchAccount, deleteAccount } from '@/api/memberships';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import type { Account, Session } from '@/types';
@@ -23,6 +24,7 @@ export function AccountsCard() {
   // Same confirmation the header switcher uses - switching swaps the whole
   // app's data context, so it shouldn't happen on a single stray click.
   const [pendingSwitch, setPendingSwitch] = useState<Account | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
 
   const accounts = useQuery({ queryKey: ['accounts'], queryFn: fetchAccounts });
 
@@ -57,7 +59,20 @@ export function AccountsCard() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const remove = useMutation({
+    mutationFn: (password: string) => deleteAccount(deleteTarget!.organizationId, password),
+    onSuccess: (result) => {
+      setDeleteTarget(null);
+      applySession(result);
+      toast.success(result.purged ? 'Account and all its data have been permanently deleted.' : 'You no longer have access to that account.');
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const busy = switchTo.isPending || create.isPending;
+  // Deleting your only account isn't supported here (see membershipController.deleteAccount's
+  // "only account" guard) - hide the action rather than let someone click into a 422.
+  const canDeleteAccounts = (accounts.data?.length ?? 0) > 1;
 
   return (
     <>
@@ -126,6 +141,18 @@ export function AccountsCard() {
                   >
                     Details <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
+                  {canDeleteAccounts && (
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      aria-label={`Delete ${account.churchName || 'account'}`}
+                      disabled={busy}
+                      onClick={() => setDeleteTarget(account)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -134,6 +161,13 @@ export function AccountsCard() {
       </SettingsCard>
 
       <AccountTeamSheet account={selected} open={!!selected} onOpenChange={(next) => !next && setSelected(null)} />
+
+      <DeleteAccountDialog
+        account={deleteTarget}
+        onOpenChange={(open) => !open && !remove.isPending && setDeleteTarget(null)}
+        isPending={remove.isPending}
+        onConfirm={(password) => remove.mutate(password)}
+      />
 
       <Dialog
         open={!!pendingSwitch}

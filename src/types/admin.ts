@@ -39,6 +39,9 @@ export interface AdminSenderId {
   bmsStatus: string;
   isPrimary: boolean;
   createdAt: string;
+  // Never includes the secret - just whether this sender ID's backup-provider (Hubtel)
+  // credentials have been set.
+  hubtelConfigured: boolean;
 }
 
 export interface AdminOrgDetail {

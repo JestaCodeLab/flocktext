@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  AlertTriangle,
   ArrowLeft,
   Ban,
   BadgeCheck,
+  BarChart3,
   CheckCircle2,
+  KeyRound,
   MessageSquareText,
   Pencil,
   Rocket,
@@ -19,6 +22,7 @@ import {
   Plus,
   Users as UsersIcon,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,9 +30,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
+import { EditHubtelCredentialsDialog, type EditHubtelCredentialsTarget } from '@/components/admin/EditHubtelCredentialsDialog';
 import { AdminAddUserDialog } from '@/components/admin/AdminAddUserDialog';
 import { EditOrgUserDialog } from '@/components/admin/EditOrgUserDialog';
 import { DeleteOrgUserDialog } from '@/components/admin/DeleteOrgUserDialog';
@@ -53,10 +60,21 @@ import {
   checkBmsStatus,
   restoreSenderId,
   permanentlyDeleteSenderId,
+  updateHubtelCredentials,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
+
+type OrgTabKey = 'sender-ids' | 'users' | 'danger-zone';
+
+const ORG_TABS: { key: OrgTabKey; label: string; icon: LucideIcon }[] = [
+  { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck },
+  { key: 'users', label: 'Users', icon: UsersIcon },
+  { key: 'danger-zone', label: 'Danger zone', icon: AlertTriangle },
+];
+
+const TRIGGER_CLASS = 'data-active:text-primary data-active:font-bold data-active:after:bg-primary';
 
 function DetailSkeleton() {
   return (
@@ -99,6 +117,7 @@ export function AdminOrganizationDetailPage() {
   const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<AdminSenderId | null>(null);
   const [editTarget, setEditTarget] = useState<EditSenderIdTarget | null>(null);
+  const [hubtelTarget, setHubtelTarget] = useState<EditHubtelCredentialsTarget | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [editUserTarget, setEditUserTarget] = useState<AdminOrgUser | null>(null);
   const [deleteUserTarget, setDeleteUserTarget] = useState<AdminOrgUser | null>(null);
@@ -124,6 +143,17 @@ export function AdminOrganizationDetailPage() {
     mutationFn: () => updateAdminOrganizationProfile(id!, profileForm),
     onSuccess: () => {
       toast.success('Organization profile updated.');
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const saveHubtel = useMutation({
+    mutationFn: ({ clientId, clientSecret }: { clientId: string; clientSecret: string }) =>
+      updateHubtelCredentials(id!, hubtelTarget!.senderIdId, { clientId, clientSecret }),
+    onSuccess: () => {
+      toast.success('Hubtel credentials saved.');
+      setHubtelTarget(null);
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -293,6 +323,9 @@ export function AdminOrganizationDetailPage() {
           >
             <RefreshCw className={`h-4 w-4 ${detail.isFetching ? 'animate-spin' : ''}`} />
           </Button>
+          <Button variant="outline" onClick={() => navigate(`/admin/organizations/${id}/delivery-report`)}>
+            <BarChart3 className="h-4 w-4" /> Delivery report
+          </Button>
           <Button variant="outline" onClick={() => setShowSendSms(true)}>
             <MessageSquareText className="h-4 w-4" /> Send SMS
           </Button>
@@ -388,159 +421,189 @@ export function AdminOrganizationDetailPage() {
         </div>
       </div>
 
-      <div className="mb-3 text-[13px] font-bold text-foreground/80">Sender IDs</div>
-      <div className="mb-6 overflow-hidden rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary hover:bg-secondary">
-              <TableHead>Sender ID</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>BMS status</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {org.senderIds.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell className="font-semibold">{s.senderId}</TableCell>
-                <TableCell className="w-[220px] text-muted-foreground">
-                  {s.purpose ? (
-                    <Tooltip>
-                      <TooltipTrigger render={<span className="block max-w-[220px] truncate" />}>{s.purpose}</TooltipTrigger>
-                      <TooltipContent>{s.purpose}</TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    '—'
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{s.bmsStatus || '—'}</TableCell>
-                <TableCell>
-                  {s.status === 'pending_review' && (
-                    <div className="flex items-center gap-1.5">
-                      <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
-                        <Send className="h-3.5 w-3.5" /> Register
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
-                        <Pencil className="h-3.5 w-3.5" /> Edit
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
-                        <X className="h-3.5 w-3.5" /> Reject
-                      </Button>
-                    </div>
-                  )}
-                  {s.status === 'rejected' && (
-                    <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Button>
-                  )}
-                  {s.status === 'processing' && (
-                    <div className="flex items-center gap-1.5">
-                      <Button size="sm" variant="outline" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
-                        <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
-                      </Button>
-                      <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
-                        <ShieldCheck className="h-3.5 w-3.5" /> Approve
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
-                        <X className="h-3.5 w-3.5" /> Reject
-                      </Button>
-                    </div>
-                  )}
-                  {s.status === 'deleted' && (
-                    <div className="flex items-center gap-1.5">
-                      <Button size="sm" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
-                        <RotateCcw className="h-3.5 w-3.5" /> Restore
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => setPermanentDeleteTarget(s)}>
-                        <Trash2 className="h-3.5 w-3.5" /> Delete permanently
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
+      <Tabs defaultValue="sender-ids">
+        <div className="mb-4 overflow-x-auto border-b">
+          <TabsList variant="line" className="group-data-[orientation=horizontal]/tabs:h-auto min-w-0 justify-start gap-6 p-0">
+            {ORG_TABS.map((tab) => (
+              <TabsTrigger key={tab.key} value={tab.key} className={cn('h-auto px-0 py-3', TRIGGER_CLASS)}>
+                <tab.icon className="h-3.5 w-3.5" /> {tab.label}
+              </TabsTrigger>
             ))}
-            {org.senderIds.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
-                  No sender IDs submitted yet.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="mb-3 flex items-center justify-between">
-        <div className="text-[13px] font-bold text-foreground/80">Users</div>
-        <Button size="sm" onClick={() => setShowAddUser(true)}>
-          <Plus className="h-3.5 w-3.5" /> Add user
-        </Button>
-      </div>
-      <div className="mb-6 overflow-hidden rounded-xl border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary hover:bg-secondary">
-              <TableHead>Name</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Verified</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {org.users.map((u) => (
-              <TableRow key={u.id}>
-                <TableCell className="font-semibold">{u.name}</TableCell>
-                <TableCell className="text-muted-foreground">{u.phone}</TableCell>
-                <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                <TableCell className="text-muted-foreground">{u.role}</TableCell>
-                <TableCell className="text-muted-foreground">{u.isVerified ? 'Yes' : 'No'}</TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      title="Remove"
-                      onClick={() => setDeleteUserTarget(u)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {org.users.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
-                  <div className="flex flex-col items-center gap-2">
-                    <UsersIcon className="h-5 w-5 text-muted-foreground" />
-                    No team members yet.
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="rounded-xl border border-destructive/30 bg-card p-5">
-        <div className="mb-1 text-[13px] font-bold text-destructive">Danger zone</div>
-        <div className="mb-4 text-sm text-muted-foreground">
-          Permanently delete this organization and all of its data. This cannot be undone.
+          </TabsList>
         </div>
-        <Button variant="destructive" onClick={() => setShowDelete(true)}>
-          Delete organization
-        </Button>
-      </div>
+
+        <TabsContent value="sender-ids">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary hover:bg-secondary">
+                  <TableHead>Sender ID</TableHead>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>BMS status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {org.senderIds.map((s) => (
+                  <TableRow key={s.id}>
+                    <TableCell className="font-semibold">{s.senderId}</TableCell>
+                    <TableCell className="w-[220px] text-muted-foreground">
+                      {s.purpose ? (
+                        <Tooltip>
+                          <TooltipTrigger render={<span className="block max-w-[220px] truncate" />}>{s.purpose}</TooltipTrigger>
+                          <TooltipContent>{s.purpose}</TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{s.bmsStatus || '—'}</TableCell>
+                    <TableCell>
+                      {s.status === 'pending_review' && (
+                        <div className="flex items-center gap-1.5">
+                          <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
+                            <Send className="h-3.5 w-3.5" /> Register
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
+                            <Pencil className="h-3.5 w-3.5" /> Edit
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
+                            <X className="h-3.5 w-3.5" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                      {s.status === 'rejected' && (
+                        <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
+                          <Pencil className="h-3.5 w-3.5" /> Edit
+                        </Button>
+                      )}
+                      {s.status === 'processing' && (
+                        <div className="flex items-center gap-1.5">
+                          <Button size="sm" variant="outline" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
+                            <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
+                          </Button>
+                          <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
+                            <ShieldCheck className="h-3.5 w-3.5" /> Approve
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
+                            <X className="h-3.5 w-3.5" /> Reject
+                          </Button>
+                        </div>
+                      )}
+                      {s.status === 'deleted' && (
+                        <div className="flex items-center gap-1.5">
+                          <Button size="sm" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
+                            <RotateCcw className="h-3.5 w-3.5" /> Restore
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => setPermanentDeleteTarget(s)}>
+                            <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+                          </Button>
+                        </div>
+                      )}
+                      {(s.status === 'processing' || s.status === 'approved') && (
+                        <div className="flex items-center gap-1.5">
+                          <Badge variant={s.hubtelConfigured ? 'default' : 'outline'}>
+                            {s.hubtelConfigured ? 'Hubtel configured' : 'Hubtel not configured'}
+                          </Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
+                          >
+                            <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {org.senderIds.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-6 text-center text-muted-foreground">
+                      No sender IDs submitted yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <div className="mb-3 flex items-center justify-end">
+            <Button size="sm" onClick={() => setShowAddUser(true)}>
+              <Plus className="h-3.5 w-3.5" /> Add user
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary hover:bg-secondary">
+                  <TableHead>Name</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Verified</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {org.users.map((u) => (
+                  <TableRow key={u.id}>
+                    <TableCell className="font-semibold">{u.name}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.phone}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.role}</TableCell>
+                    <TableCell className="text-muted-foreground">{u.isVerified ? 'Yes' : 'No'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          size="icon-sm"
+                          variant="ghost"
+                          className="text-destructive"
+                          title="Remove"
+                          onClick={() => setDeleteUserTarget(u)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {org.users.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2">
+                        <UsersIcon className="h-5 w-5 text-muted-foreground" />
+                        No team members yet.
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="danger-zone">
+          <div className="rounded-xl border border-destructive/30 bg-card p-5">
+            <div className="mb-1 text-[13px] font-bold text-destructive">Danger zone</div>
+            <div className="mb-4 text-sm text-muted-foreground">
+              Permanently delete this organization and all of its data. This cannot be undone.
+            </div>
+            <Button variant="destructive" onClick={() => setShowDelete(true)}>
+              Delete organization
+            </Button>
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <EditSenderIdDialog
         target={editTarget}
@@ -559,6 +622,12 @@ export function AdminOrganizationDetailPage() {
         onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}
         onConfirm={() => permanentlyDelete.mutate()}
         isPending={permanentlyDelete.isPending}
+      />
+      <EditHubtelCredentialsDialog
+        target={hubtelTarget}
+        onOpenChange={(open) => !open && setHubtelTarget(null)}
+        onConfirm={(clientId, clientSecret) => saveHubtel.mutate({ clientId, clientSecret })}
+        isPending={saveHubtel.isPending}
       />
       <AdminAddUserDialog orgId={id!} open={showAddUser} onOpenChange={setShowAddUser} />
       <EditOrgUserDialog orgId={id!} target={editUserTarget} onOpenChange={(open) => !open && setEditUserTarget(null)} />

@@ -44,3 +44,14 @@ export async function refreshBmsCredit() {
   const { data } = await adminApi.post<BmsCreditInfo>('/admin/packages/bms-credit/refresh');
   return data;
 }
+
+export interface HubtelWalletInfo {
+  balance: number;
+  updatedAt: string | null;
+}
+
+// FlockText's own Hubtel (backup SMS provider) balance - see services/deliveryEscalation.js.
+export async function fetchHubtelWalletBalance() {
+  const { data } = await adminApi.get<HubtelWalletInfo>('/admin/packages/hubtel-credit');
+  return data;
+}

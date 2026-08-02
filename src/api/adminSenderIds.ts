@@ -60,3 +60,14 @@ export async function permanentlyDeleteSenderId(orgId: string, senderIdId: strin
   const { data } = await adminApi.delete<{ deleted: boolean }>(`/admin/sender-ids/${orgId}/${senderIdId}`);
   return data;
 }
+
+// Backup SMS provider (Hubtel) credentials for this one sender ID - per sender ID, not
+// per org, since Hubtel independently registers and issues credentials per sender ID.
+// See services/deliveryEscalation.js on the API side. Never returns the secret back.
+export async function updateHubtelCredentials(orgId: string, senderIdId: string, payload: { clientId: string; clientSecret: string }) {
+  const { data } = await adminApi.patch<{ hubtelConfigured: true }>(
+    `/admin/sender-ids/${orgId}/${senderIdId}/hubtel-credentials`,
+    payload
+  );
+  return data;
+}
