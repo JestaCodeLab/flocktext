@@ -21,6 +21,8 @@ import {
   ShieldCheck,
   Plus,
   Users as UsersIcon,
+  Globe,
+  Smartphone,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -548,6 +550,7 @@ export function AdminOrganizationDetailPage() {
                   <TableHead>Email</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Verified</TableHead>
+                  <TableHead>Registered via</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -559,6 +562,16 @@ export function AdminOrganizationDetailPage() {
                     <TableCell className="text-muted-foreground">{u.email}</TableCell>
                     <TableCell className="text-muted-foreground">{u.role}</TableCell>
                     <TableCell className="text-muted-foreground">{u.isVerified ? 'Yes' : 'No'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <Badge variant="outline" className="gap-1 font-normal">
+                        {u.registeredVia === 'mobile' ? (
+                          <Smartphone className="h-3 w-3" />
+                        ) : (
+                          <Globe className="h-3 w-3" />
+                        )}
+                        {u.registeredVia === 'mobile' ? 'Mobile app' : 'Web'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
                         <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
@@ -579,7 +592,7 @@ export function AdminOrganizationDetailPage() {
                 ))}
                 {org.users.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <UsersIcon className="h-5 w-5 text-muted-foreground" />
                         No team members yet.

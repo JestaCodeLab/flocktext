@@ -3,6 +3,9 @@ import { useAuthStore } from '@/store/authStore';
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  // Lets the backend tell web signups apart from the mobile app's, which sends
+  // this same header with 'mobile' - see api/controllers/authController.js signup.
+  headers: { 'X-Client-Platform': 'web' },
 });
 
 api.interceptors.request.use((config) => {

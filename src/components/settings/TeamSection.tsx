@@ -90,7 +90,7 @@ export function TeamSection() {
         action={
           isAdmin && (
             <Button size="sm" onClick={() => setShowInvite(true)}>
-              <UserPlus className="h-[15px] w-[15px]" /> Invite
+              <UserPlus className="h-[15px] w-[15px]" /> Invite Team Member
             </Button>
           )
         }

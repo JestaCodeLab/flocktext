@@ -26,6 +26,7 @@ export interface AdminOrgUser {
   role: 'admin' | 'user';
   isVerified: boolean;
   lastLoginAt: string | null;
+  registeredVia: 'web' | 'mobile';
 }
 
 export type SenderIdStatus = 'pending_review' | 'processing' | 'approved' | 'rejected' | 'deleted';

@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search } from 'lucide-react';
+import { RefreshCw, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,14 +23,19 @@ export function AdminOrganizationsPage() {
         <div className="mt-0.5 text-sm text-muted-foreground">{orgs.data?.total ?? 0} total</div>
       </div>
 
-      <div className="relative mb-4 max-w-sm">
-        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search by church name…"
-          className="pl-10"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <div className="relative max-w-sm flex-1">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by church name…"
+            className="pl-10"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" disabled={orgs.isFetching} onClick={() => orgs.refetch()}>
+          <RefreshCw className={`h-4 w-4 ${orgs.isFetching ? 'animate-spin' : ''}`} /> Refresh
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-xl border border-border bg-card">

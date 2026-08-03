@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Coins, Receipt, Search } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, Coins, Receipt, Search, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MiniStatCard } from '@/components/messages/MessageDetailBody';
-import { fetchAdminTransactions, type AdminTransactionType } from '@/api/adminTransactions';
+import { DeleteTransactionDialog } from '@/components/admin/DeleteTransactionDialog';
+import { apiErrorMessage } from '@/api/client';
+import {
+  fetchAdminTransactions,
+  deleteAdminTransaction,
+  type AdminTransaction,
+  type AdminTransactionType,
+} from '@/api/adminTransactions';
 
 const PAGE_SIZE = 20;
 
@@ -56,6 +64,9 @@ export function AdminTransactionsPage() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState<AdminTransactionType | 'all'>('all');
   const [page, setPage] = useState(1);
+  const [deleteTarget, setDeleteTarget] = useState<AdminTransaction | null>(null);
+
+  const queryClient = useQueryClient();
 
   const transactions = useQuery({
     queryKey: ['admin-transactions', search, type, page],
@@ -66,6 +77,16 @@ export function AdminTransactionsPage() {
         page,
         pageSize: PAGE_SIZE,
       }),
+  });
+
+  const remove = useMutation({
+    mutationFn: () => deleteAdminTransaction(deleteTarget!.id),
+    onSuccess: () => {
+      toast.success('Transaction deleted.');
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
   return (
@@ -130,13 +151,14 @@ export function AdminTransactionsPage() {
               <TableHead className="text-right">Amount</TableHead>
               <TableHead className="text-right">Credits</TableHead>
               <TableHead>Reference</TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {transactions.isLoading &&
               Array.from({ length: 6 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <Skeleton className="h-5 w-full" />
                   </TableCell>
                 </TableRow>
@@ -167,11 +189,22 @@ export function AdminTransactionsPage() {
                 <TableCell className="text-right font-semibold">GHS {t.amountGHS.toLocaleString()}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{t.credits ? t.credits.toLocaleString() : '—'}</TableCell>
                 <TableCell className="max-w-[160px] truncate text-xs text-muted-foreground">{t.paystackReference || '—'}</TableCell>
+                <TableCell>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    className="text-destructive"
+                    title="Delete"
+                    onClick={() => setDeleteTarget(t)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
             {transactions.data?.rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <Receipt className="h-5 w-5 text-muted-foreground" />
                     No transactions yet.
@@ -184,6 +217,13 @@ export function AdminTransactionsPage() {
       </div>
 
       {transactions.data && <PaginationControls page={page} total={transactions.data.total} onPageChange={setPage} />}
+
+      <DeleteTransactionDialog
+        target={deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={() => remove.mutate()}
+        isPending={remove.isPending}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, RefreshCw, XCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,7 @@ export function InviteTeamMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Invite team member</DialogTitle>
         </DialogHeader>
@@ -461,7 +461,19 @@ function MultiAccountInviteForm({
       <div className="space-y-4">
         {adminAccounts.length > 1 && (
           <div className="space-y-2">
-            <Label>Accounts</Label>
+            <div className="flex items-center justify-between">
+              <Label>Accounts</Label>
+              <Button
+                type="button"
+                size="icon-sm"
+                variant="ghost"
+                title="Refresh accounts"
+                disabled={accounts.isFetching}
+                onClick={() => accounts.refetch()}
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${accounts.isFetching ? 'animate-spin' : ''}`} />
+              </Button>
+            </div>
             <div className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-border p-2">
               {adminAccounts.map((a) => (
                 <label
