@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Download, Eye, RefreshCw, Search, Send } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, Download, Eye, RefreshCw, Search, Send, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DeleteAdminMessageDialog } from '@/components/admin/DeleteAdminMessageDialog';
 import { statusBadgeVariant, providerBadge, downloadCsv } from '@/components/messages/MessageDetailBody';
-import { fetchAdminMessages, fetchAdminMessageRecipients, type AdminMessageStats, type AdminMessageSummary } from '@/api/adminMessages';
+import {
+  deleteAdminMessage,
+  fetchAdminMessages,
+  fetchAdminMessageRecipients,
+  type AdminMessageStats,
+  type AdminMessageSummary,
+} from '@/api/adminMessages';
+import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 20;
@@ -58,7 +67,15 @@ function PaginationControls({
   );
 }
 
-function MessagesTable({ rows, onView }: { rows: AdminMessageSummary[]; onView: (id: string) => void }) {
+function MessagesTable({
+  rows,
+  onView,
+  onDelete,
+}: {
+  rows: AdminMessageSummary[];
+  onView: (id: string) => void;
+  onDelete: (row: AdminMessageSummary) => void;
+}) {
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <Table>
@@ -104,9 +121,20 @@ function MessagesTable({ rows, onView }: { rows: AdminMessageSummary[]; onView: 
                   <Badge variant={status.variant}>{status.label}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Button size="icon-sm" variant="ghost" title="View details" onClick={() => onView(m.id)}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button size="icon-sm" variant="ghost" title="View details" onClick={() => onView(m.id)}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      title="Delete record"
+                      onClick={() => onDelete(m)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -134,11 +162,22 @@ export function AdminDeliveryReportPage() {
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminMessageSummary | null>(null);
 
   useEffect(() => {
     setDeliveredPage(1);
     setFailedPage(1);
   }, [search]);
+
+  const deleteMessage = useMutation({
+    mutationFn: (id: string) => deleteAdminMessage(id),
+    onSuccess: () => {
+      toast.success('Record deleted.');
+      setDeleteTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-messages'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
 
   const delivered = useQuery({
     queryKey: ['admin-messages', 'delivered', search, deliveredPage],
@@ -249,7 +288,7 @@ export function AdminDeliveryReportPage() {
       )}
       {activeTab === 'delivered' && !delivered.isLoading && (
         <>
-          <MessagesTable rows={delivered.data?.rows ?? []} onView={setViewingId} />
+          <MessagesTable rows={delivered.data?.rows ?? []} onView={setViewingId} onDelete={setDeleteTarget} />
           <PaginationControls page={deliveredPage} total={delivered.data?.total ?? 0} onPageChange={setDeliveredPage} />
         </>
       )}
@@ -263,7 +302,7 @@ export function AdminDeliveryReportPage() {
       )}
       {activeTab === 'failed' && !failed.isLoading && (
         <>
-          <MessagesTable rows={failed.data?.rows ?? []} onView={setViewingId} />
+          <MessagesTable rows={failed.data?.rows ?? []} onView={setViewingId} onDelete={setDeleteTarget} />
           <PaginationControls page={failedPage} total={failed.data?.total ?? 0} onPageChange={setFailedPage} />
         </>
       )}
@@ -347,6 +386,13 @@ export function AdminDeliveryReportPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <DeleteAdminMessageDialog
+        target={deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMessage.mutate(deleteTarget.id)}
+        isPending={deleteMessage.isPending}
+      />
     </div>
   );
 }
