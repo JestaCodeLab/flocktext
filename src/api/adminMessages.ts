@@ -62,3 +62,8 @@ export async function fetchAdminMessageRecipients(id: string) {
   const { data } = await adminApi.get<AdminMessageDetail>(`/admin/messages/${id}/recipients`);
   return data;
 }
+
+export async function deleteAdminMessage(id: string) {
+  const { data } = await adminApi.delete<{ deleted: true }>(`/admin/messages/${id}`);
+  return data;
+}
