@@ -31,3 +31,8 @@ export async function fetchAdminTransactions(params?: {
   const { data } = await adminApi.get<AdminTransactionListResponse>('/admin/transactions', { params });
   return data;
 }
+
+export async function deleteAdminTransaction(id: string) {
+  const { data } = await adminApi.delete<{ deleted: true }>(`/admin/transactions/${id}`);
+  return data;
+}
