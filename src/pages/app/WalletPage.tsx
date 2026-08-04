@@ -63,7 +63,7 @@ export function WalletPage() {
 
   return (
     <div>
-      <div className="mb-6 text-[26px] font-bold">SMS Credit</div>
+      <div className="mb-6 text-[22px] font-bold sm:text-[26px]">SMS Credit</div>
 
       {wallet.isLoading ? (
         <div className="mb-6.5 grid grid-cols-1 gap-4 sm:grid-cols-2">

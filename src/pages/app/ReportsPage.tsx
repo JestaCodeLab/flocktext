@@ -97,50 +97,84 @@ function ScheduledTable({
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-[13px]">Next send</TableHead>
-            <TableHead className="text-[13px]">Type</TableHead>
-            <TableHead className="text-[13px]">Sent to</TableHead>
-            <TableHead className="text-[13px]">Message</TableHead>
-            <TableHead className="w-0 text-[13px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {messages.map((m) => (
-            <TableRow key={m.id}>
-              <TableCell>
-                <ScheduledDateTime date={m.scheduleDate} />
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary" className="gap-1">
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[13px]">Next send</TableHead>
+              <TableHead className="text-[13px]">Type</TableHead>
+              <TableHead className="text-[13px]">Sent to</TableHead>
+              <TableHead className="text-[13px]">Message</TableHead>
+              <TableHead className="w-0 text-[13px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {messages.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>
+                  <ScheduledDateTime date={m.scheduleDate} />
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="gap-1">
+                    {m.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                    {m.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate text-muted-foreground">{recipientSummary(m)}</TableCell>
+                <TableCell className="max-w-[280px] truncate text-muted-foreground">{m.body}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="icon-sm" variant="ghost" onClick={() => onView(m)}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      disabled={cancelingId === m.id}
+                      onClick={() => onCancel(m.id)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="divide-y divide-border sm:hidden">
+        {messages.map((m) => (
+          <div key={m.id} className="flex items-center gap-1 px-3.5 py-3">
+            <button type="button" onClick={() => onView(m)} className="min-w-0 flex-1 text-left active:opacity-70">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-foreground">
+                  {new Date(m.scheduleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  <span className="ml-1.5 font-normal text-muted-foreground">
+                    {new Date(m.scheduleDate).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </span>
+                </div>
+                <Badge variant="secondary" className="shrink-0 gap-1 text-[10px]">
                   {m.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
                   {m.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
                 </Badge>
-              </TableCell>
-              <TableCell className="max-w-[200px] truncate text-muted-foreground">{recipientSummary(m)}</TableCell>
-              <TableCell className="max-w-[280px] truncate text-muted-foreground">{m.body}</TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button size="icon-sm" variant="ghost" onClick={() => onView(m)}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-destructive"
-                    disabled={cancelingId === m.id}
-                    onClick={() => onCancel(m.id)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </div>
+              <div className="mt-1 truncate text-xs text-muted-foreground">To: {recipientSummary(m)}</div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">{m.body}</div>
+            </button>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              className="shrink-0 text-destructive"
+              disabled={cancelingId === m.id}
+              onClick={() => onCancel(m.id)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -275,80 +309,112 @@ function MessagesTable({
   onSaveTemplate: (messageId: string) => void;
   resendingMessageId?: string | null;
 }) {
+  function ActionsMenu({ m }: { m: MessageSummary }) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon-sm" variant="ghost" title="Actions">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-42">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
+            <Eye className="h-3 w-3" /> View details
+          </DropdownMenuItem>
+          {onResend && (
+            <DropdownMenuItem className="cursor-pointer" disabled={resendingMessageId === m.id} onClick={() => onResend(m.id)}>
+              <RotateCcw className="h-3 w-3" /> Resend
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onSaveTemplate(m.id)}>
+            <FileText className="h-3 w-3" /> Save as template
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-[13px]">Date &amp; time</TableHead>
-            <TableHead className="text-[13px]">Type</TableHead>
-            <TableHead className="text-[13px]">Message</TableHead>
-            <TableHead className="text-center text-[13px]">Recipients</TableHead>
-            <TableHead className="text-[13px]">Sender ID</TableHead>
-            <TableHead className="text-[13px]">Source</TableHead>
-            <TableHead className="text-[13px]">Status</TableHead>
-            <TableHead className="w-0 text-[13px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((m) => {
-            const status = messageStatusBadge(m.stats);
-            const source = sourceBadge(m.source);
-            return (
-              <TableRow key={m.id}>
-                <TableCell>
-                  <div className="font-medium text-foreground">
-                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[13px]">Date &amp; time</TableHead>
+              <TableHead className="text-[13px]">Type</TableHead>
+              <TableHead className="text-[13px]">Message</TableHead>
+              <TableHead className="text-center text-[13px]">Recipients</TableHead>
+              <TableHead className="text-[13px]">Sender ID</TableHead>
+              <TableHead className="text-[13px]">Source</TableHead>
+              <TableHead className="text-[13px]">Status</TableHead>
+              <TableHead className="w-0 text-[13px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((m) => {
+              const status = messageStatusBadge(m.stats);
+              const source = sourceBadge(m.source);
+              return (
+                <TableRow key={m.id}>
+                  <TableCell>
+                    <div className="font-medium text-foreground">
+                      {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk`}</Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[240px] truncate text-muted-foreground">{m.preview}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                  <TableCell>
+                    <Badge variant={source.variant}>{source.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={status.variant}>{status.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <ActionsMenu m={m} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="divide-y divide-border sm:hidden">
+        {rows.map((m) => {
+          const status = messageStatusBadge(m.stats);
+          return (
+            <div key={m.id} className="flex items-center gap-1 px-3.5 py-3">
+              <button type="button" onClick={() => onView(m)} className="min-w-0 flex-1 text-left active:opacity-70">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-foreground">
+                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    <span className="ml-1.5 font-normal text-muted-foreground">
+                      {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk`}</Badge>
-                </TableCell>
-                <TableCell className="max-w-[240px] truncate text-muted-foreground">{m.preview}</TableCell>
-                <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
-                <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
-                <TableCell>
-                  <Badge variant={source.variant}>{source.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={status.variant}>{status.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button size="icon-sm" variant="ghost" title="Actions">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end" className="w-42">
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
-                        <Eye className="h-3 w-3" /> View details
-                      </DropdownMenuItem>
-                      {onResend && (
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          disabled={resendingMessageId === m.id}
-                          onClick={() => onResend(m.id)}
-                        >
-                          <RotateCcw className="h-3 w-3" /> Resend
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => onSaveTemplate(m.id)}>
-                        <FileText className="h-3 w-3" /> Save as template
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  <Badge variant={status.variant} className="shrink-0 text-[10px]">
+                    {status.label}
+                  </Badge>
+                </div>
+                <div className="mt-1 truncate text-xs text-muted-foreground">{m.preview}</div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  {m.stats.total} recipient{m.stats.total === 1 ? '' : 's'} · {m.senderId}
+                </div>
+              </button>
+              <ActionsMenu m={m} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -486,7 +552,7 @@ export function ReportsPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-1 text-[26px] font-bold">Delivery Reports</div>
+        <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Delivery Reports</div>
         <div className="text-sm text-muted-foreground">Delivery and failure breakdowns for every send.</div>
       </div>
 

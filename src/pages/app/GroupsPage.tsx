@@ -78,7 +78,7 @@ export function GroupsPage() {
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[26px] font-extrabold">Groups</div>
+          <div className="text-[22px] font-extrabold sm:text-[26px]">Groups</div>
           <div className="mt-0.5 text-sm text-muted-foreground">{groups.data?.length ?? 0} groups</div>
         </div>
         <Button onClick={() => setShowCreate(true)}>
