@@ -69,7 +69,7 @@ function computeMilestones(detail: MessageDetail): Milestone[] {
       label: 'Delivered',
       done: true,
       at: resolvedTimes.length ? resolvedTimes.reduce((a, b) => (new Date(a.at) > new Date(b.at) ? a : b)).at : detail.date,
-      sub: `${detail.stats.delivered} delivered, ${detail.stats.failed} failed`,
+      sub: `${detail.stats.delivered} delivered, ${detail.stats.rejected} rejected, ${detail.stats.failed} failed`,
     });
   } else {
     milestones.push({

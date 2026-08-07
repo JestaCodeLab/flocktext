@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DeleteAdminMessageDialog } from '@/components/admin/DeleteAdminMessageDialog';
-import { statusBadgeVariant, providerBadge, downloadCsv } from '@/components/messages/MessageDetailBody';
+import { StatusBadge, providerBadge, downloadCsv } from '@/components/messages/MessageDetailBody';
 import {
   deleteAdminMessage,
   fetchAdminMessages,
@@ -24,12 +24,14 @@ import { cn } from '@/lib/utils';
 const PAGE_SIZE = 20;
 
 // Matches messageController.listMessages' semantics on the org side: "delivered"
-// means nothing has failed yet (stats.failed === 0 - includes still-pending rows),
-// "failed" means at least one recipient failed.
+// means nothing has failed or been rejected yet (stats.failed === 0 &&
+// stats.rejected === 0 - includes still-pending rows), "failed"/"rejected" each mean
+// at least one recipient landed in that outcome.
 function messageStatusBadge(stats: AdminMessageStats) {
-  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})` };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending' };
-  return { variant: 'success' as const, label: 'Delivered' };
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
+  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
 function PaginationControls({
@@ -118,7 +120,7 @@ function MessagesTable({
                 <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
                 <TableCell className="text-muted-foreground">{m.sentBy}</TableCell>
                 <TableCell>
-                  <Badge variant={status.variant}>{status.label}</Badge>
+                  <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
@@ -158,15 +160,17 @@ function MessagesTable({
 export function AdminDeliveryReportPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'delivered' | 'failed'>('delivered');
+  const [activeTab, setActiveTab] = useState<'delivered' | 'failed' | 'rejected'>('delivered');
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminMessageSummary | null>(null);
 
   useEffect(() => {
     setDeliveredPage(1);
     setFailedPage(1);
+    setRejectedPage(1);
   }, [search]);
 
   const deleteMessage = useMutation({
@@ -186,6 +190,10 @@ export function AdminDeliveryReportPage() {
   const failed = useQuery({
     queryKey: ['admin-messages', 'failed', search, failedPage],
     queryFn: () => fetchAdminMessages({ status: 'failed', search: search || undefined, page: failedPage, pageSize: PAGE_SIZE }),
+  });
+  const rejected = useQuery({
+    queryKey: ['admin-messages', 'rejected', search, rejectedPage],
+    queryFn: () => fetchAdminMessages({ status: 'rejected', search: search || undefined, page: rejectedPage, pageSize: PAGE_SIZE }),
   });
 
   const detail = useQuery({
@@ -218,7 +226,7 @@ export function AdminDeliveryReportPage() {
     downloadCsv(`admin-broadcast-${viewingId}-recipients.csv`, rows);
   }
 
-  const isFetching = delivered.isFetching || failed.isFetching;
+  const isFetching = delivered.isFetching || failed.isFetching || rejected.isFetching;
   const detailStatus = detail.data ? messageStatusBadge(detail.data.stats) : null;
 
   return (
@@ -252,6 +260,16 @@ export function AdminDeliveryReportPage() {
           >
             Failed ({failed.data?.total ?? 0})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('rejected')}
+            className={cn(
+              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Rejected ({rejected.data?.total ?? 0})
+          </button>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -271,6 +289,7 @@ export function AdminDeliveryReportPage() {
             onClick={() => {
               delivered.refetch();
               failed.refetch();
+              rejected.refetch();
             }}
           >
             <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
@@ -307,6 +326,20 @@ export function AdminDeliveryReportPage() {
         </>
       )}
 
+      {activeTab === 'rejected' && rejected.isLoading && (
+        <div className="space-y-2.5">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[52px] rounded-xl" />
+          ))}
+        </div>
+      )}
+      {activeTab === 'rejected' && !rejected.isLoading && (
+        <>
+          <MessagesTable rows={rejected.data?.rows ?? []} onView={setViewingId} onDelete={setDeleteTarget} />
+          <PaginationControls page={rejectedPage} total={rejected.data?.total ?? 0} onPageChange={setRejectedPage} />
+        </>
+      )}
+
       <Dialog open={!!viewingId} onOpenChange={(open) => !open && setViewingId(null)}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
@@ -331,8 +364,8 @@ export function AdminDeliveryReportPage() {
               </div>
 
               <div className="my-4 flex items-center justify-between gap-3">
-                <Badge variant={detailStatus?.variant}>{detailStatus?.label}</Badge>
-                <div className="grid grid-cols-3 gap-2.5">
+                <Badge variant={detailStatus?.variant} className={detailStatus?.className}>{detailStatus?.label}</Badge>
+                <div className="grid grid-cols-4 gap-2.5">
                   <div className="rounded-xl border border-border bg-card px-4 py-2.5 text-center">
                     <div className="text-xs text-muted-foreground">Total</div>
                     <div className="mt-1 text-lg font-bold">{detail.data.stats.total}</div>
@@ -340,6 +373,10 @@ export function AdminDeliveryReportPage() {
                   <div className="rounded-xl border border-border bg-card px-4 py-2.5 text-center">
                     <div className="text-xs text-muted-foreground">Delivered</div>
                     <div className="mt-1 text-lg font-bold text-success">{detail.data.stats.delivered}</div>
+                  </div>
+                  <div className="rounded-xl border border-border bg-card px-4 py-2.5 text-center">
+                    <div className="text-xs text-muted-foreground">Rejected</div>
+                    <div className="mt-1 text-lg font-bold text-warning">{detail.data.stats.rejected}</div>
                   </div>
                   <div className="rounded-xl border border-border bg-card px-4 py-2.5 text-center">
                     <div className="text-xs text-muted-foreground">Failed</div>
@@ -371,7 +408,7 @@ export function AdminDeliveryReportPage() {
                         <TableCell className="font-semibold">{r.name}</TableCell>
                         <TableCell className="text-muted-foreground">{r.phone}</TableCell>
                         <TableCell>
-                          <Badge variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
+                          <StatusBadge status={r.status} />
                         </TableCell>
                         <TableCell className="text-muted-foreground">{r.reason || '—'}</TableCell>
                         <TableCell>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, CreditCard, Tag, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Ban, CreditCard, Tag, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,10 +10,25 @@ import { cn } from '@/lib/utils';
 
 const RECIPIENTS_PAGE_SIZE = 10;
 
-export function statusBadgeVariant(status: 'pending' | 'delivered' | 'failed') {
+export function statusBadgeVariant(status: 'pending' | 'delivered' | 'failed' | 'rejected') {
   if (status === 'delivered') return 'success' as const;
   if (status === 'failed') return 'destructive' as const;
+  if (status === 'rejected') return 'outline' as const;
   return 'secondary' as const;
+}
+
+// 'rejected' has no dedicated Badge variant token, so it's rendered with the same
+// outline+warning-tint pattern already used elsewhere in the app (e.g.
+// ImportContactsPanel.tsx's "possible duplicate" badge) rather than adding a new variant.
+export function StatusBadge({ status }: { status: 'pending' | 'delivered' | 'failed' | 'rejected' }) {
+  if (status === 'rejected') {
+    return (
+      <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
+        rejected
+      </Badge>
+    );
+  }
+  return <Badge variant={statusBadgeVariant(status)}>{status}</Badge>;
 }
 
 export function sourceBadge(source: MessageDetail['source']) {
@@ -52,13 +67,14 @@ export function MiniStatCard({
   icon: LucideIcon;
   label: string;
   value: React.ReactNode;
-  tint: 'primary' | 'blue' | 'success' | 'destructive' | 'muted';
+  tint: 'primary' | 'blue' | 'success' | 'destructive' | 'warning' | 'muted';
 }) {
   const tintClass = {
     primary: 'bg-primary/10 text-primary',
     blue: 'bg-chart-3/15 text-chart-3',
     success: 'bg-success/10 text-success',
     destructive: 'bg-destructive/10 text-destructive',
+    warning: 'bg-warning/10 text-warning',
     muted: 'bg-muted text-muted-foreground',
   }[tint];
 
@@ -90,8 +106,8 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-function DeliveryBarChart({ delivered, failed }: { delivered: number; failed: number }) {
-  const data = [{ label: 'Delivery', delivered, failed }];
+function DeliveryBarChart({ delivered, failed, rejected }: { delivered: number; failed: number; rejected: number }) {
+  const data = [{ label: 'Delivery', delivered, failed, rejected }];
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <ResponsiveContainer width="100%" height={200}>
@@ -102,6 +118,7 @@ function DeliveryBarChart({ delivered, failed }: { delivered: number; failed: nu
           <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
           <Bar dataKey="delivered" name="Delivered" fill="var(--color-success)" radius={[4, 4, 0, 0]} maxBarSize={56} />
+          <Bar dataKey="rejected" name="Rejected" fill="var(--color-warning)" radius={[4, 4, 0, 0]} maxBarSize={56} />
           <Bar dataKey="failed" name="Failed" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} maxBarSize={56} />
         </BarChart>
       </ResponsiveContainer>
@@ -169,9 +186,9 @@ function RecipientsTable({ recipients, page, showProvider }: { recipients: Messa
             <TableCell className="font-semibold">{r.name}</TableCell>
             <TableCell className="text-muted-foreground">{r.phone}</TableCell>
             <TableCell>
-              <Badge variant={statusBadgeVariant(r.status)}>{r.status}</Badge>
+              <StatusBadge status={r.status} />
             </TableCell>
-            <TableCell className="text-muted-foreground">{r.reason || '—'}</TableCell>
+            <TableCell className="text-muted-foreground">{(showProvider ? r.reason : r.userReason) || '—'}</TableCell>
             {showProvider && (
               <TableCell>
                 <Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>
@@ -209,7 +226,7 @@ export function MessageDetailBody({
   // went out through. Omitted on org self-service surfaces, which share this component.
   showProvider?: boolean;
 }) {
-  const failedCount = detail.recipients.filter((r) => r.status === 'failed').length;
+  const failedCount = detail.recipients.filter((r) => r.status === 'failed' || r.status === 'rejected').length;
 
   const [page, setPage] = useState(1);
   useEffect(() => {
@@ -227,7 +244,7 @@ export function MessageDetailBody({
               <MiniStatCard icon={Tag} label="Sender" value={detail.senderId} tint="muted" />
               <MiniStatCard icon={Share2} label="Source" value={detail.source} tint="muted" />
             </div>
-            <DeliveryBarChart delivered={detail.stats.delivered} failed={detail.stats.failed} />
+            <DeliveryBarChart delivered={detail.stats.delivered} failed={detail.stats.failed} rejected={detail.stats.rejected} />
           </div>
           <MessageCard detail={detail} />
         </div>
@@ -253,9 +270,10 @@ export function MessageDetailBody({
         <MessageCard detail={detail} />
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
         <MiniStatCard icon={Send} label="Total" value={detail.stats.total} tint="muted" />
         <MiniStatCard icon={CheckCircle2} label="Delivered" value={detail.stats.delivered} tint="success" />
+        <MiniStatCard icon={Ban} label="Rejected" value={detail.stats.rejected} tint="warning" />
         <MiniStatCard icon={XCircle} label="Failed" value={detail.stats.failed} tint="destructive" />
         <MiniStatCard icon={CreditCard} label="Credit" value={detail.creditCost} tint="primary" />
       </div>

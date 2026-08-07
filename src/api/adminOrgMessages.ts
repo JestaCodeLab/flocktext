@@ -2,7 +2,7 @@ import { adminApi } from '@/api/adminClient';
 import type { DateRangeParams } from '@/lib/dateRange';
 import type { MessageDetail } from '@/api/messages';
 
-export type AdminOrgMessageStatus = 'delivered' | 'pending' | 'failed';
+export type AdminOrgMessageStatus = 'delivered' | 'pending' | 'failed' | 'rejected';
 
 export interface AdminOrgMessagesSummary {
   messagesSent: number;
@@ -41,6 +41,7 @@ export interface AdminOrgMessageStats {
   delivered: number;
   failed: number;
   pending: number;
+  rejected: number;
 }
 
 export interface AdminOrgMessageSummary {
@@ -103,6 +104,7 @@ export interface AdminOrgMessageExportRow {
   delivered: number;
   failed: number;
   pending: number;
+  rejected: number;
   creditCost: number;
 }
 

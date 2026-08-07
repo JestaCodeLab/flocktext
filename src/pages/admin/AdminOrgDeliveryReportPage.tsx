@@ -45,13 +45,15 @@ import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 20;
 
-// Matches the row-level badge used throughout the app: "Failed" means at least one
-// recipient failed, "Pending" means nothing has failed yet but delivery is still
-// resolving, otherwise every recipient resolved cleanly.
+// Matches the row-level badge used throughout the app: "Failed"/"Rejected" mean at
+// least one recipient landed in that outcome, "Pending" means nothing has
+// failed/rejected yet but delivery is still resolving, otherwise every recipient
+// resolved cleanly.
 function messageStatusBadge(stats: AdminOrgMessageSummary['stats']) {
-  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})` };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending' };
-  return { variant: 'success' as const, label: 'Delivered' };
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
+  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
@@ -145,7 +147,7 @@ function MessagesTable({
                 <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
                 <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
                 <TableCell>
-                  <Badge variant={status.variant}>{status.label}</Badge>
+                  <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -202,6 +204,7 @@ export function AdminOrgDeliveryReportPage() {
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [pendingPage, setPendingPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [resendConfirmId, setResendConfirmId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
@@ -212,6 +215,7 @@ export function AdminOrgDeliveryReportPage() {
     setDeliveredPage(1);
     setPendingPage(1);
     setFailedPage(1);
+    setRejectedPage(1);
   }, [range]);
 
   const org = useQuery({
@@ -239,6 +243,10 @@ export function AdminOrgDeliveryReportPage() {
   const failed = useQuery({
     queryKey: ['admin-org-messages', orgId, 'failed', range, failedPage],
     queryFn: () => fetchAdminOrgMessages(orgId, 'failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
+  });
+  const rejected = useQuery({
+    queryKey: ['admin-org-messages', orgId, 'rejected', range, rejectedPage],
+    queryFn: () => fetchAdminOrgMessages(orgId, 'rejected', range, { page: rejectedPage, pageSize: PAGE_SIZE }),
   });
 
   const detail = useQuery({
@@ -294,7 +302,7 @@ export function AdminOrgDeliveryReportPage() {
     try {
       const data = await fetchAdminOrgMessagesExport(orgId, activeTab, range);
       const rows = [
-        ['Date', 'Message', 'Recipients', 'Sender ID', 'Total', 'Delivered', 'Failed', 'Pending', 'Credit cost'],
+        ['Date', 'Message', 'Recipients', 'Sender ID', 'Total', 'Delivered', 'Rejected', 'Failed', 'Pending', 'Credit cost'],
         ...data.rows.map((r) => [
           new Date(r.date).toLocaleString(),
           r.body,
@@ -302,6 +310,7 @@ export function AdminOrgDeliveryReportPage() {
           r.senderId,
           String(r.total),
           String(r.delivered),
+          String(r.rejected),
           String(r.failed),
           String(r.pending),
           String(r.creditCost),
@@ -315,7 +324,8 @@ export function AdminOrgDeliveryReportPage() {
     }
   }
 
-  const isFetching = delivered.isFetching || pending.isFetching || failed.isFetching || summary.isFetching || chart.isFetching;
+  const isFetching =
+    delivered.isFetching || pending.isFetching || failed.isFetching || rejected.isFetching || summary.isFetching || chart.isFetching;
   const buckets = chart.data?.buckets ?? [];
   const detailStatus = detail.data ? messageStatusBadge(detail.data.stats) : null;
 
@@ -346,6 +356,7 @@ export function AdminOrgDeliveryReportPage() {
               delivered.refetch();
               pending.refetch();
               failed.refetch();
+              rejected.refetch();
             }}
           >
             <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
@@ -430,6 +441,16 @@ export function AdminOrgDeliveryReportPage() {
           >
             Failed ({failed.data?.total ?? 0})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('rejected')}
+            className={cn(
+              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Rejected ({rejected.data?.total ?? 0})
+          </button>
         </div>
 
         <Button size="sm" variant="outline" disabled={isExporting} onClick={exportFiltered}>
@@ -481,6 +502,20 @@ export function AdminOrgDeliveryReportPage() {
           <>
             <MessagesTable rows={failed.data?.rows ?? []} onView={handleView} />
             <PaginationControls page={failedPage} total={failed.data?.total ?? 0} onPageChange={setFailedPage} />
+          </>
+        ))}
+
+      {activeTab === 'rejected' &&
+        (rejected.isLoading ? (
+          <div className="space-y-2.5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[52px] rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <MessagesTable rows={rejected.data?.rows ?? []} onView={handleView} />
+            <PaginationControls page={rejectedPage} total={rejected.data?.total ?? 0} onPageChange={setRejectedPage} />
           </>
         ))}
 

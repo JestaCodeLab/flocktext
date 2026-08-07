@@ -41,13 +41,16 @@ import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
 
-// Delivered/Failed here refer to the whole send, not one recipient - "Failed"
-// means at least one recipient failed (matches the tab this row can appear in
-// and the set eligible for resend-failed); "Pending" means still resolving.
+// Delivered/Failed/Rejected here refer to the whole send, not one recipient - "Failed"
+// means at least one recipient failed and "Rejected" means at least one was rejected
+// (each matches the tab that row can appear in, and the set eligible for
+// resend-failed); "Pending" means still resolving. `className` carries the
+// outline+warning treatment 'rejected' needs, since it has no dedicated Badge variant.
 function messageStatusBadge(stats: MessageStats) {
-  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})` };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending' };
-  return { variant: 'success' as const, label: 'Delivered' };
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
+  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -97,50 +100,84 @@ function ScheduledTable({
 }) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-[13px]">Next send</TableHead>
-            <TableHead className="text-[13px]">Type</TableHead>
-            <TableHead className="text-[13px]">Sent to</TableHead>
-            <TableHead className="text-[13px]">Message</TableHead>
-            <TableHead className="w-0 text-[13px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {messages.map((m) => (
-            <TableRow key={m.id}>
-              <TableCell>
-                <ScheduledDateTime date={m.scheduleDate} />
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary" className="gap-1">
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[13px]">Next send</TableHead>
+              <TableHead className="text-[13px]">Type</TableHead>
+              <TableHead className="text-[13px]">Sent to</TableHead>
+              <TableHead className="text-[13px]">Message</TableHead>
+              <TableHead className="w-0 text-[13px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {messages.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>
+                  <ScheduledDateTime date={m.scheduleDate} />
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="gap-1">
+                    {m.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                    {m.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate text-muted-foreground">{recipientSummary(m)}</TableCell>
+                <TableCell className="max-w-[280px] truncate text-muted-foreground">{m.body}</TableCell>
+                <TableCell>
+                  <div className="flex gap-1">
+                    <Button size="icon-sm" variant="ghost" onClick={() => onView(m)}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon-sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      disabled={cancelingId === m.id}
+                      onClick={() => onCancel(m.id)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="divide-y divide-border sm:hidden">
+        {messages.map((m) => (
+          <div key={m.id} className="flex items-center gap-1 px-3.5 py-3">
+            <button type="button" onClick={() => onView(m)} className="min-w-0 flex-1 text-left active:opacity-70">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-sm font-semibold text-foreground">
+                  {new Date(m.scheduleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  <span className="ml-1.5 font-normal text-muted-foreground">
+                    {new Date(m.scheduleDate).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </span>
+                </div>
+                <Badge variant="secondary" className="shrink-0 gap-1 text-[10px]">
                   {m.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
                   {m.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
                 </Badge>
-              </TableCell>
-              <TableCell className="max-w-[200px] truncate text-muted-foreground">{recipientSummary(m)}</TableCell>
-              <TableCell className="max-w-[280px] truncate text-muted-foreground">{m.body}</TableCell>
-              <TableCell>
-                <div className="flex gap-1">
-                  <Button size="icon-sm" variant="ghost" onClick={() => onView(m)}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-destructive"
-                    disabled={cancelingId === m.id}
-                    onClick={() => onCancel(m.id)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </div>
+              <div className="mt-1 truncate text-xs text-muted-foreground">To: {recipientSummary(m)}</div>
+              <div className="mt-0.5 truncate text-xs text-muted-foreground">{m.body}</div>
+            </button>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              className="shrink-0 text-destructive"
+              disabled={cancelingId === m.id}
+              onClick={() => onCancel(m.id)}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -275,80 +312,112 @@ function MessagesTable({
   onSaveTemplate: (messageId: string) => void;
   resendingMessageId?: string | null;
 }) {
+  function ActionsMenu({ m }: { m: MessageSummary }) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon-sm" variant="ghost" title="Actions">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-42">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
+            <Eye className="h-3 w-3" /> View details
+          </DropdownMenuItem>
+          {onResend && (
+            <DropdownMenuItem className="cursor-pointer" disabled={resendingMessageId === m.id} onClick={() => onResend(m.id)}>
+              <RotateCcw className="h-3 w-3" /> Resend
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onSaveTemplate(m.id)}>
+            <FileText className="h-3 w-3" /> Save as template
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-[13px]">Date &amp; time</TableHead>
-            <TableHead className="text-[13px]">Type</TableHead>
-            <TableHead className="text-[13px]">Message</TableHead>
-            <TableHead className="text-center text-[13px]">Recipients</TableHead>
-            <TableHead className="text-[13px]">Sender ID</TableHead>
-            <TableHead className="text-[13px]">Source</TableHead>
-            <TableHead className="text-[13px]">Status</TableHead>
-            <TableHead className="w-0 text-[13px]">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((m) => {
-            const status = messageStatusBadge(m.stats);
-            const source = sourceBadge(m.source);
-            return (
-              <TableRow key={m.id}>
-                <TableCell>
-                  <div className="font-medium text-foreground">
-                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[13px]">Date &amp; time</TableHead>
+              <TableHead className="text-[13px]">Type</TableHead>
+              <TableHead className="text-[13px]">Message</TableHead>
+              <TableHead className="text-center text-[13px]">Recipients</TableHead>
+              <TableHead className="text-[13px]">Sender ID</TableHead>
+              <TableHead className="text-[13px]">Source</TableHead>
+              <TableHead className="text-[13px]">Status</TableHead>
+              <TableHead className="w-0 text-[13px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((m) => {
+              const status = messageStatusBadge(m.stats);
+              const source = sourceBadge(m.source);
+              return (
+                <TableRow key={m.id}>
+                  <TableCell>
+                    <div className="font-medium text-foreground">
+                      {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk`}</Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[240px] truncate text-muted-foreground">{m.preview}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                  <TableCell>
+                    <Badge variant={source.variant}>{source.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <ActionsMenu m={m} />
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="divide-y divide-border sm:hidden">
+        {rows.map((m) => {
+          const status = messageStatusBadge(m.stats);
+          return (
+            <div key={m.id} className="flex items-center gap-1 px-3.5 py-3">
+              <button type="button" onClick={() => onView(m)} className="min-w-0 flex-1 text-left active:opacity-70">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-foreground">
+                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                    <span className="ml-1.5 font-normal text-muted-foreground">
+                      {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </span>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{m.stats.total <= 1 ? 'Single' : `Bulk`}</Badge>
-                </TableCell>
-                <TableCell className="max-w-[240px] truncate text-muted-foreground">{m.preview}</TableCell>
-                <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
-                <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
-                <TableCell>
-                  <Badge variant={source.variant}>{source.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={status.variant}>{status.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button size="icon-sm" variant="ghost" title="Actions">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end" className="w-42">
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
-                        <Eye className="h-3 w-3" /> View details
-                      </DropdownMenuItem>
-                      {onResend && (
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          disabled={resendingMessageId === m.id}
-                          onClick={() => onResend(m.id)}
-                        >
-                          <RotateCcw className="h-3 w-3" /> Resend
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => onSaveTemplate(m.id)}>
-                        <FileText className="h-3 w-3" /> Save as template
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                  <Badge variant={status.variant} className={cn('shrink-0 text-[10px]', status.className)}>
+                    {status.label}
+                  </Badge>
+                </div>
+                <div className="mt-1 truncate text-xs text-muted-foreground">{m.preview}</div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground">
+                  {m.stats.total} recipient{m.stats.total === 1 ? '' : 's'} · {m.senderId}
+                </div>
+              </button>
+              <ActionsMenu m={m} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -398,11 +467,12 @@ export function ReportsPage() {
   const [templateSourceId, setTemplateSourceId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [selectedScheduledId, setSelectedScheduledId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'scheduled' | 'delivered' | 'failed'>('delivered');
+  const [activeTab, setActiveTab] = useState<'scheduled' | 'delivered' | 'failed' | 'rejected'>('delivered');
   const [range, setRange] = useState<DateRangeParams>({ preset: 'all_time' });
   const [scheduledPage, setScheduledPage] = useState(1);
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
   const queryClient = useQueryClient();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
 
@@ -412,11 +482,12 @@ export function ReportsPage() {
     setScheduledPage(1);
     setDeliveredPage(1);
     setFailedPage(1);
+    setRejectedPage(1);
   }, [range]);
 
   // Jump straight to the Scheduled tab (e.g. from the Dashboard's "View all" link).
   useEffect(() => {
-    const state = location.state as { tab?: 'scheduled' | 'delivered' | 'failed' } | null;
+    const state = location.state as { tab?: 'scheduled' | 'delivered' | 'failed' | 'rejected' } | null;
     if (state?.tab) setActiveTab(state.tab);
     if (state?.tab) window.history.replaceState({}, '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -433,6 +504,10 @@ export function ReportsPage() {
   const failed = useQuery({
     queryKey: ['messages', 'failed', range, failedPage],
     queryFn: () => fetchMessages('failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
+  });
+  const rejected = useQuery({
+    queryKey: ['messages', 'rejected', range, rejectedPage],
+    queryFn: () => fetchMessages('rejected', range, { page: rejectedPage, pageSize: PAGE_SIZE }),
   });
 
   const resend = useMutation({
@@ -466,7 +541,7 @@ export function ReportsPage() {
     if (!viewDetail.data) return;
     const rows = [
       ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
-      ...viewDetail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
+      ...viewDetail.data.recipients.map((r) => [r.name, r.phone, r.status, r.userReason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
     ];
     downloadCsv(`message-${viewingId}-recipients.csv`, rows);
   }
@@ -480,13 +555,13 @@ export function ReportsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const isLoading = scheduled.isLoading || delivered.isLoading || failed.isLoading;
-  const isFetching = scheduled.isFetching || delivered.isFetching || failed.isFetching;
+  const isLoading = scheduled.isLoading || delivered.isLoading || failed.isLoading || rejected.isLoading;
+  const isFetching = scheduled.isFetching || delivered.isFetching || failed.isFetching || rejected.isFetching;
 
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-1 text-[26px] font-bold">Delivery Reports</div>
+        <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Delivery Reports</div>
         <div className="text-sm text-muted-foreground">Delivery and failure breakdowns for every send.</div>
       </div>
 
@@ -533,6 +608,16 @@ export function ReportsPage() {
               >
                 Failed ({failed.data?.total ?? 0})
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('rejected')}
+                className={cn(
+                  'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+                  activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Rejected ({rejected.data?.total ?? 0})
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -544,6 +629,7 @@ export function ReportsPage() {
                   scheduled.refetch();
                   delivered.refetch();
                   failed.refetch();
+                  rejected.refetch();
                 }}
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
@@ -606,6 +692,22 @@ export function ReportsPage() {
               </>
             ) : (
               <EmptyState message="No failed messages — everything's delivering cleanly." />
+            ))}
+
+          {activeTab === 'rejected' &&
+            (rejected.data?.rows.length ? (
+              <>
+                <MessagesTable
+                  rows={rejected.data.rows}
+                  onView={handleView}
+                  onResend={(messageId) => resend.mutate(messageId)}
+                  onSaveTemplate={setTemplateSourceId}
+                  resendingMessageId={resend.isPending ? (resend.variables ?? null) : null}
+                />
+                <PaginationControls page={rejectedPage} pageSize={PAGE_SIZE} total={rejected.data.total} onPageChange={setRejectedPage} />
+              </>
+            ) : (
+              <EmptyState message="No rejected messages." />
             ))}
         </>
       )}

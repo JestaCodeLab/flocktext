@@ -15,7 +15,7 @@ export function ActivityLogPage() {
 
   return (
     <div>
-      <div className="mb-6 text-[26px] font-bold">Activity Log</div>
+      <div className="mb-6 text-[22px] font-bold sm:text-[26px]">Activity Log</div>
 
       {log.isLoading && (
         <div className="space-y-2">

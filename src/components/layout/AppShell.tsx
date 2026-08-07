@@ -21,7 +21,7 @@ import {
   SendIcon,
   Sun,
   Moon,
-  Menu,
+  MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchMe, logout } from '@/api/auth';
@@ -78,6 +78,22 @@ function getBottomNavItems(role: string | undefined): { to: string; label: strin
   items.push({ to: '/app/settings', label: 'Settings', icon: Settings });
   return items;
 }
+
+// The mobile bottom tab bar's plain (non-emphasized) tabs, flanking the
+// raised Send SMS button. Everything else the sidebar can reach (Templates,
+// SMS Credit, Settings, Activity Log, Contacts/Groups, Contacts/Birthdays)
+// lives behind the bar's "More" tab instead of getting its own slot.
+function getMobileTabItems(entity: EntityLabels): { to: string; label: string; icon: LucideIcon }[] {
+  return [
+    { to: '/app/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/app/contacts', label: entity.pluralCap, icon: Contact },
+    { to: '/app/reports', label: 'Reports', icon: BarChart3 },
+  ];
+}
+
+// Paths owned by a bottom-bar tab - anything else falls under "More", so that
+// tab lights up whenever the current page can only be reached through it.
+const MOBILE_TAB_PREFIXES = ['/app/dashboard', '/app/contacts', '/app/compose', '/app/reports'];
 
 function navLinkClass(isActive: boolean) {
   return cn(
@@ -181,6 +197,8 @@ export function AppShell() {
   const mainNavItems = getMainNavItems(entity);
   const { user, organization, membership } = session;
   const bottomNavItems = getBottomNavItems(membership.role);
+  const mobileTabItems = getMobileTabItems(entity);
+  const isMoreTabActive = !MOBILE_TAB_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
 
   async function handleLogout() {
     const { refreshToken } = useAuthStore.getState();
@@ -272,14 +290,6 @@ export function AppShell() {
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-3 py-2.5 sm:gap-3.5 sm:px-5 sm:py-3.5 md:px-8">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground md:hidden"
-          >
-            <Menu className="h-[15px] w-[15px]" />
-          </button>
-
           <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto sm:gap-2.5">
             <DropdownMenu>
               <DropdownMenuTrigger className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-medium whitespace-nowrap">
@@ -447,10 +457,67 @@ export function AppShell() {
           </DialogContent>
         </Dialog>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-9 lg:py-7">
+        <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-24 sm:px-6 sm:py-6 md:pb-6 lg:px-9 lg:py-7">
           <Outlet />
         </main>
       </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-stretch border-t border-border bg-card pb-[env(safe-area-inset-bottom)] md:hidden">
+        {mobileTabItems.slice(0, 2).map((item) => {
+          const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                'flex flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium',
+                isActive ? 'text-primary' : 'text-muted-foreground'
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <Link
+            to="/app/compose"
+            className="-mt-5 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg ring-4 ring-background"
+          >
+            <SendIcon className="h-5 w-5" />
+          </Link>
+        </div>
+
+        {mobileTabItems.slice(2).map((item) => {
+          const isActive = location.pathname === item.to || location.pathname.startsWith(`${item.to}/`);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={cn(
+                'flex flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium',
+                isActive ? 'text-primary' : 'text-muted-foreground'
+              )}
+            >
+              <item.icon className="h-5 w-5" />
+              {item.label}
+            </Link>
+          );
+        })}
+
+        <button
+          type="button"
+          onClick={() => setMobileNavOpen(true)}
+          className={cn(
+            'flex flex-1 flex-col items-center justify-center gap-1 py-2 text-[11px] font-medium',
+            isMoreTabActive ? 'text-primary' : 'text-muted-foreground'
+          )}
+        >
+          <MoreHorizontal className="h-5 w-5" />
+          More
+        </button>
+      </nav>
 
       <SessionTimeoutModal />
     </div>

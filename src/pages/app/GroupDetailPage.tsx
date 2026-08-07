@@ -80,7 +80,7 @@ export function GroupDetailPage() {
             <>
               <Input
                 autoFocus
-                className="h-auto w-40 py-1 text-[26px] font-extrabold sm:w-64"
+                className="h-auto w-40 py-1 text-[22px] font-extrabold sm:w-64 sm:text-[26px]"
                 value={editValue}
                 onChange={(e) => setEditValue(e.target.value)}
                 onKeyDown={(e) => {
@@ -97,7 +97,7 @@ export function GroupDetailPage() {
             </>
           ) : (
             <>
-              <div className="truncate text-[26px] font-extrabold">{detail.data?.name ?? '—'}</div>
+              <div className="truncate text-[22px] font-extrabold sm:text-[26px]">{detail.data?.name ?? '—'}</div>
               <Button size="icon-sm" variant="ghost" className="shrink-0" onClick={startEditing}>
                 <Pencil className="h-3.5 w-3.5" />
               </Button>

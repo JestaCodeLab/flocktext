@@ -46,13 +46,13 @@ export function MessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const failedCount = detail.data?.stats.failed ?? 0;
+  const failedCount = (detail.data?.stats.failed ?? 0) + (detail.data?.stats.rejected ?? 0);
 
   function exportCsv() {
     if (!detail.data) return;
     const rows = [
       ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
-      ...detail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
+      ...detail.data.recipients.map((r) => [r.name, r.phone, r.status, r.userReason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
     ];
     downloadCsv(`message-${id}-recipients.csv`, rows);
   }
@@ -69,7 +69,7 @@ export function MessageReportPage() {
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
+          <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Delivery Details</div>
           <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
         </div>
         {!!detail.data && failedCount > 0 && (

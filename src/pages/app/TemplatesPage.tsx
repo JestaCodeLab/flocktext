@@ -96,7 +96,7 @@ export function TemplatesPage() {
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[26px] font-bold">Templates</div>
+          <div className="text-[22px] font-bold sm:text-[26px]">Templates</div>
           <div className="mt-0.5 text-sm text-muted-foreground">Pre-built and custom message templates.</div>
         </div>
         <Button className="self-start sm:self-auto" onClick={openCreate}>

@@ -42,7 +42,7 @@ export function SettingsPage() {
   return (
     <div>
       <div className="mb-4">
-        <div className="mb-1 text-[26px] font-bold">Settings</div>
+        <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Settings</div>
         <div className="text-sm text-muted-foreground">Manage your account settings and preferences</div>
       </div>
 

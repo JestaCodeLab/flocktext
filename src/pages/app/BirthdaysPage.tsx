@@ -60,7 +60,7 @@ export function BirthdaysPage() {
       <div className={cn(!birthdayUnlocked && 'pointer-events-none select-none blur-sm')}>
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <div className="text-[26px] font-bold">Birthdays</div>
+            <div className="text-[22px] font-bold sm:text-[26px]">Birthdays</div>
             <div className="mt-0.5 text-sm text-muted-foreground">
               {birthdays.data?.length ?? 0} {entity.plural} with a birthday on file
             </div>

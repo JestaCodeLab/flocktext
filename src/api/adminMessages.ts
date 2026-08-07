@@ -5,6 +5,7 @@ export interface AdminMessageStats {
   delivered: number;
   failed: number;
   pending: number;
+  rejected: number;
 }
 
 export interface AdminMessageSummary {
@@ -28,7 +29,7 @@ export interface AdminMessageListResponse {
 
 export async function fetchAdminMessages(params?: {
   search?: string;
-  status?: 'delivered' | 'failed';
+  status?: 'delivered' | 'failed' | 'rejected';
   page?: number;
   pageSize?: number;
 }) {
@@ -40,8 +41,9 @@ export interface AdminMessageRecipientRow {
   id: string;
   name: string;
   phone: string;
-  status: 'pending' | 'delivered' | 'failed';
+  status: 'pending' | 'delivered' | 'failed' | 'rejected';
   reason: string;
+  userReason: string;
   deliveredAt: string | null;
   provider: 'bms' | 'hubtel';
 }

@@ -467,7 +467,7 @@ export function DashboardPage() {
     <div>
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="mb-1 text-[26px] font-bold">Dashboard</div>
+          <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Dashboard</div>
           <div className="text-sm text-muted-foreground">{summary.data?.churchName ?? <Skeleton className="h-4 w-40" />}</div>
         </div>
         <div className="flex flex-wrap gap-3">
