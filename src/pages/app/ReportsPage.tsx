@@ -41,13 +41,16 @@ import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
 
-// Delivered/Failed here refer to the whole send, not one recipient - "Failed"
-// means at least one recipient failed (matches the tab this row can appear in
-// and the set eligible for resend-failed); "Pending" means still resolving.
+// Delivered/Failed/Rejected here refer to the whole send, not one recipient - "Failed"
+// means at least one recipient failed and "Rejected" means at least one was rejected
+// (each matches the tab that row can appear in, and the set eligible for
+// resend-failed); "Pending" means still resolving. `className` carries the
+// outline+warning treatment 'rejected' needs, since it has no dedicated Badge variant.
 function messageStatusBadge(stats: MessageStats) {
-  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})` };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending' };
-  return { variant: 'success' as const, label: 'Delivered' };
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
+  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -376,7 +379,7 @@ function MessagesTable({
                     <Badge variant={source.variant}>{source.label}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={status.variant}>{status.label}</Badge>
+                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                   </TableCell>
                   <TableCell>
                     <ActionsMenu m={m} />
@@ -401,7 +404,7 @@ function MessagesTable({
                       {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
                     </span>
                   </div>
-                  <Badge variant={status.variant} className="shrink-0 text-[10px]">
+                  <Badge variant={status.variant} className={cn('shrink-0 text-[10px]', status.className)}>
                     {status.label}
                   </Badge>
                 </div>
@@ -464,11 +467,12 @@ export function ReportsPage() {
   const [templateSourceId, setTemplateSourceId] = useState<string | null>(null);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [selectedScheduledId, setSelectedScheduledId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'scheduled' | 'delivered' | 'failed'>('delivered');
+  const [activeTab, setActiveTab] = useState<'scheduled' | 'delivered' | 'failed' | 'rejected'>('delivered');
   const [range, setRange] = useState<DateRangeParams>({ preset: 'all_time' });
   const [scheduledPage, setScheduledPage] = useState(1);
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
   const queryClient = useQueryClient();
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
 
@@ -478,11 +482,12 @@ export function ReportsPage() {
     setScheduledPage(1);
     setDeliveredPage(1);
     setFailedPage(1);
+    setRejectedPage(1);
   }, [range]);
 
   // Jump straight to the Scheduled tab (e.g. from the Dashboard's "View all" link).
   useEffect(() => {
-    const state = location.state as { tab?: 'scheduled' | 'delivered' | 'failed' } | null;
+    const state = location.state as { tab?: 'scheduled' | 'delivered' | 'failed' | 'rejected' } | null;
     if (state?.tab) setActiveTab(state.tab);
     if (state?.tab) window.history.replaceState({}, '');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -499,6 +504,10 @@ export function ReportsPage() {
   const failed = useQuery({
     queryKey: ['messages', 'failed', range, failedPage],
     queryFn: () => fetchMessages('failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
+  });
+  const rejected = useQuery({
+    queryKey: ['messages', 'rejected', range, rejectedPage],
+    queryFn: () => fetchMessages('rejected', range, { page: rejectedPage, pageSize: PAGE_SIZE }),
   });
 
   const resend = useMutation({
@@ -532,7 +541,7 @@ export function ReportsPage() {
     if (!viewDetail.data) return;
     const rows = [
       ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
-      ...viewDetail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
+      ...viewDetail.data.recipients.map((r) => [r.name, r.phone, r.status, r.userReason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
     ];
     downloadCsv(`message-${viewingId}-recipients.csv`, rows);
   }
@@ -546,8 +555,8 @@ export function ReportsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const isLoading = scheduled.isLoading || delivered.isLoading || failed.isLoading;
-  const isFetching = scheduled.isFetching || delivered.isFetching || failed.isFetching;
+  const isLoading = scheduled.isLoading || delivered.isLoading || failed.isLoading || rejected.isLoading;
+  const isFetching = scheduled.isFetching || delivered.isFetching || failed.isFetching || rejected.isFetching;
 
   return (
     <div>
@@ -599,6 +608,16 @@ export function ReportsPage() {
               >
                 Failed ({failed.data?.total ?? 0})
               </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('rejected')}
+                className={cn(
+                  'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+                  activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Rejected ({rejected.data?.total ?? 0})
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
@@ -610,6 +629,7 @@ export function ReportsPage() {
                   scheduled.refetch();
                   delivered.refetch();
                   failed.refetch();
+                  rejected.refetch();
                 }}
               >
                 <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
@@ -672,6 +692,22 @@ export function ReportsPage() {
               </>
             ) : (
               <EmptyState message="No failed messages — everything's delivering cleanly." />
+            ))}
+
+          {activeTab === 'rejected' &&
+            (rejected.data?.rows.length ? (
+              <>
+                <MessagesTable
+                  rows={rejected.data.rows}
+                  onView={handleView}
+                  onResend={(messageId) => resend.mutate(messageId)}
+                  onSaveTemplate={setTemplateSourceId}
+                  resendingMessageId={resend.isPending ? (resend.variables ?? null) : null}
+                />
+                <PaginationControls page={rejectedPage} pageSize={PAGE_SIZE} total={rejected.data.total} onPageChange={setRejectedPage} />
+              </>
+            ) : (
+              <EmptyState message="No rejected messages." />
             ))}
         </>
       )}

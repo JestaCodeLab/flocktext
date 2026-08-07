@@ -46,13 +46,13 @@ export function MessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const failedCount = detail.data?.stats.failed ?? 0;
+  const failedCount = (detail.data?.stats.failed ?? 0) + (detail.data?.stats.rejected ?? 0);
 
   function exportCsv() {
     if (!detail.data) return;
     const rows = [
       ['Name', 'Phone', 'Status', 'Reason', 'Delivered at'],
-      ...detail.data.recipients.map((r) => [r.name, r.phone, r.status, r.reason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
+      ...detail.data.recipients.map((r) => [r.name, r.phone, r.status, r.userReason, r.deliveredAt ? new Date(r.deliveredAt).toLocaleString() : '']),
     ];
     downloadCsv(`message-${id}-recipients.csv`, rows);
   }

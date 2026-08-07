@@ -39,7 +39,7 @@ export interface SendMessagePayload {
 
 export interface SendMessageResult {
   id: string;
-  stats: { total: number; delivered: number; failed: number; pending: number };
+  stats: { total: number; delivered: number; failed: number; pending: number; rejected: number };
   creditCost: number;
   walletBalanceCredits: number;
 }
@@ -97,6 +97,7 @@ export interface MessageStats {
   delivered: number;
   failed: number;
   pending: number;
+  rejected: number;
 }
 
 export interface MessageSummary {
@@ -112,7 +113,7 @@ export interface MessageSummary {
   stats: MessageStats;
 }
 
-export async function fetchMessages(status?: 'delivered' | 'failed', range?: DateRangeParams, page?: PageParams) {
+export async function fetchMessages(status?: 'delivered' | 'failed' | 'rejected', range?: DateRangeParams, page?: PageParams) {
   const { data } = await api.get<Paginated<MessageSummary>>('/messages', { params: { status, ...range, ...page } });
   return data;
 }
@@ -121,8 +122,11 @@ export interface MessageRecipientRow {
   id: string;
   name: string;
   phone: string;
-  status: 'pending' | 'delivered' | 'failed';
+  status: 'pending' | 'delivered' | 'failed' | 'rejected';
+  // Technical/admin-facing cause - shown only in the Admin Console.
   reason: string;
+  // Friendly, org-facing version of the same outcome - shown in the org's own reports.
+  userReason: string;
   deliveredAt: string | null;
   // Only populated by the admin-facing recipients endpoints (see api/adminOrgMessages.ts) -
   // undefined on the org self-service endpoint this type is also shared with.

@@ -16,6 +16,7 @@ import { apiErrorMessage } from '@/api/client';
 // duplicating the small label instead of exporting the full badge-variant helper.
 function statusLabel(stats: AdminOrgMessageStats) {
   if (stats.failed > 0) return `Failed (${stats.failed})`;
+  if (stats.rejected > 0) return `Rejected (${stats.rejected})`;
   if (stats.pending > 0) return 'Pending';
   return 'Delivered';
 }
