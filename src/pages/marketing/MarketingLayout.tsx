@@ -17,11 +17,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
-import { SUPPORT_EMAIL, WHATSAPP_URL } from '@/pages/marketing/data/contact';
+import { FACEBOOK_URL, INSTAGRAM_URL, SUPPORT_EMAIL, WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
+import { FacebookIcon } from '@/pages/marketing/components/FacebookIcon';
+import { InstagramIcon } from '@/pages/marketing/components/InstagramIcon';
 import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
 
-const navLinks = [{ to: '/pricing', label: 'Pricing', end: false }];
+const navLinks = [
+  { to: '/blog', label: 'Blog', end: false },
+  { to: '/pricing', label: 'Pricing', end: false },
+];
 
 // "Download App" scrolls to a section on the homepage only, not a route — a
 // plain anchor link, so no NavLink active-state.
@@ -360,6 +365,26 @@ export function MarketingLayout() {
               Bulk SMS for businesses, churches, and institutions — reach everyone you serve, automate birthdays, and
               keep every group in sync.
             </p>
+            <div className="flex items-center gap-3">
+              <a
+                href={FACEBOOK_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="FlockText on Facebook"
+                className="flex size-8 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-foreground/70 transition-colors hover:text-sidebar-foreground"
+              >
+                <FacebookIcon className="size-4" />
+              </a>
+              <a
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="FlockText on Instagram"
+                className="flex size-8 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-foreground/70 transition-colors hover:text-sidebar-foreground"
+              >
+                <InstagramIcon className="size-4" />
+              </a>
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -370,6 +395,9 @@ export function MarketingLayout() {
               </Link>
               <Link to="/pricing" className="w-fit transition-colors hover:text-sidebar-foreground">
                 Pricing
+              </Link>
+              <Link to="/blog" className="w-fit transition-colors hover:text-sidebar-foreground">
+                Blog
               </Link>
               <Link to="/signup" className="w-fit transition-colors hover:text-sidebar-foreground">
                 Get started

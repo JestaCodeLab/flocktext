@@ -46,7 +46,7 @@ const heroSlides = [
 ];
 
 // Generic placeholder wordmarks — swap for real client logos once confirmed. See [[flocktext-marketing-homepage]].
-const trustedByLogos = ['Vertex', 'Northbridge', 'Solace', 'Meridian', 'Anchor Co.', 'Halcyon'];
+const trustedByLogos = ['ChurchHQ', 'JD Solutions', 'Internse', 'S.Connect', 'Anchor Co.', 'Halcyon'];
 
 const features = [
   {
@@ -146,25 +146,32 @@ const industries = [
 // Placeholder testimonials — pending real customer quotes to replace these. See [[flocktext-marketing-homepage]].
 const testimonials = [
   {
+    quote: 'FlockText has made it so easy to keep our congregation informed and engaged. Highly recommended!',
+    name: 'Pastor GiLord',
+    role: 'The Saviors Embassy',
+  },
+  {
+    quote: 'We have been using FlockText for our church communications and it has been a game-changer. The delivery is fast and reliable.',
+    name: 'Rev. Jerry Martey',
+    role: 'FaithLove Chapel',
+  },
+  {
     quote: 'FlockText has transformed the way we communicate with our customers. Reliable, fast and easy to use.',
-    name: 'Business Owner',
-    role: 'Retail',
+    name: 'Kelvin Osei',
+    role: 'Wholesaile & Retail',
   },
   {
     quote: 'The delivery rate is excellent and the reports help us track every campaign effectively.',
-    name: 'Operations Manager',
-    role: 'Financial services',
-  },
-  {
-    quote: "We use FlockText daily for reminders and promotions. It's simply the best SMS platform we've used.",
-    name: 'Team Lead',
-    role: 'Hospitality',
-  },
+    name: 'Mrs. Gladys Mensah',
+    role: 'Minimart Supervisor',
+  }
+
 ];
 
 export function HomePage() {
   const [heroSlide, setHeroSlide] = useState(0);
   const industriesTrackRef = useRef<HTMLDivElement>(null);
+  const testimonialsTrackRef = useRef<HTMLDivElement>(null);
   // A logged-in user landing here via direct URL should get routed back to
   // their dashboard instead of being re-prompted to sign up.
   const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
@@ -174,8 +181,7 @@ export function HomePage() {
     return () => clearInterval(id);
   }, []);
 
-  function scrollIndustries(direction: 1 | -1) {
-    const track = industriesTrackRef.current;
+  function scrollByCard(track: HTMLDivElement | null, direction: 1 | -1) {
     const card = track?.firstElementChild as HTMLElement | null;
     if (!track || !card) return;
     const gap = parseFloat(getComputedStyle(track).columnGap || '0');
@@ -199,9 +205,8 @@ export function HomePage() {
                   key={slide.image}
                   src={slide.image}
                   alt=""
-                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${
-                    i === heroSlide ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${i === heroSlide ? 'opacity-100' : 'opacity-0'
+                    }`}
                 />
               ))}
             </div>
@@ -238,7 +243,7 @@ export function HomePage() {
           </h1>
 
           <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
-            Send bulk SMS, manage contacts, and engage your audience effectively with FlockText.
+            Reach customers, members and teams instantly with affordable bulk SMS, contact management, automation and delivery tracking.
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
@@ -271,15 +276,15 @@ export function HomePage() {
           className="absolute inset-0"
           style={{
             background:
-              'linear-gradient(to right, var(--background) 0%, var(--background) 30%, color-mix(in oklch, var(--background) 55%, transparent) 48%, transparent 68%)',
+              'linear-gradient(to right, var(--background) 0%, var(--background) 32%, color-mix(in oklch, var(--background) 50%, transparent) 50%, transparent 68%)',
           }}
         />
 
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
           <div className="max-w-xl lg:max-w-lg">
             <h1 className="text-[48px] leading-[1] font-bold tracking-tight text-foreground lg:text-[52px]">
-              Bulk SMS for 
-              <span className="text-primary"> Businesses & Churches </span> 
+              Bulk SMS for
+              <span className="text-primary"> Businesses & Churches </span>
               in Ghana
             </h1>
 
@@ -318,7 +323,7 @@ export function HomePage() {
       <section className="hidden border-t border-border sm:block">
         <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8">
           <p className="text-center text-base text-muted-foreground">
-            Trusted by businesses and organizations across Africa
+            Trusted by businesses across Ghana
           </p>
           <div className="mt-7 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 grayscale">
             {trustedByLogos.map((name) => (
@@ -386,7 +391,7 @@ export function HomePage() {
             <button
               type="button"
               aria-label="Previous"
-              onClick={() => scrollIndustries(-1)}
+              onClick={() => scrollByCard(industriesTrackRef.current, -1)}
               className="absolute top-1/2 -left-4 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-card text-foreground shadow-md ring-1 ring-foreground/10 transition-colors hover:bg-secondary sm:flex"
             >
               <ChevronLeft className="size-5" />
@@ -394,7 +399,7 @@ export function HomePage() {
             <button
               type="button"
               aria-label="Next"
-              onClick={() => scrollIndustries(1)}
+              onClick={() => scrollByCard(industriesTrackRef.current, 1)}
               className="absolute top-1/2 -right-4 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-card text-foreground shadow-md ring-1 ring-foreground/10 transition-colors hover:bg-secondary sm:flex"
             >
               <ChevronRight className="size-5" />
@@ -493,7 +498,7 @@ export function HomePage() {
       {/* Pricing */}
       <section id="pricing" className="border-t border-border bg-card/60">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
-          <div className="mx-auto max-w-2xl text-center">
+          <div className="mx-auto max-w-3xl text-center">
             <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">Pricing</div>
             <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
               Simple, pay-as-you-go pricing
@@ -530,17 +535,42 @@ export function HomePage() {
             </h2>
           </div>
 
-          <div className="mx-auto mt-14 grid max-w-6xl gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {testimonials.map((testimonial) => (
-              <div key={testimonial.quote} className="flex flex-col rounded-2xl bg-card p-7 ring-1 ring-foreground/10">
-                <Quote className="size-6 text-primary/40" />
-                <p className="mt-4 flex-1 text-base leading-relaxed text-foreground/80">{testimonial.quote}</p>
-                <div className="mt-5 border-t border-border pt-4">
-                  <div className="text-base font-bold text-foreground">{testimonial.name}</div>
-                  <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+          <div className="relative mx-auto mt-14 max-w-6xl">
+            <div
+              ref={testimonialsTrackRef}
+              className="no-scrollbar flex snap-x snap-mandatory gap-5 overflow-x-auto scroll-smooth pb-2"
+            >
+              {testimonials.map((testimonial) => (
+                <div
+                  key={testimonial.quote}
+                  className="flex w-[85%] shrink-0 snap-start flex-col rounded-2xl bg-card p-7 ring-1 ring-foreground/10 sm:w-[calc(50%-10px)] lg:w-[calc(33.333%-14px)]"
+                >
+                  <Quote className="size-6 text-primary/40" />
+                  <p className="mt-4 flex-1 text-base leading-relaxed text-foreground/80">{testimonial.quote}</p>
+                  <div className="mt-5 border-t border-border pt-4">
+                    <div className="text-base font-bold text-foreground">{testimonial.name}</div>
+                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+
+            <button
+              type="button"
+              aria-label="Previous"
+              onClick={() => scrollByCard(testimonialsTrackRef.current, -1)}
+              className="absolute top-1/2 -left-4 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-card text-foreground shadow-md ring-1 ring-foreground/10 transition-colors hover:bg-secondary sm:flex"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Next"
+              onClick={() => scrollByCard(testimonialsTrackRef.current, 1)}
+              className="absolute top-1/2 -right-4 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-card text-foreground shadow-md ring-1 ring-foreground/10 transition-colors hover:bg-secondary sm:flex"
+            >
+              <ChevronRight className="size-5" />
+            </button>
           </div>
         </div>
       </section>
@@ -556,7 +586,7 @@ export function HomePage() {
               Start communicating better today
             </h2>
             <p className="mt-2 max-w-xl text-base text-sidebar-foreground/60">
-              Join thousands of businesses using FlockText to connect, engage and grow.
+              Join businesses across Ghana already using FlockText to connect, engage and grow.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3">
