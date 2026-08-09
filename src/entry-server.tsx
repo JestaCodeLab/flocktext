@@ -9,6 +9,8 @@ import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
 import { SupportPage } from '@/pages/marketing/SupportPage';
 import { BusinessesPage } from '@/pages/marketing/BusinessesPage';
 import { ChurchesPage } from '@/pages/marketing/ChurchesPage';
+import { BlogPage } from '@/pages/marketing/BlogPage';
+import { BlogPostPage } from '@/pages/marketing/BlogPostPage';
 import { routeSeo } from '@/pages/marketing/data/seo';
 
 export function render(path: string) {
@@ -28,6 +30,8 @@ export function render(path: string) {
             <Route path="/support" element={<SupportPage />} />
             <Route path="/businesses" element={<BusinessesPage />} />
             <Route path="/churches" element={<ChurchesPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
           </Route>
         </Routes>
       </MemoryRouter>

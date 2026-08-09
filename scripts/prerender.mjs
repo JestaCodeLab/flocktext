@@ -43,12 +43,25 @@ async function main() {
     const { SITE_URL } = await vite.ssrLoadModule('/src/pages/marketing/data/seo.ts');
 
     for (const routePath of prerenderRoutes) {
-      const { html, title, description, url, image, imageWidth, imageHeight } = render(routePath);
+      const { html, title, description, url, image, imageWidth, imageHeight, type, publishedTime, jsonLd } =
+        render(routePath);
+
+      // article:published_time and the JSON-LD block only apply to blog posts -
+      // built separately and spliced in before </head> since the base template
+      // has no placeholder tags for them (unlike the og/twitter meta below,
+      // which always exist in the template and are swapped via .replace()).
+      const extraHead = [
+        publishedTime ? `<meta property="article:published_time" content="${escapeHtml(publishedTime)}" />` : '',
+        jsonLd ? `<script type="application/ld+json">${JSON.stringify(jsonLd)}</script>` : '',
+      ]
+        .filter(Boolean)
+        .join('\n    ');
 
       const page = template
         .replace(/<title>.*?<\/title>/, `<title>${escapeHtml(title)}</title>`)
         .replace(/<meta name="description" content=".*?"\s*\/>/, `<meta name="description" content="${escapeHtml(description)}" />`)
         .replace(/<link rel="canonical" href=".*?"\s*\/>/, `<link rel="canonical" href="${escapeHtml(url)}" />`)
+        .replace(/<meta property="og:type" content=".*?"\s*\/>/, `<meta property="og:type" content="${escapeHtml(type ?? 'website')}" />`)
         .replace(/<meta property="og:title" content=".*?"\s*\/>/, `<meta property="og:title" content="${escapeHtml(title)}" />`)
         .replace(/<meta property="og:description" content=".*?"\s*\/>/, `<meta property="og:description" content="${escapeHtml(description)}" />`)
         .replace(/<meta property="og:url" content=".*?"\s*\/>/, `<meta property="og:url" content="${escapeHtml(url)}" />`)
@@ -58,6 +71,7 @@ async function main() {
         .replace(/<meta name="twitter:title" content=".*?"\s*\/>/, `<meta name="twitter:title" content="${escapeHtml(title)}" />`)
         .replace(/<meta name="twitter:description" content=".*?"\s*\/>/, `<meta name="twitter:description" content="${escapeHtml(description)}" />`)
         .replace(/<meta name="twitter:image" content=".*?"\s*\/>/, `<meta name="twitter:image" content="${escapeHtml(image)}" />`)
+        .replace('</head>', extraHead ? `    ${extraHead}\n  </head>` : '</head>')
         .replace('<div id="root"></div>', `<div id="root">${html}</div>`);
 
       const outFile = outputPathFor(routePath);

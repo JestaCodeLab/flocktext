@@ -9,6 +9,9 @@ import { PrivacyPage } from '@/pages/marketing/PrivacyPage';
 import { SupportPage } from '@/pages/marketing/SupportPage';
 import { BusinessesPage } from '@/pages/marketing/BusinessesPage';
 import { ChurchesPage } from '@/pages/marketing/ChurchesPage';
+import { BlogPage } from '@/pages/marketing/BlogPage';
+import { BlogPostPage } from '@/pages/marketing/BlogPostPage';
+import { NotFoundPage } from '@/pages/marketing/NotFoundPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { SignupPage } from '@/pages/auth/SignupPage';
 import { OtpPage } from '@/pages/auth/OtpPage';
@@ -71,6 +74,9 @@ function App() {
         <Route path="/support" element={<SupportPage />} />
         <Route path="/businesses" element={<BusinessesPage />} />
         <Route path="/churches" element={<ChurchesPage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
 
       <Route element={<GuestRoute />}>
@@ -132,8 +138,6 @@ function App() {
           </Route>
         </Route>
       </Route>
-
-      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
