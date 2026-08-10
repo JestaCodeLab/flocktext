@@ -476,9 +476,9 @@ export function HomePage() {
             </div>
 
             <div className="mt-9 -mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-              <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
+              {/* <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
                 <img src={appStoreBadge} alt="Download on the App Store" className="h-16 w-auto lg:h-20" />
-              </a>
+              </a> */}
               <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
                 <img src={playStoreBadge} alt="Get it on Google Play" className="h-16 w-auto lg:h-20 " />
               </a>
