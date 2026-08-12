@@ -26,7 +26,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
 import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator';
-import { APP_STORE_URL, PLAY_STORE_URL } from '@/pages/marketing/data/contact';
+import { PLAY_STORE_URL } from '@/pages/marketing/data/contact';
 import { routeSeo } from '@/pages/marketing/data/seo';
 import heroImage from '@/assets/images/flocktext_home_banner.png';
 import churchImage from '@/assets/images/church.png';
@@ -36,7 +36,6 @@ import handPhoneImage from '@/assets/images/phone.png';
 import pastorsImage from '@/assets/images/pastors.png';
 import shopsImage from '@/assets/images/retail-depot.png';
 import fashionImage from '@/assets/images/fashion.png';
-import appStoreBadge from '@/assets/images/Appstore-download.webp';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
 
 const heroSlides = [
@@ -243,7 +242,7 @@ export function HomePage() {
           </h1>
 
           <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
-            Reach customers, members and teams instantly with affordable bulk SMS, contact management, automation and delivery tracking.
+            Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses and churches.
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
@@ -289,7 +288,7 @@ export function HomePage() {
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Reach every customer or member instantly, manage contacts, and engage your audience effectively with FlockText.
+              Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses and churches.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -476,9 +475,9 @@ export function HomePage() {
             </div>
 
             <div className="mt-9 -mb-6 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
-              <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
+              {/* <a href={APP_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
                 <img src={appStoreBadge} alt="Download on the App Store" className="h-16 w-auto lg:h-20" />
-              </a>
+              </a> */}
               <a href={PLAY_STORE_URL} target="_blank" rel="noreferrer" className="transition-opacity hover:opacity-85">
                 <img src={playStoreBadge} alt="Get it on Google Play" className="h-16 w-auto lg:h-20 " />
               </a>

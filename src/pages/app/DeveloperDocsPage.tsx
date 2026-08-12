@@ -21,6 +21,7 @@ function apiBaseUrl() {
 function examplePathFor(e: ApiEndpointDoc): string {
   if (e.id === 'sender-ids-delete') return '/v1/sender-ids/665f1c2e9b1d4a0012a3f8d2';
   if (e.id === 'sender-ids-status') return '/v1/sender-ids/status?senderId=StPaulsChurch';
+  if (e.id === 'messages-status') return '/v1/messages/665f1c2e9b1d4a0012a3f8f0/status';
   return e.path;
 }
 
