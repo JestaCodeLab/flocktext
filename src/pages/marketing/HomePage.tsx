@@ -26,7 +26,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
 import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator';
-import { APP_STORE_URL, PLAY_STORE_URL } from '@/pages/marketing/data/contact';
+import { PLAY_STORE_URL } from '@/pages/marketing/data/contact';
 import { routeSeo } from '@/pages/marketing/data/seo';
 import heroImage from '@/assets/images/flocktext_home_banner.png';
 import churchImage from '@/assets/images/church.png';
@@ -36,7 +36,6 @@ import handPhoneImage from '@/assets/images/phone.png';
 import pastorsImage from '@/assets/images/pastors.png';
 import shopsImage from '@/assets/images/retail-depot.png';
 import fashionImage from '@/assets/images/fashion.png';
-import appStoreBadge from '@/assets/images/Appstore-download.webp';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
 
 const heroSlides = [
