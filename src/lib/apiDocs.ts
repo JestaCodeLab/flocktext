@@ -226,4 +226,50 @@ export const API_ENDPOINTS: ApiEndpointDoc[] = [
       { status: 422, description: 'Missing message, no recipients, or an invalid recipient phone number.' },
     ],
   },
+  {
+    id: 'messages-status',
+    group: 'Messages',
+    method: 'GET',
+    path: '/v1/messages/{id}/status',
+    summary: 'Get the status of a sent message',
+    description:
+      'Returns delivery status for a message previously created via POST /v1/messages/send, including a per-recipient breakdown so you can match results back to the phone numbers you sent to.',
+    requestParams: [{ name: 'id', type: 'string', requirement: 'Path', description: 'The message ID, from the send response.' }],
+    responseParams: [
+      { name: 'id', type: 'string', requirement: 'Optional', description: 'The message’s ID.' },
+      { name: 'status', type: 'string', requirement: 'Optional', description: 'sent, scheduled, or cancelled - the message’s own lifecycle state, not delivery outcome.' },
+      { name: 'stats', type: 'object', requirement: 'Optional', description: 'total / delivered / failed / pending / rejected counts.' },
+      { name: 'recipients', type: 'object[]', requirement: 'Optional', description: 'Array of { phone, name, status, reason, deliveredAt } - one entry per recipient.' },
+    ],
+    status: 200,
+    response: `{
+  "status": "success",
+  "message": "Message status retrieved successfully.",
+  "data": {
+    "id": "665f1c2e9b1d4a0012a3f8f0",
+    "status": "sent",
+    "stats": { "total": 2, "delivered": 1, "failed": 0, "pending": 1, "rejected": 0 },
+    "recipients": [
+      {
+        "phone": "+233241234567",
+        "name": "Kwame",
+        "status": "delivered",
+        "reason": null,
+        "deliveredAt": "2026-08-12T09:03:11.000Z"
+      },
+      {
+        "phone": "+233551234567",
+        "name": null,
+        "status": "pending",
+        "reason": null,
+        "deliveredAt": null
+      }
+    ]
+  }
+}`,
+    errors: [
+      { status: 401, description: 'Invalid or missing API key.' },
+      { status: 404, description: 'Message not found.' },
+    ],
+  },
 ];

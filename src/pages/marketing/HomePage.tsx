@@ -243,7 +243,7 @@ export function HomePage() {
           </h1>
 
           <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
-            Reach customers, members and teams instantly with affordable bulk SMS, contact management, automation and delivery tracking.
+            Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses and churches.
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
@@ -289,7 +289,7 @@ export function HomePage() {
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Reach every customer or member instantly, manage contacts, and engage your audience effectively with FlockText.
+              Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses and churches.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
