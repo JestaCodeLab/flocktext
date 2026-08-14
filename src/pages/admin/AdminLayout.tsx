@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, CreditCard, BadgeCheck, ChevronDown, ShieldCheck, Puzzle, Megaphone, Settings, Send, Receipt } from 'lucide-react';
+import { LayoutDashboard, Building2, CreditCard, BadgeCheck, ChevronDown, ShieldCheck, Puzzle, Megaphone, Settings, Send, Receipt, LifeBuoy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAdminAuthStore } from '@/store/adminAuthStore';
 import { adminLogout } from '@/api/adminAuth';
@@ -19,6 +19,7 @@ const navItems = [
   { to: '/admin/transactions', label: 'Transactions', icon: Receipt },
   { to: '/admin/packages', label: 'Packages', icon: CreditCard },
   { to: '/admin/sender-ids', label: 'Sender IDs', icon: BadgeCheck },
+  { to: '/admin/tickets', label: 'Support Tickets', icon: LifeBuoy },
   { to: '/admin/addons', label: 'Addons', icon: Puzzle },
   { to: '/admin/announcements', label: 'Announcements', icon: Megaphone },
 ];

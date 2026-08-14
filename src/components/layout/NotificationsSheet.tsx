@@ -1,8 +1,10 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bell, BellOff, Wallet, CalendarClock, SendHorizonal, BadgeCheck, XCircle, UserPlus, Megaphone } from 'lucide-react';
+import { Bell, BellOff, Wallet, CalendarClock, SendHorizonal, BadgeCheck, XCircle, UserPlus, Megaphone, LifeBuoy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { fetchNotifications, markNotificationRead, markAllNotificationsRead, type NotificationType } from '@/api/notifications';
+import { fetchNotifications, markNotificationRead, markAllNotificationsRead, type NotificationItem, type NotificationType } from '@/api/notifications';
 
 const NOTIFICATION_ICON: Record<NotificationType, typeof Bell> = {
   low_balance: Wallet,
@@ -12,10 +14,13 @@ const NOTIFICATION_ICON: Record<NotificationType, typeof Bell> = {
   sender_id_rejected: XCircle,
   team_invite: UserPlus,
   platform_announcement: Megaphone,
+  ticket_status_changed: LifeBuoy,
 };
 
 export function NotificationsSheet() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
   const query = useQuery({ queryKey: ['notifications'], queryFn: fetchNotifications, refetchInterval: 30000 });
 
   const markRead = useMutation({
@@ -31,8 +36,19 @@ export function NotificationsSheet() {
   const notifications = query.data?.notifications ?? [];
   const unreadCount = query.data?.unreadCount ?? 0;
 
+  // Ticket-status notifications deep-link to the ticket - the sheet needs a
+  // controlled open state so a click-through can close it on the way out.
+  function handleNotificationClick(n: NotificationItem) {
+    if (!n.read) markRead.mutate(n.id);
+    const ticketId = n.type === 'ticket_status_changed' ? (n.metadata as { ticketId?: string } | undefined)?.ticketId : undefined;
+    if (ticketId) {
+      setOpen(false);
+      navigate(`/app/support/${ticketId}`);
+    }
+  }
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger className="relative flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground">
         <Bell className="h-[15px] w-[15px]" />
         {unreadCount > 0 && (
@@ -71,7 +87,7 @@ export function NotificationsSheet() {
                 <button
                   key={n.id}
                   type="button"
-                  onClick={() => !n.read && markRead.mutate(n.id)}
+                  onClick={() => handleNotificationClick(n)}
                   className={cn('flex w-full items-start gap-3 px-5 py-3 text-left hover:bg-muted/50', !n.read && 'bg-primary/5')}
                 >
                   <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">

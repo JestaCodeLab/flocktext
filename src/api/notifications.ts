@@ -7,13 +7,15 @@ export type NotificationType =
   | 'sender_id_approved'
   | 'sender_id_rejected'
   | 'team_invite'
-  | 'platform_announcement';
+  | 'platform_announcement'
+  | 'ticket_status_changed';
 
 export interface NotificationItem {
   id: string;
   type: NotificationType;
   title: string;
   message: string;
+  metadata?: { ticketId?: string } | Record<string, unknown>;
   read: boolean;
   date: string;
 }
