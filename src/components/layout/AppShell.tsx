@@ -22,6 +22,7 @@ import {
   Sun,
   Moon,
   MoreHorizontal,
+  LifeBuoy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchMe, logout } from '@/api/auth';
@@ -44,6 +45,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { NotificationsSheet } from '@/components/layout/NotificationsSheet';
 import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
+import { WhatsAppSupportButton } from '@/components/layout/WhatsAppSupportButton';
 import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
 import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import type { LucideIcon } from 'lucide-react';
@@ -75,6 +77,7 @@ function getMainNavItems(entity: EntityLabels): NavItem[] {
 function getBottomNavItems(role: string | undefined): { to: string; label: string; icon: LucideIcon }[] {
   const items: { to: string; label: string; icon: LucideIcon }[] = [];
   if (role === 'admin') items.push({ to: '/app/activity-log', label: 'Activity Log', icon: History });
+  items.push({ to: '/app/support', label: 'Support', icon: LifeBuoy });
   items.push({ to: '/app/settings', label: 'Settings', icon: Settings });
   return items;
 }
@@ -336,7 +339,7 @@ export function AppShell() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-medium whitespace-nowrap">
+            <div className="hidden shrink-0 items-center gap-1.5 rounded-full border border-border bg-secondary px-3.5 py-1 text-sm font-medium whitespace-nowrap sm:flex">
               <Wallet className="h-[15px] w-[15px] text-primary" />
               {organization.walletBalanceCredits.toLocaleString()} credits
             </div>
@@ -518,6 +521,8 @@ export function AppShell() {
           More
         </button>
       </nav>
+
+      <WhatsAppSupportButton />
 
       <SessionTimeoutModal />
     </div>

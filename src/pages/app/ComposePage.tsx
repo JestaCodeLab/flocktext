@@ -20,7 +20,7 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
 import { fetchGroups, fetchContactsCount, fetchContacts, type Contact } from '@/api/contacts';
 import { fetchTemplates } from '@/api/templates';
-import { sendMessage, scheduleMessage, type RecurringFreq } from '@/api/messages';
+import { sendMessage, scheduleMessage, type RecurringFreq, type RecipientType } from '@/api/messages';
 import { fetchEffectiveSenderId } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
@@ -77,21 +77,26 @@ export function ComposePage() {
   const session = useAuthStore((s) => s.session);
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
 
-  const [recipientMode, setRecipientMode] = useState<'single' | 'groups' | 'all'>(preset?.recipientMode ?? 'groups');
+  const [recipientMode, setRecipientMode] = useState<'single' | 'groups' | 'all'>(preset?.recipientMode ?? 'single');
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
-  const [singlePhone, setSinglePhone] = useState(preset?.phone ?? '');
-  const [singleName, setSingleName] = useState(preset?.recipientName ?? '');
-  // Preset navigation (e.g. "Message this contact" elsewhere in the app) already hands
-  // us a resolved phone/name, so land on manual entry in that case rather than the
-  // search UI - otherwise default to searching existing contacts, the more common path.
-  const [singleEntryMode, setSingleEntryMode] = useState<'contact' | 'manual'>(preset?.phone ? 'manual' : 'contact');
   // contactSearchInput updates on every keystroke (so the box itself feels responsive);
   // contactSearch only catches up 300ms after typing pauses, and is what actually drives
   // the query - without this, an org with hundreds of contacts fires one network request
   // per keystroke, and an empty search fetches every contact unfiltered.
   const [contactSearchInput, setContactSearchInput] = useState('');
   const [contactSearch, setContactSearch] = useState('');
-  const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  // Multiple contacts can be searched for and added one at a time - the search box
+  // stays open after each pick so the next one can be found right away.
+  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([]);
+  // Numbers not in the address book can be added to the same send alongside searched
+  // contacts - kept separate from selectedContacts since these aren't Contact records.
+  // Preset navigation (e.g. "Message this contact" elsewhere in the app) already hands us
+  // a resolved phone/name, so it's seeded in here rather than needing its own entry mode.
+  const [manualRecipients, setManualRecipients] = useState<{ phone: string; name: string }[]>(
+    preset?.phone ? [{ phone: preset.phone, name: preset.recipientName ?? '' }] : []
+  );
+  const [manualAddPhone, setManualAddPhone] = useState('');
+  const [manualAddName, setManualAddName] = useState('');
   const [scheduleMode, setScheduleMode] = useState<'now' | 'once' | 'recurring'>('now');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
@@ -121,11 +126,18 @@ export function ComposePage() {
   const contactResults = useQuery({
     queryKey: ['contacts', contactSearch],
     queryFn: () => fetchContacts(contactSearch),
-    enabled: recipientMode === 'single' && singleEntryMode === 'contact' && !selectedContact && contactSearch.length > 0,
+    enabled: recipientMode === 'single' && contactSearch.length > 0,
   });
   const MAX_CONTACT_RESULTS = 50;
-  const shownContactResults = contactResults.data?.slice(0, MAX_CONTACT_RESULTS) ?? [];
-  const hiddenContactResultCount = Math.max(0, (contactResults.data?.length ?? 0) - MAX_CONTACT_RESULTS);
+  // Already-added contacts (via search or a manually-typed number matching the same
+  // phone) stay out of the results list so the same person can't be added twice.
+  const selectableContactResults = (contactResults.data ?? []).filter(
+    (c) =>
+      !selectedContacts.some((sc) => sc.id === c.id) &&
+      !manualRecipients.some((r) => normalizePhone(r.phone) === normalizePhone(c.phone))
+  );
+  const shownContactResults = selectableContactResults.slice(0, MAX_CONTACT_RESULTS);
+  const hiddenContactResultCount = Math.max(0, selectableContactResults.length - MAX_CONTACT_RESULTS);
   const senderIds = (session?.organization.senderIds ?? []).filter((s) => s.status !== 'deleted');
   const approvedSenderIds = senderIds.filter((s) => s.status === 'approved');
   const approvedSenderId = approvedSenderIds.find((s) => s.isPrimary) ?? approvedSenderIds[0];
@@ -142,13 +154,13 @@ export function ComposePage() {
 
   // Matches the server's own rule (validators/shared.js requires 9+ digits), so
   // a half-typed number isn't counted as a deliverable recipient.
-  const singlePhoneValid = normalizePhone(singlePhone).length >= 9;
+  const manualAddPhoneValid = normalizePhone(manualAddPhone).length >= 9;
 
   const recipientCount = useMemo(() => {
-    if (recipientMode === 'single') return singlePhoneValid ? 1 : 0;
+    if (recipientMode === 'single') return selectedContacts.length + manualRecipients.length;
     if (recipientMode === 'all') return contactsCount.data ?? 0;
     return groups.data?.find((g) => g.id === selectedGroupId)?.count ?? 0;
-  }, [recipientMode, singlePhoneValid, groups.data, selectedGroupId, contactsCount.data]);
+  }, [recipientMode, selectedContacts, manualRecipients, groups.data, selectedGroupId, contactsCount.data]);
 
   const segments = countSegments(body);
   const estimatedCost = segments * recipientCount;
@@ -171,12 +183,20 @@ export function ComposePage() {
     // actually resolved - an in-flight count reads as 0 and would otherwise
     // block the button for a moment on every page load.
     if (recipientMode === 'single') {
-      if (!singlePhone.trim()) {
-        result.push({ key: 'recipients', status: 'blocked', buttonLabel: 'Add a recipient', message: 'Enter a phone number to send to.' });
-      } else if (!singlePhoneValid) {
-        result.push({ key: 'recipients', status: 'blocked', buttonLabel: 'Check the number', message: "That number looks incomplete — it needs at least 9 digits." });
+      const totalContactRecipients = selectedContacts.length + manualRecipients.length;
+      if (totalContactRecipients === 0) {
+        result.push({
+          key: 'recipients',
+          status: 'blocked',
+          buttonLabel: 'Add a recipient',
+          message: `Search or add at least one number to send to.`,
+        });
       } else {
-        result.push({ key: 'recipients', status: 'ok', message: 'Sending to 1 number' });
+        result.push({
+          key: 'recipients',
+          status: 'ok',
+          message: `Sending to ${totalContactRecipients} ${totalContactRecipients === 1 ? entity.singular : entity.plural}`,
+        });
       }
     } else if (recipientMode === 'all') {
       if (contactsCount.isSuccess && recipientCount === 0) {
@@ -269,8 +289,8 @@ export function ComposePage() {
     return result;
   }, [
     recipientMode,
-    singlePhone,
-    singlePhoneValid,
+    selectedContacts,
+    manualRecipients,
     selectedGroupId,
     recipientCount,
     contactsCount.isSuccess,
@@ -294,9 +314,10 @@ export function ComposePage() {
     setBody('');
     setTemplateId('');
     setSelectedGroupId(null);
-    setSinglePhone('');
-    setSingleName('');
-    setSelectedContact(null);
+    setSelectedContacts([]);
+    setManualRecipients([]);
+    setManualAddPhone('');
+    setManualAddName('');
     setContactSearchInput('');
     setContactSearch('');
     setScheduleDate('');
@@ -342,6 +363,22 @@ export function ComposePage() {
     setSelectedGroupId((current) => (current === id ? null : id));
   }
 
+  // Adds a number typed by hand to the same recipient list search-picked contacts go
+  // into. Dedupes against both sources by digits-only phone, same as the search results
+  // filter, so the same person can't end up in the list (and billed) twice.
+  function addManualRecipient() {
+    const digits = normalizePhone(manualAddPhone);
+    if (digits.length < 9) return;
+    const alreadyAdded =
+      selectedContacts.some((c) => normalizePhone(c.phone) === digits) ||
+      manualRecipients.some((r) => normalizePhone(r.phone) === digits);
+    if (!alreadyAdded) {
+      setManualRecipients((prev) => [...prev, { phone: manualAddPhone.trim(), name: manualAddName.trim() }]);
+    }
+    setManualAddPhone('');
+    setManualAddName('');
+  }
+
   // Inserts at the cursor (not just appended) so this works mid-sentence too, then
   // restores focus and places the cursor right after the inserted token.
   function insertVariable(token: string) {
@@ -371,12 +408,20 @@ export function ComposePage() {
   }
 
   function handleConfirm() {
+    // Contacts picked via search plus any manually-typed numbers go out together as a
+    // "list" send - the server re-matches each phone against existing contacts for
+    // personalization, so mixing real contacts and ad-hoc numbers works transparently.
     const basePayload = {
       body,
-      recipientType: recipientMode,
+      recipientType: (recipientMode === 'single' ? 'list' : recipientMode) as RecipientType,
       groupIds: recipientMode === 'groups' && selectedGroupId ? [selectedGroupId] : undefined,
-      phone: recipientMode === 'single' ? singlePhone : undefined,
-      recipientName: recipientMode === 'single' ? singleName || undefined : undefined,
+      recipients:
+        recipientMode === 'single'
+          ? [
+              ...selectedContacts.map((c) => ({ phone: c.phone, name: c.name })),
+              ...manualRecipients.map((r) => ({ phone: r.phone, name: r.name || undefined })),
+            ]
+          : undefined,
       templateId: templateId || null,
       senderId: selectedSenderId || undefined,
     };
@@ -444,19 +489,8 @@ export function ComposePage() {
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 w-full flex-1">
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
-            <div className="mb-3.5 flex flex-wrap items-center justify-between gap-2">
-              <div className="text-[15px] font-medium text-foreground/80">Send To</div>
+            <div className="mb-3.5 flex flex-wrap items-center gap-2">
               <div className="flex rounded-lg border border-border p-0.5">
-                <button
-                  type="button"
-                  onClick={() => setRecipientMode('groups')}
-                  className={cn(
-                    'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
-                    recipientMode === 'groups' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  Groups
-                </button>
                 <button
                   type="button"
                   onClick={() => setRecipientMode('single')}
@@ -466,6 +500,16 @@ export function ComposePage() {
                   )}
                 >
                   Single
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRecipientMode('groups')}
+                  className={cn(
+                    'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
+                    recipientMode === 'groups' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  Groups
                 </button>
                 <button
                   type="button"
@@ -517,121 +561,129 @@ export function ComposePage() {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="flex w-fit rounded-lg border border-border p-0.5">
-                  <button
-                    type="button"
-                    onClick={() => setSingleEntryMode('contact')}
-                    className={cn(
-                      'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
-                      singleEntryMode === 'contact' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    From {entity.plural}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSingleEntryMode('manual')}
-                    className={cn(
-                      'rounded-md px-3 py-1 text-sm font-semibold transition-colors',
-                      singleEntryMode === 'manual' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    Manual entry
-                  </button>
+              <div className="space-y-2">
+                {(selectedContacts.length > 0 || manualRecipients.length > 0) && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedContacts.map((c) => (
+                      <div
+                        key={c.id}
+                        className="flex items-center gap-1.5 rounded-full border border-primary bg-accent/40 py-1 pl-3 pr-1.5 text-xs"
+                      >
+                        <span className="font-semibold">{c.name}</span>
+                        <span className="text-muted-foreground">{c.phone}</span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedContacts((prev) => prev.filter((sc) => sc.id !== c.id))}
+                          className="rounded-full p-0.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {manualRecipients.map((r) => (
+                      <div
+                        key={r.phone}
+                        className="flex items-center gap-1.5 rounded-full border border-border bg-secondary/60 py-1 pl-3 pr-1.5 text-xs"
+                      >
+                        {r.name && <span className="font-semibold">{r.name}</span>}
+                        <span className="text-muted-foreground">{r.phone}</span>
+                        <button
+                          type="button"
+                          onClick={() => setManualRecipients((prev) => prev.filter((mr) => mr.phone !== r.phone))}
+                          className="rounded-full p-0.5 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={`Search ${entity.plural} by name or phone…`}
+                    className="pl-10"
+                    value={contactSearchInput}
+                    onChange={(e) => setContactSearchInput(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+                <div
+                  className={cn(
+                    'max-h-[220px] overflow-auto rounded-lg',
+                    contactSearchInput.trim().length > 0 && 'border border-border'
+                  )}
+                >
+                  {contactSearchInput.trim().length > 0 && contactResults.isLoading && (
+                    <div className="p-4 text-sm text-muted-foreground">Searching {entity.plural}…</div>
+                  )}
+                  {contactSearchInput.trim().length > 0 && !contactResults.isLoading && shownContactResults.length === 0 && (
+                    <div className="p-4 text-sm text-muted-foreground">No {entity.plural} found.</div>
+                  )}
+                  {shownContactResults.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedContacts((prev) => (prev.some((sc) => sc.id === c.id) ? prev : [...prev, c]));
+                        setContactSearchInput('');
+                        setContactSearch('');
+                      }}
+                      className="flex w-full items-center gap-3 border-b border-border px-3.5 py-2.5 text-left last:border-b-0 hover:bg-secondary/60"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm font-semibold">{c.name}</div>
+                        <div className="truncate text-xs text-muted-foreground">{c.phone}</div>
+                      </div>
+                      <Plus className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  ))}
+                  {hiddenContactResultCount > 0 && (
+                    <div className="border-t border-border p-2.5 text-center text-xs text-muted-foreground">
+                      +{hiddenContactResultCount} more — keep typing to narrow it down
+                    </div>
+                  )}
                 </div>
 
-                {singleEntryMode === 'contact' ? (
-                  selectedContact ? (
-                    <div className="flex items-center justify-between gap-2 rounded-lg border border-primary bg-accent/40 p-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold leading-tight">{selectedContact.name}</div>
-                        <div className="truncate text-xs text-muted-foreground">{selectedContact.phone}</div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setSelectedContact(null);
-                          setSinglePhone('');
-                          setSingleName('');
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5" /> Change
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder={`Search ${entity.plural} by name or phone…`}
-                          className="pl-10"
-                          value={contactSearchInput}
-                          onChange={(e) => setContactSearchInput(e.target.value)}
-                          autoFocus
-                        />
-                      </div>
-                      <div className="max-h-[220px] overflow-auto rounded-lg border border-border">
-                        {/* {contactSearchInput.trim().length === 0 && (
-                          <div className="p-4 text-sm text-muted-foreground">
-                            Start typing a name or phone number to search your {entity.plural}.
-                          </div>
-                        )} */}
-                        {contactSearchInput.trim().length > 0 && contactResults.isLoading && (
-                          <div className="p-4 text-sm text-muted-foreground">Searching {entity.plural}…</div>
-                        )}
-                        {contactSearchInput.trim().length > 0 && !contactResults.isLoading && shownContactResults.length === 0 && (
-                          <div className="p-4 text-sm text-muted-foreground">No {entity.plural} found.</div>
-                        )}
-                        {shownContactResults.map((c) => (
-                          <button
-                            key={c.id}
-                            type="button"
-                            onClick={() => {
-                              setSelectedContact(c);
-                              setSinglePhone(c.phone);
-                              setSingleName(c.name);
-                            }}
-                            className="flex w-full items-center gap-3 border-b border-border px-3.5 py-2.5 text-left last:border-b-0 hover:bg-secondary/60"
-                          >
-                            <div className="min-w-0 flex-1">
-                              <div className="truncate text-sm font-semibold">{c.name}</div>
-                              <div className="truncate text-xs text-muted-foreground">{c.phone}</div>
-                            </div>
-                          </button>
-                        ))}
-                        {hiddenContactResultCount > 0 && (
-                          <div className="border-t border-border p-2.5 text-center text-xs text-muted-foreground">
-                            +{hiddenContactResultCount} more — keep typing to narrow it down
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )
-                ) : (
-                  <>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="single-phone">Phone number</Label>
-                      <Input
-                        id="single-phone"
-                        placeholder="024 xxx xxxx"
-                        inputMode="numeric"
-                        value={singlePhone}
-                        onChange={(e) => setSinglePhone(formatPhoneInput(e.target.value))}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="single-name">Name (optional)</Label>
-                      <Input
-                        id="single-name"
-                        placeholder="Used for {firstName}/{lastName} personalization"
-                        value={singleName}
-                        onChange={(e) => setSingleName(e.target.value)}
-                      />
-                    </div>
-                  </>
-                )}
+                <div className="space-y-1.5 border-t border-border pt-3">
+                  <Label className="text-xs text-muted-foreground">Or add a number manually</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input
+                      placeholder="024 xxx xxxx"
+                      inputMode="numeric"
+                      className="sm:flex-1"
+                      value={manualAddPhone}
+                      onChange={(e) => setManualAddPhone(formatPhoneInput(e.target.value))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addManualRecipient();
+                        }
+                      }}
+                    />
+                    <Input
+                      placeholder="Name (optional)"
+                      className="sm:flex-1"
+                      value={manualAddName}
+                      onChange={(e) => setManualAddName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addManualRecipient();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="shrink-0"
+                      disabled={!manualAddPhoneValid}
+                      onClick={addManualRecipient}
+                    >
+                      <Plus className="h-4 w-4" /> Add
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -694,63 +746,63 @@ export function ComposePage() {
                 </div>
               )}
 
-            {scheduleMode === 'recurring' && (
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recurring-freq">Frequency</Label>
-                    <select
-                      id="recurring-freq"
-                      className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
-                      value={recurringFreq}
-                      onChange={(e) => setRecurringFreq(e.target.value as RecurringFreq)}
-                    >
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                    </select>
+              {scheduleMode === 'recurring' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-freq">Frequency</Label>
+                      <select
+                        id="recurring-freq"
+                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
+                        value={recurringFreq}
+                        onChange={(e) => setRecurringFreq(e.target.value as RecurringFreq)}
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-time">Time</Label>
+                      <Input id="recurring-time" type="time" value={recurringTime} onChange={(e) => setRecurringTime(e.target.value)} />
+                    </div>
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recurring-time">Time</Label>
-                    <Input id="recurring-time" type="time" value={recurringTime} onChange={(e) => setRecurringTime(e.target.value)} />
-                  </div>
+                  {recurringFreq === 'weekly' && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-day-of-week">Day of week</Label>
+                      <select
+                        id="recurring-day-of-week"
+                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
+                        value={recurringDayOfWeek}
+                        onChange={(e) => setRecurringDayOfWeek(Number(e.target.value))}
+                      >
+                        {WEEKDAYS.map((d, i) => (
+                          <option key={i} value={i}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {recurringFreq === 'monthly' && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-day-of-month">Day of month</Label>
+                      <select
+                        id="recurring-day-of-month"
+                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
+                        value={recurringDayOfMonth}
+                        onChange={(e) => setRecurringDayOfMonth(Number(e.target.value))}
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
-                {recurringFreq === 'weekly' && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recurring-day-of-week">Day of week</Label>
-                    <select
-                      id="recurring-day-of-week"
-                      className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
-                      value={recurringDayOfWeek}
-                      onChange={(e) => setRecurringDayOfWeek(Number(e.target.value))}
-                    >
-                      {WEEKDAYS.map((d, i) => (
-                        <option key={i} value={i}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                {recurringFreq === 'monthly' && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recurring-day-of-month">Day of month</Label>
-                    <select
-                      id="recurring-day-of-month"
-                      className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
-                      value={recurringDayOfMonth}
-                      onChange={(e) => setRecurringDayOfMonth(Number(e.target.value))}
-                    >
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
             </div>
           )}
 
@@ -816,7 +868,7 @@ export function ComposePage() {
           <div className="mb-4 rounded-2xl border border-border bg-card p-5">
             <div className="mb-2.5 flex justify-between text-sm">
               <div className="text-muted-foreground">Recipients</div>
-              <div className="font-bold">{recipientMode === 'single' ? (singlePhone ? 1 : 0) : recipientCount}</div>
+              <div className="font-bold">{recipientCount}</div>
             </div>
             <div className="mb-2.5 flex justify-between text-sm">
               <div className="text-muted-foreground">SMS segments</div>
@@ -878,7 +930,7 @@ export function ComposePage() {
           <div className="space-y-2 text-sm text-muted-foreground">
             <div>
               Recipients:{' '}
-              <b className="text-foreground">{recipientMode === 'single' ? singlePhone || '—' : `${recipientCount} ${entity.plural}`}</b>
+              <b className="text-foreground">{`${recipientCount} ${recipientCount === 1 ? entity.singular : entity.plural}`}</b>
             </div>
             <div>
               Credit cost: <b className="text-foreground">{estimatedCost} credits</b>

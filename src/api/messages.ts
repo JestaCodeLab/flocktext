@@ -31,6 +31,7 @@ export interface SendMessagePayload {
   recipientType: RecipientType;
   groupIds?: string[];
   contactIds?: string[];
+  recipients?: { phone: string; name?: string }[];
   phone?: string;
   recipientName?: string;
   templateId?: string | null;

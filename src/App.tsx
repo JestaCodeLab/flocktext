@@ -35,6 +35,7 @@ import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
 import { AdminSenderIdsPage } from '@/pages/admin/AdminSenderIdsPage';
 import { AdminAddonsPage } from '@/pages/admin/AdminAddonsPage';
 import { AdminAnnouncementsPage } from '@/pages/admin/AdminAnnouncementsPage';
+import { AdminTicketsPage } from '@/pages/admin/AdminTicketsPage';
 import { AdminAccountPage } from '@/pages/admin/AdminAccountPage';
 import { OnboardingLayout } from '@/pages/onboarding/OnboardingLayout';
 import { WelcomeStep } from '@/pages/onboarding/WelcomeStep';
@@ -53,6 +54,8 @@ import { ReportsPage } from '@/pages/app/ReportsPage';
 import { MessageReportPage } from '@/pages/app/MessageReportPage';
 import { SettingsPage } from '@/pages/app/SettingsPage';
 import { ActivityLogPage } from '@/pages/app/ActivityLogPage';
+import { SupportTicketsPage } from '@/pages/app/SupportTicketsPage';
+import { SupportTicketDetailPage } from '@/pages/app/SupportTicketDetailPage';
 import { DeveloperDocsPage } from '@/pages/app/DeveloperDocsPage';
 
 function App() {
@@ -101,6 +104,7 @@ function App() {
           <Route path="transactions" element={<AdminTransactionsPage />} />
           <Route path="packages" element={<AdminPackagesPage />} />
           <Route path="sender-ids" element={<AdminSenderIdsPage />} />
+          <Route path="tickets" element={<AdminTicketsPage />} />
           <Route path="addons" element={<AdminAddonsPage />} />
           <Route path="announcements" element={<AdminAnnouncementsPage />} />
           <Route path="account" element={<AdminAccountPage />} />
@@ -129,6 +133,8 @@ function App() {
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="reports/:id" element={<MessageReportPage />} />
+            <Route path="support" element={<SupportTicketsPage />} />
+            <Route path="support/:id" element={<SupportTicketDetailPage />} />
             <Route path="wallet" element={<WalletPage />} />
             <Route path="scheduled" element={<Navigate to="/app/reports" replace />} />
             <Route path="sender-id" element={<Navigate to="/app/settings" replace />} />

@@ -71,6 +71,7 @@ function recipientSummary(m: ScheduledMessage) {
   if (m.recipientType === 'single') return m.recipientName ? `${m.recipientName} (${m.phone})` : m.phone || '—';
   if (m.recipientType === 'all') return 'All contacts';
   if (m.recipientType === 'selection') return `${m.contactCount} selected contact${m.contactCount === 1 ? '' : 's'}`;
+  if (m.recipientType === 'list') return `${m.contactCount} recipient${m.contactCount === 1 ? '' : 's'}`;
   return m.groups.map((g) => g.name).join(', ') || '—';
 }
 
