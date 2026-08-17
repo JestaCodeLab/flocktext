@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, Ban, CreditCard, Tag, Share2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Ban, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -126,13 +126,25 @@ function DeliveryBarChart({ delivered, failed, rejected }: { delivered: number; 
   );
 }
 
-function MessageCard({ detail }: { detail: MessageDetail }) {
+// `showCredits` inlines the credit cost right before the date/time, in place of
+// the modal variant's separate Credit stat card (removed - redundant once it's
+// shown here). The page variant keeps its own "Credit Used" stat card instead,
+// so this stays opt-in rather than always-on.
+function MessageCard({ detail, showCredits }: { detail: MessageDetail; showCredits?: boolean }) {
   return (
     <div className="overflow-hidden rounded-xl bg-secondary">
       <div className="flex items-center justify-between gap-3 bg-primary px-3.5 py-2.5 text-[13px] font-bold text-white">
         <p className="text-base font-normal">Message</p>
-        <span className="shrink-0 text-[13px] font-medium text-white/70">
-          {new Date(detail.date).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+        <span className="flex shrink-0 items-center gap-1.5 text-[13px] font-medium text-white/70">
+          {showCredits && (
+            <>
+              <span>{detail.creditCost} {detail.creditCost === 1 ? 'credit' : 'credits'}</span>
+              <span aria-hidden="true">·</span>
+            </>
+          )}
+          <span>
+            {new Date(detail.date).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+          </span>
         </span>
       </div>
       <div className="break-words p-3.5 text-base leading-relaxed text-foreground">{detail.body}</div>
@@ -167,37 +179,81 @@ function RecipientsPaginationControls({ page, total, onPageChange }: { page: num
   );
 }
 
+// A failed/rejected recipient that's since been resent (see resentStatus) shouldn't just
+// sit there looking like an unresolved, ignored failure - this renders what actually
+// happened on the follow-up send, resolved live server-side rather than a stale snapshot.
+function ResentStatusNote({ status }: { status: NonNullable<MessageDetail['recipients'][number]['resentStatus']> }) {
+  const label =
+    status === 'delivered' ? 'Delivered' : status === 'pending' ? 'Pending' : status === 'rejected' ? 'Rejected' : 'Failed again';
+  const className = status === 'delivered' ? 'text-success' : status === 'pending' ? 'text-muted-foreground' : 'text-destructive';
+  return (
+    <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
+      <ArrowRight className="h-3 w-3 shrink-0" />
+      Resent — <span className={className}>{label}</span>
+    </div>
+  );
+}
+
 function RecipientsTable({ recipients, page, showProvider }: { recipients: MessageDetail['recipients']; page: number; showProvider?: boolean }) {
   const pageRecipients = recipients.slice((page - 1) * RECIPIENTS_PAGE_SIZE, page * RECIPIENTS_PAGE_SIZE);
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="text-[13px]">Name</TableHead>
-          <TableHead className="text-[13px]">Recipient</TableHead>
-          <TableHead className="text-[13px]">Status</TableHead>
-          <TableHead className="text-[13px]">Reason</TableHead>
-          {showProvider && <TableHead className="text-[13px]">Provider</TableHead>}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {pageRecipients.map((r) => (
-          <TableRow key={r.id}>
-            <TableCell className="font-semibold">{r.name}</TableCell>
-            <TableCell className="text-muted-foreground">{r.phone}</TableCell>
-            <TableCell>
-              <StatusBadge status={r.status} />
-            </TableCell>
-            <TableCell className="text-muted-foreground">{(showProvider ? r.reason : r.userReason) || '—'}</TableCell>
-            {showProvider && (
-              <TableCell>
-                <Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>
-              </TableCell>
-            )}
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <>
+      <div className="hidden sm:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-[13px]">Name</TableHead>
+              <TableHead className="text-[13px]">Recipient</TableHead>
+              <TableHead className="text-[13px]">Status</TableHead>
+              <TableHead className="text-[13px]">Reason</TableHead>
+              {showProvider && <TableHead className="text-[13px]">Provider</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pageRecipients.map((r) => (
+              <TableRow key={r.id}>
+                <TableCell className="font-semibold">{r.name}</TableCell>
+                <TableCell className="text-muted-foreground">{r.phone}</TableCell>
+                <TableCell>
+                  <StatusBadge status={r.status} />
+                  {r.resentStatus && <ResentStatusNote status={r.resentStatus} />}
+                </TableCell>
+                <TableCell className="text-muted-foreground">{(showProvider ? r.reason : r.userReason) || '—'}</TableCell>
+                {showProvider && (
+                  <TableCell>
+                    <Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="divide-y divide-border sm:hidden">
+        {pageRecipients.map((r) => {
+          const reason = (showProvider ? r.reason : r.userReason) || '—';
+          return (
+            <div key={r.id} className="px-3.5 py-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 truncate text-sm font-semibold text-foreground">{r.name}</div>
+                <StatusBadge status={r.status} />
+              </div>
+              <div className="mt-0.5 text-xs text-muted-foreground">{r.phone}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{reason}</div>
+              {r.resentStatus && <ResentStatusNote status={r.resentStatus} />}
+              {showProvider && (
+                <div className="mt-1.5">
+                  <Badge variant={providerBadge(r.provider).variant} className="text-[10px]">
+                    {providerBadge(r.provider).label}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -267,15 +323,14 @@ export function MessageDetailBody({
   return (
     <>
       <div className="mb-5">
-        <MessageCard detail={detail} />
+        <MessageCard detail={detail} showCredits />
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+      <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <MiniStatCard icon={Send} label="Total" value={detail.stats.total} tint="muted" />
         <MiniStatCard icon={CheckCircle2} label="Delivered" value={detail.stats.delivered} tint="success" />
         <MiniStatCard icon={Ban} label="Rejected" value={detail.stats.rejected} tint="warning" />
         <MiniStatCard icon={XCircle} label="Failed" value={detail.stats.failed} tint="destructive" />
-        <MiniStatCard icon={CreditCard} label="Credit" value={detail.creditCost} tint="primary" />
       </div>
 
       <div className="mb-0 flex items-end justify-between gap-3">

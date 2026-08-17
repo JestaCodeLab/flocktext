@@ -138,6 +138,10 @@ export interface MessageRecipientRow {
   // Last time this recipient's status changed - admin-only. Used to timestamp a failed
   // recipient's resolution, since only `deliveredAt` is set for the delivered case.
   updatedAt?: string;
+  // Set (to the resend attempt's live status) once this failed/rejected recipient has been
+  // resent via "Resend to N failed" - lets the UI show what actually happened next instead
+  // of leaving a bare, seemingly-unresolved "failed" badge. null/undefined = never resent.
+  resentStatus?: 'pending' | 'delivered' | 'failed' | 'rejected' | null;
 }
 
 export interface MessageDetail {
