@@ -147,7 +147,7 @@ function MessageCard({ detail, showCredits }: { detail: MessageDetail; showCredi
           </span>
         </span>
       </div>
-      <div className="break-words p-3.5 text-base leading-relaxed text-foreground">{detail.body}</div>
+      <div className="max-h-[180px] overflow-y-auto break-words p-3.5 text-base leading-relaxed text-foreground">{detail.body}</div>
     </div>
   );
 }
