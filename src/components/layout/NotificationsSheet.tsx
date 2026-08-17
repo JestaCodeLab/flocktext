@@ -58,7 +58,7 @@ export function NotificationsSheet() {
         )}
       </SheetTrigger>
       <SheetContent className="gap-0 p-0">
-        <SheetHeader className="flex-row items-center justify-between space-y-0 border-b border-border px-5 py-4">
+        <SheetHeader className="flex-row items-center justify-between space-y-0 border-b border-border py-4 pr-10 pl-5">
           <SheetTitle>Notifications</SheetTitle>
           {unreadCount > 0 && (
             <button
