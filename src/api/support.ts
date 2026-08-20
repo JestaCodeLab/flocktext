@@ -1,6 +1,6 @@
 import { api } from '@/api/client';
 
-export type TicketCategory = 'bug' | 'feature';
+export type TicketCategory = 'issue' | 'feature';
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 
 export interface TicketSummary {

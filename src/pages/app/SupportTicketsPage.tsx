@@ -19,7 +19,7 @@ export function SupportTicketsPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [subject, setSubject] = useState('');
-  const [category, setCategory] = useState<TicketCategory>('bug');
+  const [category, setCategory] = useState<TicketCategory>('issue');
   const [description, setDescription] = useState('');
 
   const tickets = useQuery({ queryKey: ['tickets'], queryFn: fetchTickets });
@@ -27,7 +27,7 @@ export function SupportTicketsPage() {
   function closeForm() {
     setShowForm(false);
     setSubject('');
-    setCategory('bug');
+    setCategory('issue');
     setDescription('');
   }
 
@@ -69,7 +69,7 @@ export function SupportTicketsPage() {
                 value={category}
                 onValueChange={(v) => setCategory(v as TicketCategory)}
                 items={[
-                  { value: 'bug', label: ticketCategoryLabel.bug },
+                  { value: 'issue', label: ticketCategoryLabel.issue },
                   { value: 'feature', label: ticketCategoryLabel.feature },
                 ]}
               >
@@ -77,7 +77,7 @@ export function SupportTicketsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bug">{ticketCategoryLabel.bug}</SelectItem>
+                  <SelectItem value="issue">{ticketCategoryLabel.issue}</SelectItem>
                   <SelectItem value="feature">{ticketCategoryLabel.feature}</SelectItem>
                 </SelectContent>
               </Select>
@@ -125,7 +125,7 @@ export function SupportTicketsPage() {
             className="flex w-full items-start gap-3 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-secondary/40"
           >
             <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-              {t.category === 'bug' ? <Bug className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+              {t.category === 'issue' ? <Bug className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">

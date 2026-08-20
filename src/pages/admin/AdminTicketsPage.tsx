@@ -101,7 +101,7 @@ export function AdminTicketsPage() {
           }}
           items={[
             { value: 'all', label: 'All types' },
-            { value: 'bug', label: ticketCategoryLabel.bug },
+            { value: 'issue', label: ticketCategoryLabel.issue },
             { value: 'feature', label: ticketCategoryLabel.feature },
           ]}
         >
@@ -110,7 +110,7 @@ export function AdminTicketsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All types</SelectItem>
-            <SelectItem value="bug">{ticketCategoryLabel.bug}</SelectItem>
+            <SelectItem value="issue">{ticketCategoryLabel.issue}</SelectItem>
             <SelectItem value="feature">{ticketCategoryLabel.feature}</SelectItem>
           </SelectContent>
         </Select>

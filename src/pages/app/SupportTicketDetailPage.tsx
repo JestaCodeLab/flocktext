@@ -35,7 +35,7 @@ export function SupportTicketDetailPage() {
           <div className="mb-4 flex flex-wrap items-start justify-between gap-2.5">
             <div className="flex items-start gap-3">
               <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                {ticket.data.category === 'bug' ? <Bug className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}
+                {ticket.data.category === 'issue' ? <Bug className="h-[18px] w-[18px]" /> : <Sparkles className="h-[18px] w-[18px]" />}
               </div>
               <div>
                 <div className="text-[20px] font-bold sm:text-[22px]">{ticket.data.subject}</div>
