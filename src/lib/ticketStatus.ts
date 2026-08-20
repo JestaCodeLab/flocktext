@@ -14,7 +14,7 @@ export const ticketStatusVariant: Record<TicketStatusValue, 'default' | 'seconda
   closed: 'destructive',
 };
 
-export const ticketCategoryLabel: Record<'bug' | 'feature', string> = {
-  bug: 'Report an issue',
+export const ticketCategoryLabel: Record<'issue' | 'feature', string> = {
+  issue: 'Report an issue',
   feature: 'Feature request',
 };
