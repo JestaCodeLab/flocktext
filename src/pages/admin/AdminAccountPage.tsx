@@ -103,7 +103,7 @@ export function AdminAccountPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-1 text-[26px] font-extrabold">Account settings</div>
+        <div className="mb-1 text-[26px] font-extrabold">Account Settings</div>
         <div className="text-sm text-muted-foreground">Manage your admin console login details.</div>
       </div>
 

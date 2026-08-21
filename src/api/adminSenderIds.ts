@@ -31,6 +31,14 @@ export async function registerSenderId(orgId: string, senderIdId: string) {
   return data;
 }
 
+// For a sender ID already registered with BMS Africa from before the org submitted
+// this request - moves it to "processing" like a successful register() would, without
+// calling the BMS Africa registration API.
+export async function markSenderIdRegistered(orgId: string, senderIdId: string) {
+  const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/mark-registered`);
+  return data;
+}
+
 export async function approveSenderId(orgId: string, senderIdId: string) {
   const { data } = await adminApi.post<{ status: SenderIdStatus }>(`/admin/sender-ids/${orgId}/${senderIdId}/approve`);
   return data;

@@ -6,13 +6,12 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fetchTickets, submitTicket, type TicketCategory } from '@/api/support';
 import { apiErrorMessage } from '@/api/client';
-import { ticketStatusLabel, ticketStatusVariant, ticketCategoryLabel } from '@/lib/ticketStatus';
+import { TicketStatusBadge, ticketCategoryLabel } from '@/lib/ticketStatus';
 
 export function SupportTicketsPage() {
   const navigate = useNavigate();
@@ -130,7 +129,7 @@ export function SupportTicketsPage() {
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="truncate text-[14px] font-semibold">{t.subject}</div>
-                <Badge variant={ticketStatusVariant[t.status]}>{ticketStatusLabel[t.status]}</Badge>
+                <TicketStatusBadge status={t.status} />
               </div>
               <div className="mt-0.5 text-xs text-muted-foreground">
                 {ticketCategoryLabel[t.category]} · {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}

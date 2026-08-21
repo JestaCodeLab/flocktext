@@ -52,7 +52,7 @@ export function AdminDashboardPage() {
     <div>
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <div className="mb-1 text-[26px] font-extrabold">Platform overview</div>
+          <div className="mb-1 text-[26px] font-extrabold">Platform Overview</div>
           <div className="text-sm text-muted-foreground">Growth and usage across every organization on FlockText.</div>
         </div>
         <DateRangeFilter range={range} onChange={setRange} />
