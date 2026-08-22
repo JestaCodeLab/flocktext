@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import {
   Users,
   Send,
@@ -139,6 +139,16 @@ function ActivityChartCard({ range, label }: { range: DateRangeParams; label: st
           <div className="text-[16px] font-bold">SMS Usage</div>
           <div className="text-[13px] text-muted-foreground">{label}</div>
         </div>
+        <div className="flex items-center gap-3.5">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--color-chart-1)' }} />
+            SMS sent
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--color-chart-3)' }} />
+            Credits used
+          </div>
+        </div>
       </div>
 
       {chart.isLoading ? (
@@ -156,7 +166,6 @@ function ActivityChartCard({ range, label }: { range: DateRangeParams; label: st
             />
             <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
             <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
-            <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
             <Bar dataKey="sent" name="SMS sent" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
             <Bar dataKey="creditsUsed" name="Credits used" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} maxBarSize={22} />
           </BarChart>

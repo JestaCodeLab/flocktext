@@ -8,8 +8,10 @@ import {
   BadgeCheck,
   BarChart3,
   CheckCircle2,
+  CircleCheck,
   KeyRound,
   MessageSquareText,
+  MoreVertical,
   Pencil,
   Rocket,
   RotateCcw,
@@ -34,6 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
@@ -56,6 +59,7 @@ import {
 } from '@/api/adminOrganizations';
 import {
   registerSenderId,
+  markSenderIdRegistered,
   approveSenderId,
   rejectSenderId,
   editSenderId,
@@ -73,7 +77,7 @@ type OrgTabKey = 'sender-ids' | 'users' | 'danger-zone';
 const ORG_TABS: { key: OrgTabKey; label: string; icon: LucideIcon }[] = [
   { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck },
   { key: 'users', label: 'Users', icon: UsersIcon },
-  { key: 'danger-zone', label: 'Danger zone', icon: AlertTriangle },
+  { key: 'danger-zone', label: 'Danger Zone', icon: AlertTriangle },
 ];
 
 const TRIGGER_CLASS = 'data-active:text-primary data-active:font-bold data-active:after:bg-primary';
@@ -188,6 +192,15 @@ export function AdminOrganizationDetailPage() {
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err, 'Could not register this sender ID with BMS Africa.')),
+  });
+
+  const markRegistered = useMutation({
+    mutationFn: (senderIdId: string) => markSenderIdRegistered(id!, senderIdId),
+    onSuccess: () => {
+      toast.success('Marked as already registered with BMS Africa.');
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
   const approve = useMutation({
@@ -443,7 +456,7 @@ export function AdminOrganizationDetailPage() {
                   <TableHead>Purpose</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>BMS status</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="w-0">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -465,61 +478,96 @@ export function AdminOrganizationDetailPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{s.bmsStatus || '—'}</TableCell>
                     <TableCell>
-                      {s.status === 'pending_review' && (
-                        <div className="flex items-center gap-1.5">
-                          <Button size="sm" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
-                            <Send className="h-3.5 w-3.5" /> Register
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
-                            <Pencil className="h-3.5 w-3.5" /> Edit
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
-                            <X className="h-3.5 w-3.5" /> Reject
-                          </Button>
-                        </div>
-                      )}
-                      {s.status === 'rejected' && (
-                        <Button size="sm" variant="outline" onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}>
-                          <Pencil className="h-3.5 w-3.5" /> Edit
-                        </Button>
-                      )}
-                      {s.status === 'processing' && (
-                        <div className="flex items-center gap-1.5">
-                          <Button size="sm" variant="outline" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
-                            <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
-                          </Button>
-                          <Button size="sm" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
-                            <ShieldCheck className="h-3.5 w-3.5" /> Approve
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => setRejectTarget(s)}>
-                            <X className="h-3.5 w-3.5" /> Reject
-                          </Button>
-                        </div>
-                      )}
-                      {s.status === 'deleted' && (
-                        <div className="flex items-center gap-1.5">
-                          <Button size="sm" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
-                            <RotateCcw className="h-3.5 w-3.5" /> Restore
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => setPermanentDeleteTarget(s)}>
-                            <Trash2 className="h-3.5 w-3.5" /> Delete permanently
-                          </Button>
-                        </div>
-                      )}
-                      {(s.status === 'processing' || s.status === 'approved') && (
-                        <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        {(s.status === 'processing' || s.status === 'approved') && (
                           <Badge variant={s.hubtelConfigured ? 'default' : 'outline'}>
                             {s.hubtelConfigured ? 'Hubtel configured' : 'Hubtel not configured'}
                           </Badge>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
-                          >
-                            <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
-                          </Button>
-                        </div>
-                      )}
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            render={
+                              <Button size="icon-sm" variant="ghost" title="Actions">
+                                <MoreVertical className="h-3.5 w-3.5" />
+                              </Button>
+                            }
+                          />
+                          <DropdownMenuContent align="end" className="w-56">
+                            {s.status === 'pending_review' && (
+                              <>
+                                <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
+                                  <Send className="h-3.5 w-3.5" /> Register
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  disabled={markRegistered.isPending}
+                                  onClick={() => markRegistered.mutate(s.id)}
+                                  title="Use if this sender ID was already registered with BMS Africa before this request"
+                                >
+                                  <CircleCheck className="h-3.5 w-3.5" /> Already registered
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" /> Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
+                                  <X className="h-3.5 w-3.5" /> Reject
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {s.status === 'rejected' && (
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}
+                              >
+                                <Pencil className="h-3.5 w-3.5" /> Edit
+                              </DropdownMenuItem>
+                            )}
+                            {s.status === 'processing' && (
+                              <>
+                                <DropdownMenuItem className="cursor-pointer" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
+                                  <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
+                                  <ShieldCheck className="h-3.5 w-3.5" /> Approve
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="cursor-pointer"
+                                  onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
+                                >
+                                  <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
+                                  <X className="h-3.5 w-3.5" /> Reject
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                            {s.status === 'approved' && (
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
+                              >
+                                <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
+                              </DropdownMenuItem>
+                            )}
+                            {s.status === 'deleted' && (
+                              <>
+                                <DropdownMenuItem className="cursor-pointer" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
+                                  <RotateCcw className="h-3.5 w-3.5" /> Restore
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(s)}>
+                                  <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

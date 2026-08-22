@@ -20,6 +20,7 @@ import {
   Gift,
   UserPlus,
   Scissors,
+  GraduationCap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
@@ -36,6 +37,7 @@ import handPhoneImage from '@/assets/images/phone.png';
 import pastorsImage from '@/assets/images/pastors.png';
 import shopsImage from '@/assets/images/retail-depot.png';
 import fashionImage from '@/assets/images/fashion.png';
+import schoolsImage from '@/assets/images/schools.png';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
 
 const heroSlides = [
@@ -113,6 +115,13 @@ const industries = [
     link: '/churches',
   },
   {
+    icon: GraduationCap,
+    title: 'Schools',
+    description: 'Fee reminders, report card alerts, and updates for parents and staff.',
+    image: schoolsImage,
+    link: '/schools',
+  },
+  {
     icon: Scissors,
     title: 'Fashion & Lifestyle',
     description: 'Promote new collections, seasonal sales, and exclusive offers to your audience.',
@@ -140,6 +149,7 @@ const industries = [
     image: healthcareImage,
     link: '/businesses',
   },
+
 ];
 
 // Placeholder testimonials — pending real customer quotes to replace these. See [[flocktext-marketing-homepage]].

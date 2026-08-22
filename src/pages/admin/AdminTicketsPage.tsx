@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { LifeBuoy, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +12,7 @@ import { UpdateTicketStatusDialog } from '@/components/admin/UpdateTicketStatusD
 import { apiErrorMessage } from '@/api/client';
 import { fetchAdminTickets, updateAdminTicketStatus, type AdminTicket } from '@/api/adminTickets';
 import type { TicketCategory, TicketStatus } from '@/api/support';
-import { ticketStatusLabel, ticketStatusVariant, ticketCategoryLabel } from '@/lib/ticketStatus';
+import { TicketStatusBadge, ticketStatusLabel, ticketCategoryLabel } from '@/lib/ticketStatus';
 
 const PAGE_SIZE = 20;
 
@@ -162,7 +161,7 @@ export function AdminTicketsPage() {
                 <TableCell className="max-w-[280px] truncate">{t.subject}</TableCell>
                 <TableCell className="text-muted-foreground">{ticketCategoryLabel[t.category]}</TableCell>
                 <TableCell>
-                  <Badge variant={ticketStatusVariant[t.status]}>{ticketStatusLabel[t.status]}</Badge>
+                  <TicketStatusBadge status={t.status} />
                 </TableCell>
               </TableRow>
             ))}

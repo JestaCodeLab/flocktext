@@ -418,9 +418,9 @@ export function ComposePage() {
       recipients:
         recipientMode === 'single'
           ? [
-              ...selectedContacts.map((c) => ({ phone: c.phone, name: c.name })),
-              ...manualRecipients.map((r) => ({ phone: r.phone, name: r.name || undefined })),
-            ]
+            ...selectedContacts.map((c) => ({ phone: c.phone, name: c.name })),
+            ...manualRecipients.map((r) => ({ phone: r.phone, name: r.name || undefined })),
+          ]
           : undefined,
       templateId: templateId || null,
       senderId: selectedSenderId || undefined,
@@ -458,36 +458,112 @@ export function ComposePage() {
           type="button"
           onClick={() => setScheduleMode('now')}
           className={cn(
-            'flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm',
+            'flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm',
             scheduleMode === 'now' ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:text-foreground'
           )}
         >
-          <Send className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Send Now
+          <Send className="h-3.5 w-3.5" /> Send Now
         </button>
         <button
           type="button"
           onClick={() => setScheduleMode('once')}
           className={cn(
-            'flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm',
+            'flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm',
             scheduleMode === 'once' ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:text-foreground'
           )}
         >
-          <CalendarClock className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Schedule
+          <CalendarClock className="h-3.5 w-3.5" /> Schedule
         </button>
         <button
           type="button"
           onClick={() => setScheduleMode('recurring')}
           className={cn(
-            'flex items-center justify-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-colors sm:gap-1.5 sm:px-4 sm:py-2.5 sm:text-sm',
+            'flex items-center justify-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:py-2 sm:text-sm',
             scheduleMode === 'recurring' ? 'border-primary bg-primary text-white' : 'border-border text-muted-foreground hover:text-foreground'
           )}
         >
-          <Repeat className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> Recurring
+          <Repeat className="h-3.5 w-3.5" /> Recurring
         </button>
       </div>
 
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 w-full flex-1">
+          {(scheduleMode === 'once' || scheduleMode === 'recurring') && (
+            <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
+              <div className="mb-3.5 text-[15px] font-medium text-foreground/80">Schedule details</div>
+              {scheduleMode === 'once' && (
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <div className="flex-1 space-y-1.5">
+                    <Label>Date</Label>
+                    <DatePicker value={scheduleDate} onChange={setScheduleDate} placeholder="Select date" />
+                  </div>
+                  <div className="flex-1 space-y-1.5">
+                    <Label>Time</Label>
+                    <TimePicker value={scheduleTime} onChange={setScheduleTime} placeholder="Select time" />
+                  </div>
+                </div>
+              )}
+
+              {scheduleMode === 'recurring' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-freq">Frequency</Label>
+                      <select
+                        id="recurring-freq"
+                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
+                        value={recurringFreq}
+                        onChange={(e) => setRecurringFreq(e.target.value as RecurringFreq)}
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-time">Time</Label>
+                      <Input id="recurring-time" type="time" value={recurringTime} onChange={(e) => setRecurringTime(e.target.value)} />
+                    </div>
+                  </div>
+                  {recurringFreq === 'weekly' && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-day-of-week">Day of week</Label>
+                      <select
+                        id="recurring-day-of-week"
+                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
+                        value={recurringDayOfWeek}
+                        onChange={(e) => setRecurringDayOfWeek(Number(e.target.value))}
+                      >
+                        {WEEKDAYS.map((d, i) => (
+                          <option key={i} value={i}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {recurringFreq === 'monthly' && (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="recurring-day-of-month">Day of month</Label>
+                      <select
+                        id="recurring-day-of-month"
+                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
+                        value={recurringDayOfMonth}
+                        onChange={(e) => setRecurringDayOfMonth(Number(e.target.value))}
+                      >
+                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                          <option key={d} value={d}>
+                            {d}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
             <div className="mb-3.5 flex flex-wrap items-center gap-2">
               <div className="flex rounded-lg border border-border p-0.5">
@@ -675,7 +751,8 @@ export function ComposePage() {
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant={manualAddPhoneValid ? 'default' : 'outline'}
+                      size="lg"
                       className="shrink-0"
                       disabled={!manualAddPhoneValid}
                       onClick={addManualRecipient}
@@ -700,7 +777,7 @@ export function ComposePage() {
                     ...senderIds.map((s) => ({ value: s.id, label: s.senderId })),
                   ]}
                 >
-                  <SelectTrigger size="sm" className="w-full">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Use default sender ID" />
                   </SelectTrigger>
                   <SelectContent>
@@ -716,95 +793,24 @@ export function ComposePage() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button size="sm" variant="outline" onClick={() => setShowAddSenderId(true)} className="shrink-0 text-sm">
-                <Plus className="h-4 w-4" /> New
+              <Button size="lg" onClick={() => setShowAddSenderId(true)} className="shrink-0 text-sm">
+                <Plus className="h-4 w-4" /> Sender ID
               </Button>
             </div>
-            {senderIds.length === 0 && (
+            {!approvedSenderId && (
               <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/50 bg-background p-3 text-xs">
                 <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="text-muted-foreground">
-                  No sender IDs registered. Messages will be sent from the platform sender ID.
+                  {senderIds.length === 0 ? (
+                    <>No sender ID registered — messages will be sent from the platform sender ID instead.</>
+                  ) : (
+                    <>No approved sender ID yet — messages will be sent from the platform sender ID until one is approved.</>
+                  )}{' '}
+                  A unique sender ID shows recipients your organization's name instead of a shared one, and reads as more trustworthy.
                 </div>
               </div>
             )}
           </div>
-
-          {(scheduleMode === 'once' || scheduleMode === 'recurring') && (
-            <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
-              <div className="mb-3.5 text-[15px] font-medium text-foreground/80">Schedule details</div>
-              {scheduleMode === 'once' && (
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label>Date</Label>
-                    <DatePicker value={scheduleDate} onChange={setScheduleDate} placeholder="Select date" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Time</Label>
-                    <TimePicker value={scheduleTime} onChange={setScheduleTime} placeholder="Select time" />
-                  </div>
-                </div>
-              )}
-
-              {scheduleMode === 'recurring' && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="recurring-freq">Frequency</Label>
-                      <select
-                        id="recurring-freq"
-                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
-                        value={recurringFreq}
-                        onChange={(e) => setRecurringFreq(e.target.value as RecurringFreq)}
-                      >
-                        <option value="daily">Daily</option>
-                        <option value="weekly">Weekly</option>
-                        <option value="monthly">Monthly</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="recurring-time">Time</Label>
-                      <Input id="recurring-time" type="time" value={recurringTime} onChange={(e) => setRecurringTime(e.target.value)} />
-                    </div>
-                  </div>
-                  {recurringFreq === 'weekly' && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="recurring-day-of-week">Day of week</Label>
-                      <select
-                        id="recurring-day-of-week"
-                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
-                        value={recurringDayOfWeek}
-                        onChange={(e) => setRecurringDayOfWeek(Number(e.target.value))}
-                      >
-                        {WEEKDAYS.map((d, i) => (
-                          <option key={i} value={i}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  {recurringFreq === 'monthly' && (
-                    <div className="space-y-1.5">
-                      <Label htmlFor="recurring-day-of-month">Day of month</Label>
-                      <select
-                        id="recurring-day-of-month"
-                        className="w-full rounded-[9px] border border-border bg-background px-3.5 py-2.5 text-sm"
-                        value={recurringDayOfMonth}
-                        onChange={(e) => setRecurringDayOfMonth(Number(e.target.value))}
-                      >
-                        {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                          <option key={d} value={d}>
-                            {d}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
 
           <div className="mb-4.5 rounded-xl border border-border bg-card p-5">
             <div className="mb-2.5 text-[15px] font-medium text-foreground/80">Template</div>

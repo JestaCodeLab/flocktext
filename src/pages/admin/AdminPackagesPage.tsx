@@ -74,7 +74,7 @@ export function AdminPackagesPage() {
 
   return (
     <div>
-      <div className="mb-6 text-[26px] font-extrabold">SMS credit packages</div>
+      <div className="mb-6 text-[26px] font-extrabold">SMS Credit Packages</div>
 
       <div className="mb-6 flex max-w-md items-end gap-3">
         <div className="flex-1">
