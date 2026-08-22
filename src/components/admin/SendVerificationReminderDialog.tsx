@@ -14,7 +14,7 @@ export function SendVerificationReminderDialog({
   isPending: boolean;
 }) {
   const previewMessage = target
-    ? `Your FlockText verification code is XXXXXX. It expires in 10 minutes. Continue signup: ${window.location.origin}/verify-otp?phone=${encodeURIComponent(target.phone)}`
+    ? `You started signing up for FlockText but didn't complete your registration. Your verification code is XXXXXX. It expires in 10 minutes. Continue here: ${window.location.origin}/verify-otp?phone=${encodeURIComponent(target.phone)}`
     : '';
 
   return (

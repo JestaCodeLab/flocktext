@@ -310,10 +310,16 @@ export function AdminOrganizationDetailPage() {
   const org = detail.data;
 
   const firstSenderIdAt = org.senderIds.map((s) => s.createdAt).sort()[0] ?? null;
+  // Sender ID comes before Onboarding here, not after - the wizard's own step order is
+  // organization profile -> sender ID -> contacts, and onboardingCompletedAt only flips
+  // once the *last* step (contacts) is done, so it always lands at or after firstSenderIdAt
+  // for anyone following the wizard in order. Ordering these to match keeps someone who's
+  // submitted a sender ID but hasn't finished contacts yet from looking like they
+  // regressed (Sender ID done, but an earlier-looking "Onboarding" still not).
   const progressSteps: OrgProgressStep[] = [
     { key: 'registered', label: 'Registered', icon: UserPlus, completedAt: org.createdAt },
-    { key: 'onboarded', label: 'Onboarding', icon: Rocket, completedAt: org.onboardingCompletedAt },
     { key: 'sender-id', label: 'Sender ID', icon: BadgeCheck, completedAt: firstSenderIdAt },
+    { key: 'onboarded', label: 'Onboarding', icon: Rocket, completedAt: org.onboardingCompletedAt },
     { key: 'first-send', label: 'First SMS sent', icon: Send, completedAt: org.firstMessageSentAt },
   ];
 
