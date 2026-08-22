@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -35,6 +36,21 @@ export function SignupPage() {
       toast.success('Account created — verify your phone to continue.');
       navigate('/verify-otp', { state: { phone: form.phone } });
     } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
+        // Account already exists for this number - most likely they started signing
+        // up before and didn't finish verifying. Resend a fresh code and send them
+        // straight there instead of leaving them stuck on a dead-end error toast.
+        try {
+          await authApi.resendOtp(normalizePhone(form.phone));
+          toast('You already started signing up with this number — verify to continue.');
+          navigate('/verify-otp', { state: { phone: form.phone } });
+        } catch (resendErr) {
+          // Already verified (resend-otp itself 409s) or something else went wrong -
+          // either way the backend's message is clear enough to show directly.
+          toast.error(apiErrorMessage(resendErr, 'An account already exists with that mobile number.'));
+        }
+        return;
+      }
       toast.error(apiErrorMessage(err, 'Could not create your account.'));
     } finally {
       setLoading(false);

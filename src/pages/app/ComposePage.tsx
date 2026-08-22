@@ -802,11 +802,11 @@ export function ComposePage() {
                 <Info className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="text-muted-foreground">
                   {senderIds.length === 0 ? (
-                    <>No sender ID registered — messages will be sent from the platform sender ID instead.</>
+                    <>No sender ID registered — messages will be sent using "FLOCKTXT" instead.</>
                   ) : (
-                    <>No approved sender ID yet — messages will be sent from the platform sender ID until one is approved.</>
+                    <>No approved sender ID yet — messages will be sent from the default ID "FLOCKTXT" until one is approved.</>
                   )}{' '}
-                  A unique sender ID shows recipients your organization's name instead of a shared one, and reads as more trustworthy.
+                  A unique sender ID displays your organization’s name, helping recipients recognize and trust your messages.
                 </div>
               </div>
             )}
