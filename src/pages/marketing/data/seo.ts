@@ -84,6 +84,15 @@ export const routeSeo: Record<string, RouteSeo> = {
     imageWidth: 1448,
     imageHeight: 1086,
   },
+  '/schools': {
+    title: 'FlockText | Bulk SMS for Schools in Ghana',
+    description:
+      'SMS software for schools and institutions in Ghana. Send exam timetables and lecture updates to students, fee reminders to parents, and campus alerts to everyone.',
+    url: `${SITE_URL}/schools`,
+    image: `${SITE_URL}/og/og-school.jpg`,
+    imageWidth: 1200,
+    imageHeight: 630,
+  },
   '/blog': {
     title: 'FlockText | Blog — Bulk SMS Tips for Ghana Businesses & Churches',
     description:

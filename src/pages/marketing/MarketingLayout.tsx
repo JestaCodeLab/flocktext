@@ -110,6 +110,9 @@ export function MarketingLayout() {
                 <DropdownMenuItem className="cursor-pointer rounded-lg px-2.5 py-2" render={<Link to="/churches" />}>
                   <span className="text-sm font-medium">For Churches</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem className="cursor-pointer rounded-lg px-2.5 py-2" render={<Link to="/schools" />}>
+                  <span className="text-sm font-medium">For Schools</span>
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
@@ -272,6 +275,19 @@ export function MarketingLayout() {
               For Churches
             </NavLink>
 
+            <NavLink
+              to="/schools"
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) =>
+                cn(
+                  'rounded-lg border-b border-border/60 px-3 py-2.5 text-base font-medium',
+                  isActive ? 'bg-secondary text-foreground' : 'text-muted-foreground'
+                )
+              }
+            >
+              For Schools
+            </NavLink>
+
             <Link
               to={downloadAppLink.to}
               onClick={() => setMenuOpen(false)}
@@ -413,6 +429,9 @@ export function MarketingLayout() {
               </Link>
               <Link to="/churches" className="w-fit transition-colors hover:text-sidebar-foreground">
                 For Churches
+              </Link>
+              <Link to="/schools" className="w-fit transition-colors hover:text-sidebar-foreground">
+                For Schools
               </Link>
             </div>
           </div>

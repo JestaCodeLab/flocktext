@@ -12,7 +12,7 @@ import { UpdateTicketStatusDialog } from '@/components/admin/UpdateTicketStatusD
 import { apiErrorMessage } from '@/api/client';
 import { fetchAdminTickets, updateAdminTicketStatus, type AdminTicket } from '@/api/adminTickets';
 import type { TicketCategory, TicketStatus } from '@/api/support';
-import { TicketStatusBadge, ticketCategoryLabel } from '@/lib/ticketStatus';
+import { TicketStatusBadge, ticketStatusLabel, ticketCategoryLabel } from '@/lib/ticketStatus';
 
 const PAGE_SIZE = 20;
 
