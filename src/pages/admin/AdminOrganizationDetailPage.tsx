@@ -47,6 +47,7 @@ import { DeleteOrgUserDialog } from '@/components/admin/DeleteOrgUserDialog';
 import { DeleteOrganizationDialog } from '@/components/admin/DeleteOrganizationDialog';
 import { DeleteSenderIdPermanentlyDialog } from '@/components/admin/DeleteSenderIdPermanentlyDialog';
 import { SendOrgSmsDialog } from '@/components/admin/SendOrgSmsDialog';
+import { SendVerificationReminderDialog } from '@/components/admin/SendVerificationReminderDialog';
 import { OrgProgressTimeline, type OrgProgressStep } from '@/components/admin/OrgProgressTimeline';
 import {
   fetchAdminOrganizationDetail,
@@ -56,6 +57,7 @@ import {
   adjustOrganizationWallet,
   deleteOrganization,
   deleteOrganizationUser,
+  sendVerificationReminder,
 } from '@/api/adminOrganizations';
 import {
   registerSenderId,
@@ -75,8 +77,8 @@ import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
 type OrgTabKey = 'sender-ids' | 'users' | 'danger-zone';
 
 const ORG_TABS: { key: OrgTabKey; label: string; icon: LucideIcon }[] = [
-  { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck },
   { key: 'users', label: 'Users', icon: UsersIcon },
+  { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck },
   { key: 'danger-zone', label: 'Danger Zone', icon: AlertTriangle },
 ];
 
@@ -127,6 +129,7 @@ export function AdminOrganizationDetailPage() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [editUserTarget, setEditUserTarget] = useState<AdminOrgUser | null>(null);
   const [deleteUserTarget, setDeleteUserTarget] = useState<AdminOrgUser | null>(null);
+  const [verificationReminderTarget, setVerificationReminderTarget] = useState<AdminOrgUser | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [showSendSms, setShowSendSms] = useState(false);
 
@@ -263,6 +266,16 @@ export function AdminOrganizationDetailPage() {
     onSuccess: () => {
       toast.success(`${deleteUserTarget?.name} removed.`);
       setDeleteUserTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const sendVerificationReminderMutation = useMutation({
+    mutationFn: () => sendVerificationReminder(id!, verificationReminderTarget!.id),
+    onSuccess: () => {
+      toast.success(`Verification reminder sent to ${verificationReminderTarget?.name}.`);
+      setVerificationReminderTarget(null);
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -622,6 +635,16 @@ export function AdminOrganizationDetailPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1.5">
+                        {!u.isVerified && (
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            title="Send verification reminder SMS"
+                            onClick={() => setVerificationReminderTarget(u)}
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -697,6 +720,12 @@ export function AdminOrganizationDetailPage() {
         onOpenChange={(open) => !open && setDeleteUserTarget(null)}
         onConfirm={() => removeUser.mutate()}
         isPending={removeUser.isPending}
+      />
+      <SendVerificationReminderDialog
+        target={verificationReminderTarget}
+        onOpenChange={(open) => !open && setVerificationReminderTarget(null)}
+        onConfirm={() => sendVerificationReminderMutation.mutate()}
+        isPending={sendVerificationReminderMutation.isPending}
       />
       <SendOrgSmsDialog
         orgId={id!}

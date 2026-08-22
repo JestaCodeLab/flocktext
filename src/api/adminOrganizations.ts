@@ -78,6 +78,13 @@ export async function deleteOrganizationUser(id: string, userId: string) {
   return data;
 }
 
+// Manual, on-demand version of the automated hourly dropoff reminder - only valid for a
+// team member with isVerified: false. Sends a fresh code + resume link over SMS only.
+export async function sendVerificationReminder(id: string, userId: string) {
+  const { data } = await adminApi.post<{ sent: true }>(`/admin/organizations/${id}/users/${userId}/send-verification-reminder`);
+  return data;
+}
+
 export async function deleteOrganization(id: string, confirmChurchName: string) {
   const { data } = await adminApi.delete<{ deleted: true }>(`/admin/organizations/${id}`, {
     data: { confirmChurchName },

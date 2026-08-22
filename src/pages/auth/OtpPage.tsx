@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,12 @@ import { normalizePhone } from '@/lib/phone';
 export function OtpPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const setSession = useAuthStore((s) => s.setSession);
-  const phone = (location.state as { phone?: string } | null)?.phone ?? '';
+  // location.state covers in-app navigation (signup/login redirecting here); the
+  // ?phone= query param covers a fresh page load from an email/SMS reminder link,
+  // which carries no router state.
+  const phone = (location.state as { phone?: string } | null)?.phone ?? searchParams.get('phone') ?? '';
 
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
