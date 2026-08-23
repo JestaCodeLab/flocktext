@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronRight, Pencil, Trash2, Users } from 'lucide-react';
+import { ChevronRight, Pencil, Trash2, UserMinus, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { EditContactDialog } from '@/components/contacts/EditContactDialog';
 import { ContactDetailDialog } from '@/components/contacts/ContactDetailDialog';
-import { deleteContact, type Contact } from '@/api/contacts';
+import { deleteContact, removeContactsFromGroup, type Contact } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { useEntityLabels } from '@/lib/terminology';
 import { getInitials } from '@/lib/name';
@@ -29,10 +29,13 @@ export function ContactsTable({
   contacts,
   isLoading,
   emptyMessage,
+  groupId,
 }: {
   contacts: Contact[] | undefined;
   isLoading: boolean;
   emptyMessage?: string;
+  /** When set, the table is rendered in the context of this group and offers a "remove from group" action alongside edit/delete. */
+  groupId?: string;
 }) {
   const queryClient = useQueryClient();
   const entity = useEntityLabels();
@@ -53,6 +56,16 @@ export function ContactsTable({
       setConfirmingDelete(null);
       invalidate();
       toast.success(`${entity.singularCap} deleted.`);
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const removeFromGroup = useMutation({
+    mutationFn: (contactId: string) => removeContactsFromGroup(groupId!, [contactId]),
+    onSuccess: () => {
+      setViewingContact(null);
+      invalidate();
+      toast.success(`${entity.singularCap} removed from group.`);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -100,6 +113,16 @@ export function ContactsTable({
                     <Button size="icon-sm" variant="ghost" className="text-chart-3 hover:text-chart-3" onClick={() => setEditingContact(c)}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
+                    {groupId && (
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        disabled={removeFromGroup.isPending}
+                        onClick={() => removeFromGroup.mutate(c.id)}
+                      >
+                        <UserMinus className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button size="icon-sm" variant="ghost" className="text-destructive hover:text-destructive" onClick={() => setConfirmingDelete(c)}>
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -158,6 +181,7 @@ export function ContactsTable({
           setViewingContact(null);
           setConfirmingDelete(c);
         }}
+        onRemoveFromGroup={groupId ? (c) => removeFromGroup.mutate(c.id) : undefined}
       />
 
       <EditContactDialog

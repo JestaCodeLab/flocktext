@@ -1,4 +1,4 @@
-import { Pencil, Trash2, Phone, Users as UsersIcon, Calendar } from 'lucide-react';
+import { Pencil, Trash2, UserMinus, Phone, Users as UsersIcon, Calendar } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,11 +12,13 @@ export function ContactDetailDialog({
   onOpenChange,
   onEdit,
   onDelete,
+  onRemoveFromGroup,
 }: {
   contact: Contact | null;
   onOpenChange: (open: boolean) => void;
   onEdit: (contact: Contact) => void;
   onDelete: (contact: Contact) => void;
+  onRemoveFromGroup?: (contact: Contact) => void;
 }) {
   return (
     <Dialog open={!!contact} onOpenChange={onOpenChange}>
@@ -64,6 +66,11 @@ export function ContactDetailDialog({
               <Button variant="outline" className="flex-1" onClick={() => onEdit(contact)}>
                 <Pencil className="h-4 w-4" /> Edit
               </Button>
+              {onRemoveFromGroup && (
+                <Button variant="outline" className="flex-1" onClick={() => onRemoveFromGroup(contact)}>
+                  <UserMinus className="h-4 w-4" /> Remove
+                </Button>
+              )}
               <Button variant="destructive" className="flex-1" onClick={() => onDelete(contact)}>
                 <Trash2 className="h-4 w-4" /> Delete
               </Button>

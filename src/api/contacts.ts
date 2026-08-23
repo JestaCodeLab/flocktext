@@ -133,3 +133,8 @@ export async function addContactsToGroup(id: string, contactIds: string[]) {
   const { data } = await api.post<{ added: number }>(`/groups/${id}/contacts`, { contactIds });
   return data;
 }
+
+export async function removeContactsFromGroup(id: string, contactIds: string[]) {
+  const { data } = await api.delete<{ removed: number }>(`/groups/${id}/contacts`, { data: { contactIds } });
+  return data;
+}
