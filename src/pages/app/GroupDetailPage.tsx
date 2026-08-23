@@ -121,6 +121,7 @@ export function GroupDetailPage() {
         contacts={detail.data?.members}
         isLoading={detail.isLoading}
         emptyMessage={`No ${entity.plural} in this group yet.`}
+        groupId={id}
       />
 
       {id && (
