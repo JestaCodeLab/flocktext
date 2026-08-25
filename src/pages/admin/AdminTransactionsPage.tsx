@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MiniStatCard } from '@/components/messages/MessageDetailBody';
 import { DeleteTransactionDialog } from '@/components/admin/DeleteTransactionDialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { apiErrorMessage } from '@/api/client';
 import {
   fetchAdminTransactions,
@@ -140,7 +141,56 @@ export function AdminTransactionsPage() {
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      {transactions.isLoading && (
+        <div className="flex flex-col gap-2.5 md:hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[150px] rounded-xl" />
+          ))}
+        </div>
+      )}
+      <MobileList>
+        {transactions.data?.rows.map((t) => (
+          <MobileListCard key={t.id}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate font-semibold">
+                  {t.orgId ? (
+                    <Link to={`/admin/organizations/${t.orgId}`} className="hover:underline">
+                      {t.churchName}
+                    </Link>
+                  ) : (
+                    t.churchName
+                  )}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {' · '}
+                  {new Date(t.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                </div>
+              </div>
+              <Button
+                size="icon-sm"
+                variant="ghost"
+                className="shrink-0 text-destructive"
+                title="Delete"
+                onClick={() => setDeleteTarget(t)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <MobileListRow label="Type" value={<Badge variant={TYPE_BADGE_VARIANT[t.type]}>{TYPE_LABEL[t.type]}</Badge>} />
+            <MobileListRow label="Description" value={t.label} />
+            <MobileListRow label="Amount" value={`GHS ${t.amountGHS.toLocaleString()}`} />
+            <MobileListRow label="Credits" value={t.credits ? t.credits.toLocaleString() : '—'} />
+            <MobileListRow label="Reference" value={t.paystackReference || '—'} />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {!transactions.isLoading && transactions.data?.rows.length === 0 && (
+        <MobileListEmpty>No transactions yet.</MobileListEmpty>
+      )}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">

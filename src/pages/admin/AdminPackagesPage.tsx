@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { StatCard } from '@/components/admin/StatCard';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
   fetchAdminPackages,
   createPackage,
@@ -76,8 +77,8 @@ export function AdminPackagesPage() {
     <div>
       <div className="mb-6 text-[26px] font-extrabold">SMS Credit Packages</div>
 
-      <div className="mb-6 flex max-w-md items-end gap-3">
-        <div className="flex-1">
+      <div className="mb-6 flex flex-wrap items-end gap-3 sm:max-w-md">
+        <div className="min-w-[220px] flex-1">
           <StatCard
             icon={Radio}
             tone={bmsCredit.data?.balance == null ? 'warning' : 'default'}
@@ -93,7 +94,7 @@ export function AdminPackagesPage() {
           <RefreshCw className="h-4 w-4" /> {refresh.isPending ? 'Checking…' : 'Refresh from BMS'}
         </Button>
       </div>
-      <div className="mb-5 flex items-center justify-between">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="text-[13px] font-bold text-foreground/80">Merchant-facing packages</div>
           <div className="mt-0.5 text-sm text-muted-foreground">{packages.data?.length ?? 0} packages</div>
@@ -103,7 +104,33 @@ export function AdminPackagesPage() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <MobileList>
+        {packages.data?.map((pkg) => (
+          <MobileListCard key={pkg.id}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <span className="font-semibold">{pkg.label}</span>
+              <div className="flex shrink-0 items-center gap-1">
+                <Button size="icon-sm" variant="ghost" onClick={() => openEdit(pkg)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button size="icon-sm" variant="ghost" onClick={() => remove.mutate(pkg.id)}>
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            </div>
+            <MobileListRow label="GHS" value={pkg.ghs} />
+            <MobileListRow label="Credits" value={pkg.credits} />
+            <MobileListRow label="Badge" value={pkg.badge || '—'} />
+            <MobileListRow
+              label="Status"
+              value={<Badge variant={pkg.active ? 'default' : 'secondary'}>{pkg.active ? 'active' : 'inactive'}</Badge>}
+            />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {packages.data?.length === 0 && <MobileListEmpty>No packages yet.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">

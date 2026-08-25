@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { UpdateTicketStatusDialog } from '@/components/admin/UpdateTicketStatusDialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { apiErrorMessage } from '@/api/client';
 import { fetchAdminTickets, updateAdminTicketStatus, type AdminTicket } from '@/api/adminTickets';
 import type { TicketCategory, TicketStatus } from '@/api/support';
@@ -115,7 +116,42 @@ export function AdminTicketsPage() {
         </Select>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      {tickets.isLoading && (
+        <div className="flex flex-col gap-2.5 md:hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[100px] rounded-xl" />
+          ))}
+        </div>
+      )}
+      <MobileList>
+        {tickets.data?.rows.map((t) => (
+          <MobileListCard key={t.id} onClick={() => setTarget(t)}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="truncate font-semibold">{t.subject}</div>
+                <div className="text-xs text-muted-foreground">
+                  {t.orgId ? (
+                    <Link to={`/admin/organizations/${t.orgId}`} onClick={(e) => e.stopPropagation()} className="hover:underline">
+                      {t.churchName}
+                    </Link>
+                  ) : (
+                    t.churchName
+                  )}
+                </div>
+              </div>
+              <TicketStatusBadge status={t.status} />
+            </div>
+            <MobileListRow label="Type" value={ticketCategoryLabel[t.category]} />
+            <MobileListRow
+              label="Date"
+              value={new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {!tickets.isLoading && tickets.data?.rows.length === 0 && <MobileListEmpty>No tickets found.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">

@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
   fetchPendingSenderIds,
   fetchAllSenderIds,
@@ -90,12 +91,104 @@ export function AdminSenderIdsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  function renderPendingActions(entry: AdminSenderIdPendingEntry) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon-sm" variant="ghost" title="Actions">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(entry)}>
+            <Send className="h-3.5 w-3.5" /> Register
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            disabled={markRegistered.isPending}
+            onClick={() => markRegistered.mutate(entry)}
+            title="Use if this sender ID was already registered with BMS Africa before this request"
+          >
+            <CircleCheck className="h-3.5 w-3.5" /> Already registered
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="cursor-pointer"
+            onClick={() => setEditTarget({ orgId: entry.orgId, senderIdId: entry.senderIdId, senderId: entry.senderId, purpose: entry.purpose })}
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(entry)}>
+            <X className="h-3.5 w-3.5" /> Reject
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  function renderAllActions(row: (typeof all.data extends (infer R)[] | undefined ? R : never)) {
+    if (row.status !== 'pending_review' && row.status !== 'rejected' && row.status !== 'processing') return null;
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon-sm" variant="ghost" title="Actions">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-52">
+          {(row.status === 'pending_review' || row.status === 'rejected') && (
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => setEditTarget({ orgId: row.orgId, senderIdId: row.senderIdId, senderId: row.senderId, purpose: row.purpose })}
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </DropdownMenuItem>
+          )}
+          {row.status === 'processing' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" disabled={sync.isPending} onClick={() => sync.mutate(row)}>
+                <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(row)}>
+                <ShieldCheck className="h-3.5 w-3.5" /> Approve
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(row)}>
+                <X className="h-3.5 w-3.5" /> Reject
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6 text-[26px] font-extrabold">Sender ID Review</div>
 
       <div className="mb-3 text-[13px] font-bold text-foreground/80">Pending review ({pending.data?.length ?? 0})</div>
-      <div className="mb-7 overflow-hidden rounded-xl border border-border bg-card">
+
+      <MobileList className="mb-7">
+        {pending.data?.map((entry) => (
+          <MobileListCard key={entry.senderIdId}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <span className="font-semibold">{entry.churchName || 'Untitled organization'}</span>
+              {renderPendingActions(entry)}
+            </div>
+            <MobileListRow label="Sender ID" value={entry.senderId} />
+            <MobileListRow label="Purpose" value={entry.purpose} />
+            <MobileListRow label="Submitted" value={new Date(entry.submittedAt).toLocaleDateString()} />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {pending.data?.length === 0 && <MobileListEmpty>Nothing awaiting review.</MobileListEmpty>}
+
+      <div className="mb-7 hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">
@@ -113,40 +206,7 @@ export function AdminSenderIdsPage() {
                 <TableCell>{entry.senderId}</TableCell>
                 <TableCell className="max-w-[280px] text-muted-foreground">{entry.purpose}</TableCell>
                 <TableCell className="text-muted-foreground">{new Date(entry.submittedAt).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button size="icon-sm" variant="ghost" title="Actions">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end" className="w-56">
-                      <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(entry)}>
-                        <Send className="h-3.5 w-3.5" /> Register
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        disabled={markRegistered.isPending}
-                        onClick={() => markRegistered.mutate(entry)}
-                        title="Use if this sender ID was already registered with BMS Africa before this request"
-                      >
-                        <CircleCheck className="h-3.5 w-3.5" /> Already registered
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => setEditTarget({ orgId: entry.orgId, senderIdId: entry.senderIdId, senderId: entry.senderId, purpose: entry.purpose })}
-                      >
-                        <Pencil className="h-3.5 w-3.5" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(entry)}>
-                        <X className="h-3.5 w-3.5" /> Reject
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+                <TableCell>{renderPendingActions(entry)}</TableCell>
               </TableRow>
             ))}
             {pending.data?.length === 0 && (
@@ -161,7 +221,23 @@ export function AdminSenderIdsPage() {
       </div>
 
       <div className="mb-3 text-[13px] font-bold text-foreground/80">All sender IDs</div>
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+
+      <MobileList>
+        {all.data?.map((row) => (
+          <MobileListCard key={row.senderIdId}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <span className="font-semibold">{row.churchName || 'Untitled organization'}</span>
+              {renderAllActions(row)}
+            </div>
+            <MobileListRow label="Sender ID" value={row.senderId} />
+            <MobileListRow label="Status" value={<Badge variant={senderIdStatusVariant[row.status]}>{senderIdStatusLabel[row.status]}</Badge>} />
+            <MobileListRow label="BMS status" value={row.bmsStatus || '—'} />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {all.data?.length === 0 && <MobileListEmpty>No sender ID requests yet.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">
@@ -181,43 +257,7 @@ export function AdminSenderIdsPage() {
                   <Badge variant={senderIdStatusVariant[row.status]}>{senderIdStatusLabel[row.status]}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{row.bmsStatus || '—'}</TableCell>
-                <TableCell>
-                  {(row.status === 'pending_review' || row.status === 'rejected' || row.status === 'processing') && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button size="icon-sm" variant="ghost" title="Actions">
-                            <MoreVertical className="h-3.5 w-3.5" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end" className="w-52">
-                        {(row.status === 'pending_review' || row.status === 'rejected') && (
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onClick={() => setEditTarget({ orgId: row.orgId, senderIdId: row.senderIdId, senderId: row.senderId, purpose: row.purpose })}
-                          >
-                            <Pencil className="h-3.5 w-3.5" /> Edit
-                          </DropdownMenuItem>
-                        )}
-                        {row.status === 'processing' && (
-                          <>
-                            <DropdownMenuItem className="cursor-pointer" disabled={sync.isPending} onClick={() => sync.mutate(row)}>
-                              <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(row)}>
-                              <ShieldCheck className="h-3.5 w-3.5" /> Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(row)}>
-                              <X className="h-3.5 w-3.5" /> Reject
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </TableCell>
+                <TableCell>{renderAllActions(row)}</TableCell>
               </TableRow>
             ))}
             {all.data?.length === 0 && (
