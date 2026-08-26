@@ -89,10 +89,6 @@ export function AdminLayout() {
       <aside className="hidden w-[236px] shrink-0 flex-col overflow-y-auto border-r border-sidebar-border bg-sidebar p-3.5 text-sidebar-foreground md:flex">
         <div className="mb-7 px-2">
           <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-7 w-auto" />
-          <div className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-sidebar-foreground/60">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Admin console
-          </div>
         </div>
         {navContent}
       </aside>
@@ -104,24 +100,26 @@ export function AdminLayout() {
         >
           <div className="mb-7 shrink-0 px-2">
             <img src="/logo/flocktext-logo-white.png" alt="FlockText" className="h-7 w-auto" />
-            <div className="mt-1.5 flex items-center gap-1 text-[11px] font-semibold text-sidebar-foreground/60">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Admin console
-            </div>
           </div>
           {navContent}
         </SheetContent>
       </Sheet>
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-3 py-2.5 sm:justify-end sm:gap-3.5 sm:px-5 sm:py-3.5 md:px-8">
-          <button
-            type="button"
-            onClick={() => setMobileNavOpen(true)}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground md:hidden"
-          >
-            <Menu className="h-[18px] w-[18px]" />
-          </button>
+        <header className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-card px-3 py-2.5 sm:gap-3.5 sm:px-5 sm:py-3.5 md:px-8">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground md:hidden"
+            >
+              <Menu className="h-[18px] w-[18px]" />
+            </button>
+            <div className="flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground">
+              <ShieldCheck className="h-4 w-4" />
+              <span className="truncate">Admin console</span>
+            </div>
+          </div>
 
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1.5 rounded-full border border-border py-1 pr-2.5 pl-1 sm:gap-2.5 sm:pr-3.5">

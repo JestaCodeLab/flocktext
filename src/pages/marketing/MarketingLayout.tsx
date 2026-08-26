@@ -221,7 +221,7 @@ export function MarketingLayout() {
               </DropdownMenu>
             ) : (
               <>
-                <Button variant="ghost" className="hidden rounded-full sm:inline-flex" render={<Link to="/login" />}>
+                <Button variant="ghost" className="hidden rounded-full sm:inline-flex lg:bg-white" render={<Link to="/login" />}>
                   Log in
                 </Button>
                 <Button className="hidden rounded-full px-5 sm:inline-flex" render={<Link to="/signup" />}>
