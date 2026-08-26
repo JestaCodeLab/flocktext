@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { fetchAdminAnnouncements, createAnnouncement, type CreateAnnouncementPayload } from '@/api/adminAnnouncements';
 import { fetchAdminOrganizations } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
@@ -82,7 +83,25 @@ export function AdminAnnouncementsPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <MobileList>
+        {announcements.data?.announcements.map((a) => (
+          <MobileListCard key={a.id}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <span className="font-semibold">{a.title}</span>
+              <Badge variant={STATUS_BADGE[a.status].variant} className="shrink-0">
+                {STATUS_BADGE[a.status].label}
+              </Badge>
+            </div>
+            <MobileListRow label="Sent by" value={a.createdBy?.name ?? '—'} />
+            <MobileListRow label="Orgs notified" value={a.notificationsCreated} />
+            <MobileListRow label="Push sent / failed" value={`${a.pushSent} / ${a.pushFailed}`} />
+            <MobileListRow label="Date" value={new Date(a.createdAt).toLocaleDateString()} />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {announcements.data?.announcements.length === 0 && <MobileListEmpty>No announcements sent yet.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">

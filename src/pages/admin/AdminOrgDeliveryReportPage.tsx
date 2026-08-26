@@ -28,6 +28,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { MessageDetailBody, MiniStatCard, downloadCsv } from '@/components/messages/MessageDetailBody';
 import { ResendPendingDialog } from '@/components/admin/ResendPendingDialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
   fetchAdminOrgMessagesSummary,
   fetchAdminOrgMessagesChart,
@@ -115,81 +116,105 @@ function MessagesTable({
   onResendPending?: (id: string) => void;
   resendingId?: string | null;
 }) {
+  function renderActions(m: AdminOrgMessageSummary) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon-sm" variant="ghost" title="Actions">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-42">
+          <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
+            <Eye className="h-3 w-3" /> View details
+          </DropdownMenuItem>
+          {onResendPending && (
+            <DropdownMenuItem className="cursor-pointer" disabled={resendingId === m.id} onClick={() => onResendPending(m.id)}>
+              <RotateCcw className="h-3 w-3" /> Resend
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-secondary hover:bg-secondary">
-            <TableHead>Date</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead>Recipients</TableHead>
-            <TableHead className="text-center">Total</TableHead>
-            <TableHead>Sender ID</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-0">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((m) => {
-            const status = messageStatusBadge(m.stats);
-            return (
-              <TableRow key={m.id}>
-                <TableCell>
-                  <div className="font-medium text-foreground">
-                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+    <>
+      <MobileList>
+        {rows.map((m) => {
+          const status = messageStatusBadge(m.stats);
+          return (
+            <MobileListCard key={m.id}>
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="min-w-0 text-xs text-muted-foreground">
+                  {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </div>
+                {renderActions(m)}
+              </div>
+              <MobileListRow label="Message" value={m.preview} />
+              <MobileListRow label="Recipients" value={m.recipients} />
+              <MobileListRow label="Total" value={m.stats.total} />
+              <MobileListRow label="Sender ID" value={m.senderId} />
+              <MobileListRow label="Status" value={<Badge variant={status.variant} className={status.className}>{status.label}</Badge>} />
+            </MobileListCard>
+          );
+        })}
+      </MobileList>
+      {rows.length === 0 && <MobileListEmpty>No messages here.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary hover:bg-secondary">
+              <TableHead>Date</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Recipients</TableHead>
+              <TableHead className="text-center">Total</TableHead>
+              <TableHead>Sender ID</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-0">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((m) => {
+              const status = messageStatusBadge(m.stats);
+              return (
+                <TableRow key={m.id}>
+                  <TableCell>
+                    <div className="font-medium text-foreground">
+                      {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[260px] truncate text-muted-foreground">{m.preview}</TableCell>
+                  <TableCell className="max-w-[180px] truncate text-muted-foreground">{m.recipients}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                  <TableCell>
+                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                  </TableCell>
+                  <TableCell>{renderActions(m)}</TableCell>
+                </TableRow>
+              );
+            })}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <Send className="h-5 w-5 text-muted-foreground" />
+                    No messages here.
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
-                  </div>
-                </TableCell>
-                <TableCell className="max-w-[260px] truncate text-muted-foreground">{m.preview}</TableCell>
-                <TableCell className="max-w-[180px] truncate text-muted-foreground">{m.recipients}</TableCell>
-                <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
-                <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
-                <TableCell>
-                  <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button size="icon-sm" variant="ghost" title="Actions">
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end" className="w-42">
-                      <DropdownMenuItem className="cursor-pointer" onClick={() => onView(m)}>
-                        <Eye className="h-3 w-3" /> View details
-                      </DropdownMenuItem>
-                      {onResendPending && (
-                        <DropdownMenuItem
-                          className="cursor-pointer"
-                          disabled={resendingId === m.id}
-                          onClick={() => onResendPending(m.id)}
-                        >
-                          <RotateCcw className="h-3 w-3" /> Resend
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </TableCell>
               </TableRow>
-            );
-          })}
-          {rows.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                <div className="flex flex-col items-center gap-2">
-                  <Send className="h-5 w-5 text-muted-foreground" />
-                  No messages here.
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
 
@@ -410,12 +435,12 @@ export function AdminOrgDeliveryReportPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex w-fit rounded-lg border border-border p-0.5">
+        <div className="no-scrollbar flex w-full max-w-full overflow-x-auto rounded-lg border border-border p-0.5 sm:w-fit">
           <button
             type="button"
             onClick={() => setActiveTab('delivered')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'delivered' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -425,7 +450,7 @@ export function AdminOrgDeliveryReportPage() {
             type="button"
             onClick={() => setActiveTab('pending')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'pending' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -435,7 +460,7 @@ export function AdminOrgDeliveryReportPage() {
             type="button"
             onClick={() => setActiveTab('failed')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'failed' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -445,7 +470,7 @@ export function AdminOrgDeliveryReportPage() {
             type="button"
             onClick={() => setActiveTab('rejected')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >

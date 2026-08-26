@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DeleteAdminMessageDialog } from '@/components/admin/DeleteAdminMessageDialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { StatusBadge, providerBadge, downloadCsv } from '@/components/messages/MessageDetailBody';
 import {
   deleteAdminMessage,
@@ -79,81 +80,123 @@ function MessagesTable({
   onDelete: (row: AdminMessageSummary) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-secondary hover:bg-secondary">
-            <TableHead>Date</TableHead>
-            <TableHead>Organization</TableHead>
-            <TableHead>Message</TableHead>
-            <TableHead className="text-center">Recipients</TableHead>
-            <TableHead>Sender ID</TableHead>
-            <TableHead>Sent by</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="w-0">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((m) => {
-            const status = messageStatusBadge(m.stats);
-            return (
-              <TableRow key={m.id}>
-                <TableCell>
-                  <div className="font-medium text-foreground">
-                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+    <>
+      <MobileList>
+        {rows.map((m) => {
+          const status = messageStatusBadge(m.stats);
+          return (
+            <MobileListCard key={m.id}>
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="truncate font-semibold">
+                    {m.orgId ? (
+                      <Link to={`/admin/organizations/${m.orgId}`} className="hover:underline">
+                        {m.churchName}
+                      </Link>
+                    ) : (
+                      m.churchName
+                    )}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                   </div>
-                </TableCell>
-                <TableCell className="font-semibold">
-                  {m.orgId ? (
-                    <Link to={`/admin/organizations/${m.orgId}`} className="hover:underline">
-                      {m.churchName}
-                    </Link>
-                  ) : (
-                    m.churchName
-                  )}
-                </TableCell>
-                <TableCell className="max-w-[260px] truncate text-muted-foreground">{m.preview}</TableCell>
-                <TableCell className="text-center text-muted-foreground">{m.recipientCount}</TableCell>
-                <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
-                <TableCell className="text-muted-foreground">{m.sentBy}</TableCell>
-                <TableCell>
-                  <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button size="icon-sm" variant="ghost" title="View details" onClick={() => onView(m.id)}>
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      size="icon-sm"
-                      variant="ghost"
-                      className="text-destructive"
-                      title="Delete record"
-                      onClick={() => onDelete(m)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button size="icon-sm" variant="ghost" title="View details" onClick={() => onView(m.id)}>
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="icon-sm" variant="ghost" className="text-destructive" title="Delete record" onClick={() => onDelete(m)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              <MobileListRow label="Message" value={m.preview} />
+              <MobileListRow label="Recipients" value={m.recipientCount} />
+              <MobileListRow label="Sender ID" value={m.senderId} />
+              <MobileListRow label="Sent by" value={m.sentBy} />
+              <MobileListRow label="Status" value={<Badge variant={status.variant} className={status.className}>{status.label}</Badge>} />
+            </MobileListCard>
+          );
+        })}
+      </MobileList>
+      {rows.length === 0 && <MobileListEmpty>No admin SMS broadcasts here.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary hover:bg-secondary">
+              <TableHead>Date</TableHead>
+              <TableHead>Organization</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead className="text-center">Recipients</TableHead>
+              <TableHead>Sender ID</TableHead>
+              <TableHead>Sent by</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="w-0">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((m) => {
+              const status = messageStatusBadge(m.stats);
+              return (
+                <TableRow key={m.id}>
+                  <TableCell>
+                    <div className="font-medium text-foreground">
+                      {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-semibold">
+                    {m.orgId ? (
+                      <Link to={`/admin/organizations/${m.orgId}`} className="hover:underline">
+                        {m.churchName}
+                      </Link>
+                    ) : (
+                      m.churchName
+                    )}
+                  </TableCell>
+                  <TableCell className="max-w-[260px] truncate text-muted-foreground">{m.preview}</TableCell>
+                  <TableCell className="text-center text-muted-foreground">{m.recipientCount}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                  <TableCell className="text-muted-foreground">{m.sentBy}</TableCell>
+                  <TableCell>
+                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon-sm" variant="ghost" title="View details" onClick={() => onView(m.id)}>
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        className="text-destructive"
+                        title="Delete record"
+                        onClick={() => onDelete(m)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <Send className="h-5 w-5 text-muted-foreground" />
+                    No admin SMS broadcasts here.
                   </div>
                 </TableCell>
               </TableRow>
-            );
-          })}
-          {rows.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                <div className="flex flex-col items-center gap-2">
-                  <Send className="h-5 w-5 text-muted-foreground" />
-                  No admin SMS broadcasts here.
-                </div>
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
   );
 }
 
@@ -239,12 +282,12 @@ export function AdminDeliveryReportPage() {
       </div>
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex w-fit rounded-lg border border-border p-0.5">
+        <div className="no-scrollbar flex w-full max-w-full overflow-x-auto rounded-lg border border-border p-0.5 sm:w-fit">
           <button
             type="button"
             onClick={() => setActiveTab('delivered')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'delivered' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -254,7 +297,7 @@ export function AdminDeliveryReportPage() {
             type="button"
             onClick={() => setActiveTab('failed')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'failed' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -264,7 +307,7 @@ export function AdminDeliveryReportPage() {
             type="button"
             onClick={() => setActiveTab('rejected')}
             className={cn(
-              'rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
               activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -272,8 +315,8 @@ export function AdminDeliveryReportPage() {
           </button>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="relative max-w-sm">
+        <div className="flex w-full items-center gap-2.5 sm:w-auto">
+          <div className="relative max-w-sm flex-1">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder="Search by organization…"
@@ -285,6 +328,7 @@ export function AdminDeliveryReportPage() {
           <Button
             size="sm"
             variant="outline"
+            className="shrink-0"
             disabled={isFetching}
             onClick={() => {
               delivered.refetch();
@@ -363,9 +407,9 @@ export function AdminDeliveryReportPage() {
                 <div className="break-words p-3.5 text-base leading-relaxed text-foreground">{detail.data.body}</div>
               </div>
 
-              <div className="my-4 flex items-center justify-between gap-3">
+              <div className="my-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Badge variant={detailStatus?.variant} className={detailStatus?.className}>{detailStatus?.label}</Badge>
-                <div className="grid grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
                   <div className="rounded-xl border border-border bg-card px-4 py-2.5 text-center">
                     <div className="text-xs text-muted-foreground">Total</div>
                     <div className="mt-1 text-lg font-bold">{detail.data.stats.total}</div>
@@ -391,7 +435,24 @@ export function AdminDeliveryReportPage() {
                   <Download className="h-3.5 w-3.5" /> Export CSV
                 </Button>
               </div>
-              <div className="overflow-hidden rounded-xl border border-border">
+              <MobileList>
+                {detail.data.recipients.map((r) => (
+                  <MobileListCard key={r.id}>
+                    <div className="mb-2 flex items-start justify-between gap-2">
+                      <span className="font-semibold">{r.name}</span>
+                      <StatusBadge status={r.status} />
+                    </div>
+                    <MobileListRow label="Phone" value={r.phone} />
+                    <MobileListRow label="Reason" value={r.reason || '—'} />
+                    <MobileListRow
+                      label="Provider"
+                      value={<Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>}
+                    />
+                  </MobileListCard>
+                ))}
+              </MobileList>
+
+              <div className="hidden overflow-hidden rounded-xl border border-border md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>

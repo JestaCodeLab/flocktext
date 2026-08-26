@@ -29,7 +29,6 @@ import { PackageGrid } from '@/pages/marketing/components/PackageGrid';
 import { CreditCalculator } from '@/pages/marketing/components/CreditCalculator';
 import { PLAY_STORE_URL } from '@/pages/marketing/data/contact';
 import { routeSeo } from '@/pages/marketing/data/seo';
-import heroImage from '@/assets/images/flocktext_home_banner.png';
 import churchImage from '@/assets/images/church.png';
 import healthcareImage from '@/assets/images/healthcare.png';
 import restaurantImage from '@/assets/images/restaurant.png';
@@ -37,13 +36,30 @@ import handPhoneImage from '@/assets/images/phone.png';
 import pastorsImage from '@/assets/images/pastors.png';
 import shopsImage from '@/assets/images/retail-depot.png';
 import fashionImage from '@/assets/images/fashion.png';
-import schoolsImage from '@/assets/images/schools.png';
+import schoolsImage from '@/assets/images/school-exams.png';
 import playStoreBadge from '@/assets/images/googleplay-download.webp';
+import pastorHeroSlide from '@/assets/hero-slides/pastor.png';
+import administratorHeroSlide from '@/assets/hero-slides/administrator.png';
+import fashionistaHeroSlide from '@/assets/hero-slides/fashionista.png';
+import retailerHeroSlide from '@/assets/hero-slides/retailer.png';
 
-const heroSlides = [
-  { image: heroImage, caption: 'Delivered to 2,481 contacts', focus: 'object-[60%_20%]' },
-  { image: pastorsImage, caption: 'Delivered to 2,314 members', focus: 'object-[50%_15%]' },
-  { image: shopsImage, caption: 'Delivered to 2,431 customers', focus: 'object-[38%_15%]' },
+// Mobile keeps the original (pre-hero-slides-folder) photo set — the sm+ hero below uses
+// its own separate rotation of the newer purpose-shot hero-slides images instead.
+const mobileHeroSlides = [
+  { image: pastorsImage, caption: 'Delivered to 2,314 members', focus: 'object-right' },
+  { image: schoolsImage, caption: 'Delivered to 1,842 parents', focus: 'object-right' },
+  { image: shopsImage, caption: 'Delivered to 2,431 customers', focus: 'object-right' },
+];
+
+// Order matters: "Businesses" appears twice (fashionista + retailer) since two of our four
+// slide photos are business owners, but they're kept apart in the rotation so the headline
+// never repeats on two consecutive slides (including the wrap from the last slide back to
+// the first).
+const desktopHeroSlides = [
+  { image: fashionistaHeroSlide, caption: 'Delivered to 2,431 customers', focus: 'object-right', headline: 'Businesses' },
+  { image: pastorHeroSlide, caption: 'Delivered to 2,314 members', focus: 'object-right', headline: 'Churches' },
+  { image: retailerHeroSlide, caption: 'Delivered to 3,102 customers', focus: 'object-right', headline: 'Businesses' },
+  { image: administratorHeroSlide, caption: 'Delivered to 1,842 parents', focus: 'object-right', headline: 'Schools' },
 ];
 
 // Generic placeholder wordmarks — swap for real client logos once confirmed. See [[flocktext-marketing-homepage]].
@@ -178,7 +194,8 @@ const testimonials = [
 ];
 
 export function HomePage() {
-  const [heroSlide, setHeroSlide] = useState(0);
+  const [mobileHeroSlide, setMobileHeroSlide] = useState(0);
+  const [desktopHeroSlide, setDesktopHeroSlide] = useState(0);
   const industriesTrackRef = useRef<HTMLDivElement>(null);
   const testimonialsTrackRef = useRef<HTMLDivElement>(null);
   // A logged-in user landing here via direct URL should get routed back to
@@ -186,7 +203,12 @@ export function HomePage() {
   const isAuthed = useAuthStore((s) => Boolean(s.accessToken));
 
   useEffect(() => {
-    const id = setInterval(() => setHeroSlide((i) => (i + 1) % heroSlides.length), 6000);
+    const id = setInterval(() => setMobileHeroSlide((i) => (i + 1) % mobileHeroSlides.length), 6000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => setDesktopHeroSlide((i) => (i + 1) % desktopHeroSlides.length), 6000);
     return () => clearInterval(id);
   }, []);
 
@@ -209,12 +231,12 @@ export function HomePage() {
         <div className="px-4 pt-3">
           <div className="relative overflow-hidden rounded-3xl ring-1 ring-foreground/10">
             <div className="relative h-64 w-full">
-              {heroSlides.map((slide, i) => (
+              {mobileHeroSlides.map((slide, i) => (
                 <img
                   key={slide.image}
                   src={slide.image}
                   alt=""
-                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${i === heroSlide ? 'opacity-100' : 'opacity-0'
+                  className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${i === mobileHeroSlide ? 'opacity-100' : 'opacity-0'
                     }`}
                 />
               ))}
@@ -222,10 +244,10 @@ export function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-foreground/50" />
 
             <div className="absolute top-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-              {heroSlides.map((slide, i) => (
+              {mobileHeroSlides.map((slide, i) => (
                 <span
                   key={slide.image}
-                  className={`h-1.5 rounded-full transition-all ${i === heroSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+                  className={`h-1.5 rounded-full transition-all ${i === mobileHeroSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
                 />
               ))}
             </div>
@@ -236,7 +258,7 @@ export function HomePage() {
               </span>
               <div className="text-[11px] leading-tight">
                 <div className="font-bold text-foreground">FlockText</div>
-                <div className="text-muted-foreground">{heroSlides[heroSlide].caption}</div>
+                <div className="text-muted-foreground">{mobileHeroSlides[mobileHeroSlide].caption}</div>
               </div>
               <span className="ml-auto flex size-5 shrink-0 items-center justify-center rounded-full bg-success">
                 <CircleCheck className="size-3.5 text-white" />
@@ -248,11 +270,11 @@ export function HomePage() {
         <div className="px-5 pt-6 pb-20">
           <h1 className="text-[24px] leading-[1.1] font-bold tracking-tight text-foreground">
             Bulk SMS for
-            <span className="block text-primary">Businesses & Churches</span> in Ghana
+            <span className="block text-primary">Businesses, Schools & Churches</span> in Ghana
           </h1>
 
           <p className="mt-3.5 text-[15px] leading-relaxed text-muted-foreground">
-            Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses and churches.
+            Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses, schools, and churches.
           </p>
 
           <div className="mt-5 flex flex-col gap-3">
@@ -272,15 +294,25 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* Hero (sm+) — flocktext_home_banner.png as a full-bleed background, white-to-transparent
-          gradient over it so the left-aligned copy stays legible against the photo.
+      {/* Hero (sm+) — a full-bleed background slider cross-fading through photos from each
+          industry FlockText serves (churches, schools, businesses), its own separate
+          desktopHeroSlides/desktopHeroSlide state (mobile above has its own slider/state
+          with the original photo set), with a white-to-transparent gradient over it so the
+          left-aligned copy stays legible against the photo.
           -mt-[68px] pulls this section up behind the sticky header (which is transparent
           at the top of the page) so the photo shows through the nav instead of stopping
           below it; min-h is bumped by that same 68px so nothing after the hero shifts. */}
-      <section
-        className="relative -mt-[68px] hidden min-h-[628px] items-center overflow-hidden bg-cover bg-right sm:flex lg:min-h-[708px]"
-        style={{ backgroundImage: `url(${heroImage})` }}
-      >
+      <section className="relative -mt-[68px] hidden min-h-[628px] items-center overflow-hidden sm:flex lg:min-h-[708px]">
+        {desktopHeroSlides.map((slide, i) => (
+          <img
+            key={slide.image}
+            src={slide.image}
+            alt=""
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${slide.focus} ${i === desktopHeroSlide ? 'opacity-100' : 'opacity-0'
+              }`}
+          />
+        ))}
+
         <div
           className="absolute inset-0"
           style={{
@@ -289,16 +321,25 @@ export function HomePage() {
           }}
         />
 
+        <div className="absolute right-6 bottom-6 z-10 flex items-center gap-1.5 lg:right-8 lg:bottom-8">
+          {desktopHeroSlides.map((slide, i) => (
+            <span
+              key={slide.image}
+              className={`h-1.5 rounded-full transition-all ${i === desktopHeroSlide ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
+            />
+          ))}
+        </div>
+
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
           <div className="max-w-xl lg:max-w-lg">
             <h1 className="text-[48px] leading-[1] font-bold tracking-tight text-foreground lg:text-[52px]">
               Bulk SMS for
-              <span className="text-primary"> Businesses & Churches </span>
+              <span className="text-primary transition-opacity duration-500"> {desktopHeroSlides[desktopHeroSlide].headline} </span>
               in Ghana
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses and churches.
+              Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses, schools, and churches.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">

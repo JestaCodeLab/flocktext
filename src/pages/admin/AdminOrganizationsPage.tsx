@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { fetchAdminOrganizations } from '@/api/adminOrganizations';
 
 export function AdminOrganizationsPage() {
@@ -23,8 +24,8 @@ export function AdminOrganizationsPage() {
         <div className="mt-0.5 text-sm text-muted-foreground">{orgs.data?.total ?? 0} total</div>
       </div>
 
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="relative max-w-sm flex-1">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="relative min-w-[220px] max-w-sm flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by church name…"
@@ -38,7 +39,33 @@ export function AdminOrganizationsPage() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      {orgs.isLoading && (
+        <div className="flex flex-col gap-2.5 md:hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[110px] rounded-xl" />
+          ))}
+        </div>
+      )}
+      <MobileList>
+        {orgs.data?.organizations.map((org) => (
+          <MobileListCard key={org.id} to={`/admin/organizations/${org.id}`}>
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="font-semibold">{org.churchName || 'Untitled organization'}</span>
+              <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
+            </div>
+            <MobileListRow label="Members" value={org.memberCount} />
+            <MobileListRow label="Messages" value={org.messageCount} />
+            <MobileListRow label="Wallet" value={`${org.walletBalanceCredits.toLocaleString()} credits`} />
+            <MobileListRow
+              label="Joined"
+              value={new Date(org.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {!orgs.isLoading && orgs.data?.organizations.length === 0 && <MobileListEmpty>No organizations yet.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">

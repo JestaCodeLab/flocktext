@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { rangeLabel, type DateRangeParams } from '@/lib/dateRange';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -136,52 +137,70 @@ export function AdminDashboardPage() {
         <div className="text-[17px] font-bold">Top organizations</div>
         <div className="text-[13px] text-muted-foreground">{rangeLabel(range)}</div>
       </div>
-      <div className="overflow-hidden rounded-2xl border border-border bg-card">
-        {summary.isLoading && (
-          <div className="space-y-2 p-5">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+      {summary.isLoading && (
+        <div className="space-y-2 rounded-2xl border border-border bg-card p-5">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      )}
+      {!summary.isLoading && (
+        <>
+          <MobileList>
+            {topOrgs.map((org, i) => (
+              <MobileListCard key={org.id} to={`/admin/organizations/${org.id}`}>
+                <div className="mb-2 flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                    {i + 1}
+                  </div>
+                  <span className="font-semibold">{org.churchName}</span>
+                </div>
+                <MobileListRow label="Messages sent" value={org.messagesSent.toLocaleString()} />
+                <MobileListRow label="Wallet credits" value={org.walletBalanceCredits.toLocaleString()} />
+              </MobileListCard>
+            ))}
+          </MobileList>
+          {topOrgs.length === 0 && <MobileListEmpty>No messages sent yet in this period.</MobileListEmpty>}
+
+          <div className="hidden overflow-hidden rounded-2xl border border-border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary hover:bg-secondary">
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead>Organization</TableHead>
+                  <TableHead className="text-right">Messages sent</TableHead>
+                  <TableHead className="text-right">Wallet credits</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {topOrgs.map((org, i) => (
+                  <TableRow key={org.id}>
+                    <TableCell>
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
+                        {i + 1}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      <Link to={`/admin/organizations/${org.id}`} className="hover:underline">
+                        {org.churchName}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">{org.messagesSent.toLocaleString()}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{org.walletBalanceCredits.toLocaleString()}</TableCell>
+                  </TableRow>
+                ))}
+                {topOrgs.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
+                      No messages sent yet in this period.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
-        )}
-        {!summary.isLoading && (
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-secondary hover:bg-secondary">
-                <TableHead className="w-12">#</TableHead>
-                <TableHead>Organization</TableHead>
-                <TableHead className="text-right">Messages sent</TableHead>
-                <TableHead className="text-right">Wallet credits</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {topOrgs.map((org, i) => (
-                <TableRow key={org.id}>
-                  <TableCell>
-                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-muted text-xs font-bold text-muted-foreground">
-                      {i + 1}
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-semibold">
-                    <Link to={`/admin/organizations/${org.id}`} className="hover:underline">
-                      {org.churchName}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">{org.messagesSent.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-muted-foreground">{org.walletBalanceCredits.toLocaleString()}</TableCell>
-                </TableRow>
-              ))}
-              {topOrgs.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center text-muted-foreground">
-                    No messages sent yet in this period.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

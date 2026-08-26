@@ -49,6 +49,7 @@ import { DeleteSenderIdPermanentlyDialog } from '@/components/admin/DeleteSender
 import { SendOrgSmsDialog } from '@/components/admin/SendOrgSmsDialog';
 import { SendVerificationReminderDialog } from '@/components/admin/SendVerificationReminderDialog';
 import { OrgProgressTimeline, type OrgProgressStep } from '@/components/admin/OrgProgressTimeline';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
   fetchAdminOrganizationDetail,
   updateAdminOrganizationProfile,
@@ -88,19 +89,19 @@ function DetailSkeleton() {
   return (
     <div>
       <Skeleton className="mb-4 h-4 w-40" />
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Skeleton className="h-8 w-64" />
           <Skeleton className="mt-2 h-4 w-32" />
         </div>
         <Skeleton className="h-9 w-28" />
       </div>
-      <div className="mb-6 grid grid-cols-4 gap-3.5">
+      <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Skeleton key={i} className="h-[84px] rounded-xl" />
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Skeleton className="h-64 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -309,6 +310,112 @@ export function AdminOrganizationDetailPage() {
 
   const org = detail.data;
 
+  function renderSenderIdActions(s: AdminSenderId) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon-sm" variant="ghost" title="Actions">
+              <MoreVertical className="h-3.5 w-3.5" />
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end" className="w-56">
+          {s.status === 'pending_review' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
+                <Send className="h-3.5 w-3.5" /> Register
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                disabled={markRegistered.isPending}
+                onClick={() => markRegistered.mutate(s.id)}
+                title="Use if this sender ID was already registered with BMS Africa before this request"
+              >
+                <CircleCheck className="h-3.5 w-3.5" /> Already registered
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}
+              >
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
+                <X className="h-3.5 w-3.5" /> Reject
+              </DropdownMenuItem>
+            </>
+          )}
+          {s.status === 'rejected' && (
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}
+            >
+              <Pencil className="h-3.5 w-3.5" /> Edit
+            </DropdownMenuItem>
+          )}
+          {s.status === 'processing' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
+                <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
+                <ShieldCheck className="h-3.5 w-3.5" /> Approve
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
+              >
+                <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
+                <X className="h-3.5 w-3.5" /> Reject
+              </DropdownMenuItem>
+            </>
+          )}
+          {s.status === 'approved' && (
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
+            >
+              <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
+            </DropdownMenuItem>
+          )}
+          {s.status === 'deleted' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
+                <RotateCcw className="h-3.5 w-3.5" /> Restore
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(s)}>
+                <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  function renderUserActions(u: AdminOrgUser) {
+    return (
+      <div className="flex items-center gap-1.5">
+        {!u.isVerified && (
+          <Button size="icon-sm" variant="ghost" title="Send verification reminder SMS" onClick={() => setVerificationReminderTarget(u)}>
+            <Send className="h-3.5 w-3.5" />
+          </Button>
+        )}
+        <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
+        <Button size="icon-sm" variant="ghost" className="text-destructive" title="Remove" onClick={() => setDeleteUserTarget(u)}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    );
+  }
+
   const firstSenderIdAt = org.senderIds.map((s) => s.createdAt).sort()[0] ?? null;
   // Sender ID comes before Onboarding here, not after - the wizard's own step order is
   // organization profile -> sender ID -> contacts, and onboardingCompletedAt only flips
@@ -329,9 +436,9 @@ export function AdminOrganizationDetailPage() {
         <ArrowLeft className="h-4 w-4" /> Back to organizations
       </Link>
 
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5 text-[26px] font-extrabold">
+          <div className="flex items-center gap-2.5 text-xl font-extrabold sm:text-[26px]">
             {org.churchName || 'Untitled organization'}
             <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
           </div>
@@ -347,7 +454,7 @@ export function AdminOrganizationDetailPage() {
             })}
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="icon"
@@ -381,7 +488,7 @@ export function AdminOrganizationDetailPage() {
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-4 gap-3.5">
+      <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="text-xs text-muted-foreground">Wallet balance</div>
           <div className="mt-1 text-xl font-extrabold">{org.walletBalanceCredits.toLocaleString()} credits</div>
@@ -404,11 +511,11 @@ export function AdminOrganizationDetailPage() {
         <OrgProgressTimeline steps={progressSteps} />
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="mb-3.5 text-[13px] font-bold text-foreground/80">Organization profile</div>
           <div className="mb-3 space-y-1.5">
-            <Label htmlFor="org-church">Church name</Label>
+            <Label htmlFor="org-church">Organization name</Label>
             <Input
               id="org-church"
               value={profileForm.churchName}
@@ -467,7 +574,28 @@ export function AdminOrganizationDetailPage() {
         </div>
 
         <TabsContent value="sender-ids">
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <MobileList>
+            {org.senderIds.map((s) => (
+              <MobileListCard key={s.id}>
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <span className="font-semibold">{s.senderId}</span>
+                  {renderSenderIdActions(s)}
+                </div>
+                <MobileListRow label="Purpose" value={s.purpose || '—'} />
+                <MobileListRow label="Status" value={<Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>} />
+                <MobileListRow label="BMS status" value={s.bmsStatus || '—'} />
+                {(s.status === 'processing' || s.status === 'approved') && (
+                  <MobileListRow
+                    label="Hubtel"
+                    value={<Badge variant={s.hubtelConfigured ? 'default' : 'outline'}>{s.hubtelConfigured ? 'Configured' : 'Not configured'}</Badge>}
+                  />
+                )}
+              </MobileListCard>
+            ))}
+          </MobileList>
+          {org.senderIds.length === 0 && <MobileListEmpty>No sender IDs submitted yet.</MobileListEmpty>}
+
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-secondary hover:bg-secondary">
@@ -503,89 +631,7 @@ export function AdminOrganizationDetailPage() {
                             {s.hubtelConfigured ? 'Hubtel configured' : 'Hubtel not configured'}
                           </Badge>
                         )}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button size="icon-sm" variant="ghost" title="Actions">
-                                <MoreVertical className="h-3.5 w-3.5" />
-                              </Button>
-                            }
-                          />
-                          <DropdownMenuContent align="end" className="w-56">
-                            {s.status === 'pending_review' && (
-                              <>
-                                <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(s.id)}>
-                                  <Send className="h-3.5 w-3.5" /> Register
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  disabled={markRegistered.isPending}
-                                  onClick={() => markRegistered.mutate(s.id)}
-                                  title="Use if this sender ID was already registered with BMS Africa before this request"
-                                >
-                                  <CircleCheck className="h-3.5 w-3.5" /> Already registered
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}
-                                >
-                                  <Pencil className="h-3.5 w-3.5" /> Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
-                                  <X className="h-3.5 w-3.5" /> Reject
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {s.status === 'rejected' && (
-                              <DropdownMenuItem
-                                className="cursor-pointer"
-                                onClick={() => setEditTarget({ senderIdId: s.id, senderId: s.senderId, purpose: s.purpose })}
-                              >
-                                <Pencil className="h-3.5 w-3.5" /> Edit
-                              </DropdownMenuItem>
-                            )}
-                            {s.status === 'processing' && (
-                              <>
-                                <DropdownMenuItem className="cursor-pointer" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
-                                  <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
-                                  <ShieldCheck className="h-3.5 w-3.5" /> Approve
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="cursor-pointer"
-                                  onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
-                                >
-                                  <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
-                                  <X className="h-3.5 w-3.5" /> Reject
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {s.status === 'approved' && (
-                              <DropdownMenuItem
-                                className="cursor-pointer"
-                                onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
-                              >
-                                <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
-                              </DropdownMenuItem>
-                            )}
-                            {s.status === 'deleted' && (
-                              <>
-                                <DropdownMenuItem className="cursor-pointer" disabled={restore.isPending} onClick={() => restore.mutate(s.id)}>
-                                  <RotateCcw className="h-3.5 w-3.5" /> Restore
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(s)}>
-                                  <Trash2 className="h-3.5 w-3.5" /> Delete permanently
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {renderSenderIdActions(s)}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -608,7 +654,33 @@ export function AdminOrganizationDetailPage() {
               <Plus className="h-3.5 w-3.5" /> Add user
             </Button>
           </div>
-          <div className="overflow-hidden rounded-xl border border-border bg-card">
+
+          <MobileList>
+            {org.users.map((u) => (
+              <MobileListCard key={u.id}>
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <span className="font-semibold">{u.name}</span>
+                  {renderUserActions(u)}
+                </div>
+                <MobileListRow label="Phone" value={u.phone} />
+                <MobileListRow label="Email" value={u.email} />
+                <MobileListRow label="Role" value={u.role} />
+                <MobileListRow label="Verified" value={u.isVerified ? 'Yes' : 'No'} />
+                <MobileListRow
+                  label="Registered via"
+                  value={
+                    <Badge variant="outline" className="gap-1 font-normal">
+                      {u.registeredVia === 'mobile' ? <Smartphone className="h-3 w-3" /> : <Globe className="h-3 w-3" />}
+                      {u.registeredVia === 'mobile' ? 'Mobile app' : 'Web'}
+                    </Badge>
+                  }
+                />
+              </MobileListCard>
+            ))}
+          </MobileList>
+          {org.users.length === 0 && <MobileListEmpty>No team members yet.</MobileListEmpty>}
+
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
             <Table>
               <TableHeader>
                 <TableRow className="bg-secondary hover:bg-secondary">
@@ -639,32 +711,7 @@ export function AdminOrganizationDetailPage() {
                         {u.registeredVia === 'mobile' ? 'Mobile app' : 'Web'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        {!u.isVerified && (
-                          <Button
-                            size="icon-sm"
-                            variant="ghost"
-                            title="Send verification reminder SMS"
-                            onClick={() => setVerificationReminderTarget(u)}
-                          >
-                            <Send className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                        <Button size="icon-sm" variant="ghost" title="Edit" onClick={() => setEditUserTarget(u)}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="icon-sm"
-                          variant="ghost"
-                          className="text-destructive"
-                          title="Remove"
-                          onClick={() => setDeleteUserTarget(u)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    <TableCell>{renderUserActions(u)}</TableCell>
                   </TableRow>
                 ))}
                 {org.users.length === 0 && (

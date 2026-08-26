@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { fetchAdminAddons, updateAddon, type AddonUpdatePayload } from '@/api/adminAddons';
 import { apiErrorMessage } from '@/api/client';
 import type { AdminAddon } from '@/types/admin';
@@ -43,7 +44,27 @@ export function AdminAddonsPage() {
         Configure pricing for paid features. Organizations pay once via Paystack to unlock each addon.
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <MobileList>
+        {addons.data?.map((addon) => (
+          <MobileListCard key={addon.id}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <span className="font-semibold">{addon.name}</span>
+              <Button size="icon-sm" variant="ghost" className="shrink-0" onClick={() => openEdit(addon)}>
+                <Pencil className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="mb-2 text-sm text-muted-foreground">{addon.description}</div>
+            <MobileListRow label="Price" value={`GHS ${addon.ghs}`} />
+            <MobileListRow
+              label="Status"
+              value={<Badge variant={addon.active ? 'default' : 'secondary'}>{addon.active ? 'active' : 'inactive'}</Badge>}
+            />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {addons.data?.length === 0 && <MobileListEmpty>No addons yet.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-secondary hover:bg-secondary">
