@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { CreditCard, Wallet as WalletIcon, Receipt, RefreshCw, TrendingDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +10,7 @@ import { CreditPackageGrid } from '@/components/wallet/CreditPackageGrid';
 import { fetchWallet, initializeTopup, verifyTopup } from '@/api/wallet';
 import { apiErrorMessage } from '@/api/client';
 import { openPaystackPopup } from '@/lib/paystack';
+import { useHubtelCheckout } from '@/lib/hubtelCheckout';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +19,7 @@ export function WalletPage() {
   const updateOrganization = useAuthStore((s) => s.updateOrganization);
   const wallet = useQuery({ queryKey: ['wallet'], queryFn: fetchWallet });
   const [activeTab, setActiveTab] = useState<'packages' | 'transactions'>('packages');
+  const [searchParams, setSearchParams] = useSearchParams();
 
   function applyTopupResult(data: { walletBalanceCredits: number }) {
     updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
@@ -36,6 +39,34 @@ export function WalletPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const hubtelCheckout = useHubtelCheckout({
+    onSuccess: (reference) => verify.mutate(reference),
+    onCancel: () => toast('Payment cancelled.'),
+  });
+
+  // Fallback for Hubtel's 'redirect' display mode: the browser navigates fully away to
+  // Hubtel's hosted checkout and back, so there's no in-page dialog to receive an outcome
+  // from - instead the return/cancellation URL (set server-side, see
+  // walletController.initializeHubtelTopup) points back here with these params. The
+  // dialog-based 'iframe' path (default) never triggers this - it resolves entirely
+  // through useHubtelCheckout's postMessage listener above.
+  useEffect(() => {
+    const reference = searchParams.get('reference');
+    const outcome = searchParams.get('outcome');
+    if (!reference || !outcome) return;
+
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('reference');
+      next.delete('outcome');
+      return next;
+    }, { replace: true });
+
+    if (outcome === 'success') verify.mutate(reference);
+    else toast('Payment cancelled.');
+    // Intentionally runs once on mount only - it reads the URL's initial query params.
+  }, []);
+
   const topup = useMutation({
     mutationFn: initializeTopup,
     onSuccess: async (data) => {
@@ -44,9 +75,13 @@ export function WalletPage() {
         toast.success('Credits added to your wallet.');
         return;
       }
+      if (data.authorization_url) {
+        hubtelCheckout.open({ reference: data.reference, url: data.authorization_url, displayMode: data.checkoutDisplay ?? 'redirect' });
+        return;
+      }
       try {
         await openPaystackPopup({
-          email: data.email,
+          email: data.email!,
           amountGHS: data.amountGHS,
           reference: data.reference,
           subaccountCode: data.subaccountCode,
@@ -209,6 +244,8 @@ export function WalletPage() {
             </Table>
           </div>
         ))}
+
+      {hubtelCheckout.node}
     </div>
   );
 }

@@ -41,17 +41,25 @@ export type InitializeTopupResult =
       mode: 'checkout';
       reference: string;
       amountGHS: number;
-      email: string;
+      // Only set for the Paystack Inline path - omitted when `authorization_url` is
+      // present instead (see below).
+      email?: string;
       organizationId: string;
       packageGhs: number;
       subaccountCode?: string;
-      // Only present when the request passed `redirect: true` - this app uses
-      // Paystack Inline instead, so `initializeTopup` below never sets it.
+      // Present when the frontend should redirect/embed a checkout page rather than open
+      // Paystack Inline - either a caller-requested Paystack redirect (`redirect: true`)
+      // or, when the API's PAYMENT_PROVIDER is set to Hubtel, every checkout (Hubtel has
+      // no Inline-popup equivalent). `checkoutDisplay` only matters in the latter case -
+      // see lib/hubtelCheckout.tsx for how both are consumed.
       authorization_url?: string;
+      checkoutDisplay?: 'iframe' | 'redirect';
     };
 
 export async function initializeTopup(ghs: number) {
-  const { data } = await api.post<InitializeTopupResult>('/wallet/topup/initialize', { ghs });
+  // returnPath only matters if the API is configured for Hubtel's 'redirect' display
+  // mode - it's where the browser lands back after a full-page checkout redirect.
+  const { data } = await api.post<InitializeTopupResult>('/wallet/topup/initialize', { ghs, returnPath: '/app/wallet' });
   return data;
 }
 
