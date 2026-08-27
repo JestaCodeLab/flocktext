@@ -56,10 +56,38 @@ const mobileHeroSlides = [
 // never repeats on two consecutive slides (including the wrap from the last slide back to
 // the first).
 const desktopHeroSlides = [
-  { image: fashionistaHeroSlide, caption: 'Delivered to 2,431 customers', focus: 'object-right', headline: 'Businesses' },
-  { image: pastorHeroSlide, caption: 'Delivered to 2,314 members', focus: 'object-right', headline: 'Churches' },
-  { image: retailerHeroSlide, caption: 'Delivered to 3,102 customers', focus: 'object-right', headline: 'Businesses' },
-  { image: administratorHeroSlide, caption: 'Delivered to 1,842 parents', focus: 'object-right', headline: 'Schools' },
+  {
+    image: fashionistaHeroSlide,
+    caption: 'Delivered to 2,431 customers',
+    focus: 'object-right',
+    kicker: 'Bulk SMS for Businesses',
+    title: 'Reach More Customers. Grow Your Business.',
+    subtext: 'Send promotions, updates, alerts, and important messages that keep your customers connected to your business.',
+  },
+  {
+    image: pastorHeroSlide,
+    caption: 'Delivered to 2,314 members',
+    focus: 'object-right',
+    kicker: 'Bulk SMS for Churches',
+    title: 'Keep Your Congregation Connected.',
+    subtext: 'Reach your congregation with announcements, reminders, event updates, and messages that keep everyone informed.',
+  },
+  {
+    image: retailerHeroSlide,
+    caption: 'Delivered to 3,102 customers',
+    focus: 'object-right',
+    kicker: 'Bulk SMS for Businesses',
+    title: 'Reach More Customers. Grow Your Business.',
+    subtext: 'Send promotions, updates, alerts, and important messages that keep your customers connected to your business.',
+  },
+  {
+    image: administratorHeroSlide,
+    caption: 'Delivered to 1,842 parents',
+    focus: 'object-right',
+    kicker: 'Bulk SMS for Schools',
+    title: 'Keep Your School Community Connected.',
+    subtext: 'Reach parents, students, and staff instantly with important announcements, reminders, and updates.',
+  },
 ];
 
 // Generic placeholder wordmarks — swap for real client logos once confirmed. See [[flocktext-marketing-homepage]].
@@ -332,14 +360,15 @@ export function HomePage() {
 
         <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8">
           <div className="max-w-xl lg:max-w-lg">
+            <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">
+              {desktopHeroSlides[desktopHeroSlide].kicker}
+            </div>
             <h1 className="text-[48px] leading-[1] font-bold tracking-tight text-foreground lg:text-[52px]">
-              Bulk SMS for
-              <span className="text-primary transition-opacity duration-500"> {desktopHeroSlides[desktopHeroSlide].headline} </span>
-              in Ghana
+              {desktopHeroSlides[desktopHeroSlide].title}
             </h1>
 
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Reach customers, engage your audience, and drive action with powerful SMS tools built for businesses, schools, and churches.
+              {desktopHeroSlides[desktopHeroSlide].subtext}
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">

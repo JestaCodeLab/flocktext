@@ -66,12 +66,11 @@ export function ChurchesPage() {
             <div>
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">For Churches</div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-                SMS Platform for Churches in Ghana
+                Keep Your Congregation Connected.
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-                Stay connected with your congregation between Sundays. FlockText helps churches, ministries, and
-                religious organizations in Ghana send service reminders, event announcements, and encouragement
-                texts — reaching members who may not check email or social media.
+                Reach your congregation with announcements, reminders, event updates, and messages that keep
+                everyone informed.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>

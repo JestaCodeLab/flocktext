@@ -124,12 +124,11 @@ export function BusinessesPage() {
             <div>
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">For Businesses</div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-                Bulk SMS Platform for Ghanaian Businesses
+                Reach More Customers. Grow Your Business.
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-                Turn one-time buyers into repeat customers with SMS marketing in Ghana. FlockText helps SMEs send
-                promotions, order updates, and appointment reminders that customers actually open — SMS has open
-                rates text and email marketing can't match.
+                Send promotions, updates, alerts, and important messages that keep your customers connected to your
+                business.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>

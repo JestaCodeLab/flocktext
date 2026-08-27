@@ -51,15 +51,34 @@ export function DeveloperSection() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  async function copyToClipboard(text: string, successMessage: string) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      toast.success(successMessage);
+    } catch {
+      toast.error('Could not copy to clipboard.');
+    }
+  }
+
   function copyKey() {
     if (!revealedKey) return;
-    navigator.clipboard.writeText(revealedKey);
-    toast.success('Copied to clipboard.');
+    copyToClipboard(revealedKey, 'Copied to clipboard.');
   }
 
   function copyKeyPrefix(prefix: string) {
-    navigator.clipboard.writeText(prefix);
-    toast.success('Key prefix copied to clipboard.');
+    copyToClipboard(prefix, 'Key prefix copied to clipboard.');
   }
 
   return (
@@ -104,8 +123,11 @@ export function DeveloperSection() {
                   </div>
                   <div className="mt-0.5 font-mono text-xs text-muted-foreground">{k.keyPrefix}••••••••</div>
                   <div className="mt-0.5 text-xs text-muted-foreground">
-                    Created {new Date(k.createdAt).toLocaleDateString()} · Last used{' '}
-                    {k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : 'never'}
+                    Created {new Date(k.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} ·
+                    Last used{' '}
+                    {k.lastUsedAt
+                      ? new Date(k.lastUsedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                      : 'never'}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -236,9 +258,9 @@ export function DeveloperSection() {
           <DialogHeader>
             <DialogTitle>Your new API key</DialogTitle>
           </DialogHeader>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background p-3">
-            <code className="min-w-0 flex-1 overflow-x-auto whitespace-nowrap text-sm">{revealedKey}</code>
-            <Button size="icon-sm" variant="ghost" onClick={copyKey}>
+          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-background p-3">
+            <code className="min-w-0 flex-1 break-all font-mono text-sm">{revealedKey}</code>
+            <Button size="icon-sm" variant="ghost" className="shrink-0" onClick={copyKey}>
               <Copy className="h-3.5 w-3.5" />
             </Button>
           </div>
