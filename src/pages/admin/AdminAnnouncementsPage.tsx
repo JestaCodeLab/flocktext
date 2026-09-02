@@ -564,17 +564,25 @@ function TemplatesTab() {
 
   return (
     <div>
-      <SectionCard
-        icon={FileText}
-        title="Reusable message templates"
-        description="Available to every organization's own compose screen (alongside their custom templates) and in the Send SMS dialog on an organization's details page."
-      >
-        <div className="flex justify-end">
-          <Button size="sm" onClick={openCreate}>
+      <div className="mb-6 rounded-xl border border-border bg-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <FileText className="h-4.5 w-4.5" />
+            </div>
+            <div>
+              <div className="text-[15px] font-bold">Reusable message templates</div>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                Available to every organization's own compose screen (alongside their custom templates) and in the Send
+                SMS dialog on an organization's details page.
+              </div>
+            </div>
+          </div>
+          <Button size="sm" className="shrink-0" onClick={openCreate}>
             <Plus className="h-3.5 w-3.5" /> New template
           </Button>
         </div>
-      </SectionCard>
+      </div>
 
       <MobileList>
         {rows.map((t) => (
@@ -591,7 +599,10 @@ function TemplatesTab() {
               </div>
             </div>
             <div className="mb-2 text-sm text-muted-foreground">{t.preview || '—'}</div>
-            <MobileListRow label="Created" value={new Date(t.createdAt).toLocaleDateString()} />
+            <MobileListRow
+              label="Created"
+              value={new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            />
           </MobileListCard>
         ))}
       </MobileList>
@@ -612,7 +623,9 @@ function TemplatesTab() {
               <TableRow key={t.id}>
                 <TableCell className="font-semibold">{t.name}</TableCell>
                 <TableCell className="max-w-md truncate text-muted-foreground">{t.preview || '—'}</TableCell>
-                <TableCell className="text-muted-foreground">{new Date(t.createdAt).toLocaleDateString()}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {new Date(t.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     <Button size="icon-sm" variant="ghost" onClick={() => openEdit(t)}>
