@@ -1,19 +1,27 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil } from 'lucide-react';
+import { Pencil, Plus, TriangleAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
-import { fetchAdminAddons, updateAddon, type AddonUpdatePayload } from '@/api/adminAddons';
+import {
+  fetchAdminAddons,
+  createAddon,
+  updateAddon,
+  type AddonCreatePayload,
+  type AddonUpdatePayload,
+} from '@/api/adminAddons';
 import { apiErrorMessage } from '@/api/client';
 import type { AdminAddon } from '@/types/admin';
 
 const emptyForm: AddonUpdatePayload = { ghs: 0, description: '', active: true };
+const emptyCreateForm: AddonCreatePayload = { name: '', description: '', ghs: 0, active: true };
 
 export function AdminAddonsPage() {
   const queryClient = useQueryClient();
@@ -21,6 +29,8 @@ export function AdminAddonsPage() {
 
   const [editing, setEditing] = useState<AdminAddon | null>(null);
   const [form, setForm] = useState<AddonUpdatePayload>(emptyForm);
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState<AddonCreatePayload>(emptyCreateForm);
 
   function openEdit(addon: AdminAddon) {
     setEditing(addon);
@@ -37,9 +47,30 @@ export function AdminAddonsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const create = useMutation({
+    mutationFn: () => createAddon(createForm),
+    onSuccess: (addon) => {
+      toast.success(`"${addon.name}" created.`);
+      setShowCreate(false);
+      setCreateForm(emptyCreateForm);
+      queryClient.invalidateQueries({ queryKey: ['admin-addons'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   return (
     <div>
-      <div className="mb-6 text-[26px] font-extrabold">Addons</div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-[26px] font-extrabold">Addons</div>
+        <Button
+          onClick={() => {
+            setCreateForm(emptyCreateForm);
+            setShowCreate(true);
+          }}
+        >
+          <Plus className="h-4 w-4" /> Create addon
+        </Button>
+      </div>
       <div className="mb-5 text-sm text-muted-foreground">
         Configure pricing for paid features. Organizations pay once via Paystack to unlock each addon.
       </div>
@@ -133,6 +164,66 @@ export function AdminAddonsPage() {
             </Button>
             <Button disabled={save.isPending || !form.ghs} onClick={() => save.mutate()}>
               {save.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create addon</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
+              <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+              <div>
+                This creates a purchasable catalog entry only. Unlike Birthday Automation or Extra Team Seat, it won't
+                automatically unlock any feature — someone still needs to add the code that checks for it.
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-addon-name">Name</Label>
+              <Input
+                id="new-addon-name"
+                value={createForm.name}
+                onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Priority Support"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-addon-description">Description</Label>
+              <Textarea
+                id="new-addon-description"
+                value={createForm.description}
+                onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
+                placeholder="What the organization is paying for."
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-addon-ghs">Price (GHS)</Label>
+              <Input
+                id="new-addon-ghs"
+                type="number"
+                value={createForm.ghs || ''}
+                onChange={(e) => setCreateForm((f) => ({ ...f, ghs: Number(e.target.value) }))}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={createForm.active ?? true}
+                onChange={(e) => setCreateForm((f) => ({ ...f, active: e.target.checked }))}
+              />
+              Active (purchasable by organizations)
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>
+              Cancel
+            </Button>
+            <Button disabled={create.isPending || !createForm.name.trim() || !createForm.ghs} onClick={() => create.mutate()}>
+              {create.isPending ? 'Creating…' : 'Create addon'}
             </Button>
           </DialogFooter>
         </DialogContent>

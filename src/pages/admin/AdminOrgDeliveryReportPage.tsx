@@ -26,7 +26,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
-import { MessageDetailBody, MiniStatCard, downloadCsv } from '@/components/messages/MessageDetailBody';
+import { MessageDetailBody, MiniStatCard, downloadCsv, sourceBadge } from '@/components/messages/MessageDetailBody';
 import { ResendPendingDialog } from '@/components/admin/ResendPendingDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
@@ -157,6 +157,10 @@ function MessagesTable({
               <MobileListRow label="Recipients" value={m.recipients} />
               <MobileListRow label="Total" value={m.stats.total} />
               <MobileListRow label="Sender ID" value={m.senderId} />
+              <MobileListRow
+                label="Source"
+                value={<Badge variant={sourceBadge(m.source).variant}>{sourceBadge(m.source).label}</Badge>}
+              />
               <MobileListRow label="Status" value={<Badge variant={status.variant} className={status.className}>{status.label}</Badge>} />
             </MobileListCard>
           );
@@ -173,6 +177,7 @@ function MessagesTable({
               <TableHead>Recipients</TableHead>
               <TableHead className="text-center">Total</TableHead>
               <TableHead>Sender ID</TableHead>
+              <TableHead>Source</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="w-0">Actions</TableHead>
             </TableRow>
@@ -195,6 +200,9 @@ function MessagesTable({
                   <TableCell className="text-center text-muted-foreground">{m.stats.total}</TableCell>
                   <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
                   <TableCell>
+                    <Badge variant={sourceBadge(m.source).variant}>{sourceBadge(m.source).label}</Badge>
+                  </TableCell>
+                  <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                   </TableCell>
                   <TableCell>{renderActions(m)}</TableCell>
@@ -203,7 +211,7 @@ function MessagesTable({
             })}
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
+                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <Send className="h-5 w-5 text-muted-foreground" />
                     No messages here.
@@ -327,12 +335,13 @@ export function AdminOrgDeliveryReportPage() {
     try {
       const data = await fetchAdminOrgMessagesExport(orgId, activeTab, range);
       const rows = [
-        ['Date', 'Message', 'Recipients', 'Sender ID', 'Total', 'Delivered', 'Rejected', 'Failed', 'Pending', 'Credit cost'],
+        ['Date', 'Message', 'Recipients', 'Sender ID', 'Source', 'Total', 'Delivered', 'Rejected', 'Failed', 'Pending', 'Credit cost'],
         ...data.rows.map((r) => [
           new Date(r.date).toLocaleString(),
           r.body,
           r.recipients,
           r.senderId,
+          sourceBadge(r.source).label,
           String(r.total),
           String(r.delivered),
           String(r.rejected),

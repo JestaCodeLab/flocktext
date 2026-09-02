@@ -100,6 +100,7 @@ export interface AdminOrgMessageExportRow {
   body: string;
   recipients: string;
   senderId: string;
+  source: 'web' | 'api' | 'automation';
   total: number;
   delivered: number;
   failed: number;

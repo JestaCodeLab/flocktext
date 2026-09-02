@@ -46,6 +46,7 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { NotificationsSheet } from '@/components/layout/NotificationsSheet';
 import { SessionTimeoutModal } from '@/components/layout/SessionTimeoutModal';
 import { WhatsAppSupportButton } from '@/components/layout/WhatsAppSupportButton';
+import { PlatformFeatureAnnouncement } from '@/components/announcements/PlatformFeatureAnnouncement';
 import { WhatsAppIcon } from '@/pages/marketing/components/WhatsAppIcon';
 import { WHATSAPP_URL } from '@/pages/marketing/data/contact';
 import type { LucideIcon } from 'lucide-react';
@@ -525,6 +526,7 @@ export function AppShell() {
       <WhatsAppSupportButton />
 
       <SessionTimeoutModal />
+      <PlatformFeatureAnnouncement />
     </div>
   );
 }

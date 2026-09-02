@@ -18,6 +18,7 @@ import { SignupPage } from '@/pages/auth/SignupPage';
 import { OtpPage } from '@/pages/auth/OtpPage';
 import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage';
 import { JoinPage } from '@/pages/public/JoinPage';
+import { HubtelCheckoutCompletePage } from '@/pages/public/HubtelCheckoutCompletePage';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
 import { GuestRoute } from '@/components/layout/GuestRoute';
 import { OnboardingGate } from '@/components/layout/OnboardingGate';
@@ -92,6 +93,7 @@ function App() {
       </Route>
 
       <Route path="/join/:token" element={<JoinPage />} />
+      <Route path="/hubtel-checkout-complete" element={<HubtelCheckoutCompletePage />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
 
       <Route element={<AdminProtectedRoute />}>

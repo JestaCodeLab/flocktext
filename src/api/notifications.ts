@@ -10,12 +10,20 @@ export type NotificationType =
   | 'platform_announcement'
   | 'ticket_status_changed';
 
+export interface FeatureAnnouncementMetadata {
+  announcementId?: string;
+  kind: 'feature';
+  subtext: string;
+  media: { kind: 'image' | 'video'; url: string }[];
+  links: { label: string; url: string }[];
+}
+
 export interface NotificationItem {
   id: string;
   type: NotificationType;
   title: string;
   message: string;
-  metadata?: { ticketId?: string } | Record<string, unknown>;
+  metadata?: { ticketId?: string } | FeatureAnnouncementMetadata | Record<string, unknown>;
   read: boolean;
   date: string;
 }

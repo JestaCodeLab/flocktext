@@ -1,16 +1,33 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, Send, X, RefreshCw, ShieldCheck, CircleCheck, MoreVertical } from 'lucide-react';
+import {
+  Pencil,
+  Send,
+  X,
+  RefreshCw,
+  ShieldCheck,
+  CircleCheck,
+  MoreVertical,
+  RotateCcw,
+  Trash2,
+  ExternalLink,
+  Hourglass,
+  BadgeCheck,
+  XCircle,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
+import { DeleteSenderIdPermanentlyDialog } from '@/components/admin/DeleteSenderIdPermanentlyDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
-  fetchPendingSenderIds,
   fetchAllSenderIds,
   registerSenderId,
   markSenderIdRegistered,
@@ -18,27 +35,35 @@ import {
   rejectSenderId,
   editSenderId,
   checkBmsStatus,
+  restoreSenderId,
+  permanentlyDeleteSenderId,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
-import type { AdminSenderIdPendingEntry } from '@/types/admin';
+import { cn } from '@/lib/utils';
+import type { AdminSenderIdRow } from '@/types/admin';
+
+type ReviewTabKey = 'pending' | 'approved' | 'rejected' | 'deleted';
+
+const TRIGGER_CLASS = 'data-active:text-primary data-active:font-bold data-active:after:bg-primary';
 
 export function AdminSenderIdsPage() {
   const queryClient = useQueryClient();
-  const pending = useQuery({ queryKey: ['admin-sender-ids-pending'], queryFn: fetchPendingSenderIds });
+  const navigate = useNavigate();
   const all = useQuery({ queryKey: ['admin-sender-ids-all'], queryFn: fetchAllSenderIds });
 
-  const [rejectTarget, setRejectTarget] = useState<AdminSenderIdPendingEntry | null>(null);
+  const [activeTab, setActiveTab] = useState<ReviewTabKey>('pending');
+  const [rejectTarget, setRejectTarget] = useState<AdminSenderIdRow | null>(null);
   const [editTarget, setEditTarget] = useState<(EditSenderIdTarget & { orgId: string }) | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<AdminSenderIdRow | null>(null);
 
   function invalidate() {
-    queryClient.invalidateQueries({ queryKey: ['admin-sender-ids-pending'] });
     queryClient.invalidateQueries({ queryKey: ['admin-sender-ids-all'] });
     queryClient.invalidateQueries({ queryKey: ['admin-dashboard-summary'] });
   }
 
   const register = useMutation({
-    mutationFn: (entry: AdminSenderIdPendingEntry) => registerSenderId(entry.orgId, entry.senderIdId),
+    mutationFn: (row: AdminSenderIdRow) => registerSenderId(row.orgId, row.senderIdId),
     onSuccess: () => {
       toast.success('Submitted to BMS Africa for registration.');
       invalidate();
@@ -47,7 +72,7 @@ export function AdminSenderIdsPage() {
   });
 
   const markRegistered = useMutation({
-    mutationFn: (entry: AdminSenderIdPendingEntry) => markSenderIdRegistered(entry.orgId, entry.senderIdId),
+    mutationFn: (row: AdminSenderIdRow) => markSenderIdRegistered(row.orgId, row.senderIdId),
     onSuccess: () => {
       toast.success('Marked as already registered with BMS Africa.');
       invalidate();
@@ -66,13 +91,13 @@ export function AdminSenderIdsPage() {
   });
 
   const sync = useMutation({
-    mutationFn: (row: { orgId: string; senderIdId: string }) => checkBmsStatus(row.orgId, row.senderIdId),
+    mutationFn: (row: AdminSenderIdRow) => checkBmsStatus(row.orgId, row.senderIdId),
     onSuccess: () => invalidate(),
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
   const approve = useMutation({
-    mutationFn: (row: { orgId: string; senderIdId: string }) => approveSenderId(row.orgId, row.senderIdId),
+    mutationFn: (row: AdminSenderIdRow) => approveSenderId(row.orgId, row.senderIdId),
     onSuccess: () => {
       toast.success('Approved.');
       invalidate();
@@ -91,7 +116,30 @@ export function AdminSenderIdsPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  function renderPendingActions(entry: AdminSenderIdPendingEntry) {
+  const restore = useMutation({
+    mutationFn: (row: AdminSenderIdRow) => restoreSenderId(row.orgId, row.senderIdId),
+    onSuccess: () => {
+      toast.success('Sender ID restored — the organization can send with it again.');
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const permanentlyDelete = useMutation({
+    mutationFn: () => permanentlyDeleteSenderId(permanentDeleteTarget!.orgId, permanentDeleteTarget!.senderIdId),
+    onSuccess: () => {
+      toast.success('Sender ID permanently deleted.');
+      setPermanentDeleteTarget(null);
+      invalidate();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  function openEdit(row: AdminSenderIdRow) {
+    setEditTarget({ orgId: row.orgId, senderIdId: row.senderIdId, senderId: row.senderId, purpose: row.purpose });
+  }
+
+  function renderActions(row: AdminSenderIdRow) {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -102,51 +150,28 @@ export function AdminSenderIdsPage() {
           }
         />
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(entry)}>
-            <Send className="h-3.5 w-3.5" /> Register
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            disabled={markRegistered.isPending}
-            onClick={() => markRegistered.mutate(entry)}
-            title="Use if this sender ID was already registered with BMS Africa before this request"
-          >
-            <CircleCheck className="h-3.5 w-3.5" /> Already registered
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => setEditTarget({ orgId: entry.orgId, senderIdId: entry.senderIdId, senderId: entry.senderId, purpose: entry.purpose })}
-          >
-            <Pencil className="h-3.5 w-3.5" /> Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(entry)}>
-            <X className="h-3.5 w-3.5" /> Reject
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
-  function renderAllActions(row: (typeof all.data extends (infer R)[] | undefined ? R : never)) {
-    if (row.status !== 'pending_review' && row.status !== 'rejected' && row.status !== 'processing') return null;
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button size="icon-sm" variant="ghost" title="Actions">
-              <MoreVertical className="h-3.5 w-3.5" />
-            </Button>
-          }
-        />
-        <DropdownMenuContent align="end" className="w-52">
-          {(row.status === 'pending_review' || row.status === 'rejected') && (
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => setEditTarget({ orgId: row.orgId, senderIdId: row.senderIdId, senderId: row.senderId, purpose: row.purpose })}
-            >
-              <Pencil className="h-3.5 w-3.5" /> Edit
-            </DropdownMenuItem>
+          {row.status === 'pending_review' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" disabled={register.isPending} onClick={() => register.mutate(row)}>
+                <Send className="h-3.5 w-3.5" /> Register
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                disabled={markRegistered.isPending}
+                onClick={() => markRegistered.mutate(row)}
+                title="Use if this sender ID was already registered with BMS Africa before this request"
+              >
+                <CircleCheck className="h-3.5 w-3.5" /> Already registered
+              </DropdownMenuItem>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(row)}>
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(row)}>
+                <X className="h-3.5 w-3.5" /> Reject
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
           )}
           {row.status === 'processing' && (
             <>
@@ -160,10 +185,111 @@ export function AdminSenderIdsPage() {
               <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(row)}>
                 <X className="h-3.5 w-3.5" /> Reject
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
             </>
           )}
+          {row.status === 'rejected' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" onClick={() => openEdit(row)}>
+                <Pencil className="h-3.5 w-3.5" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          {row.status === 'deleted' && (
+            <>
+              <DropdownMenuItem className="cursor-pointer" disabled={restore.isPending} onClick={() => restore.mutate(row)}>
+                <RotateCcw className="h-3.5 w-3.5" /> Restore
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(row)}>
+                <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/admin/organizations/${row.orgId}`)}>
+            <ExternalLink className="h-3.5 w-3.5" /> View organization
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+    );
+  }
+
+  const rows = all.data ?? [];
+  const pendingRows = rows.filter((r) => r.status === 'pending_review' || r.status === 'processing');
+  const approvedRows = rows.filter((r) => r.status === 'approved');
+  const rejectedRows = rows.filter((r) => r.status === 'rejected');
+  const deletedRows = rows.filter((r) => r.status === 'deleted');
+
+  const TABS: { key: ReviewTabKey; label: string; icon: LucideIcon; rows: AdminSenderIdRow[] }[] = [
+    { key: 'pending', label: 'Pending', icon: Hourglass, rows: pendingRows },
+    { key: 'approved', label: 'Approved', icon: BadgeCheck, rows: approvedRows },
+    { key: 'rejected', label: 'Rejected', icon: XCircle, rows: rejectedRows },
+    { key: 'deleted', label: 'Deleted', icon: Trash2, rows: deletedRows },
+  ];
+
+  function renderTable(tabRows: AdminSenderIdRow[], emptyLabel: string, showReason: boolean) {
+    return (
+      <div>
+        <MobileList className="mb-7">
+          {tabRows.map((row) => (
+            <MobileListCard key={row.senderIdId}>
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <span className="font-semibold">{row.churchName || 'Untitled organization'}</span>
+                {renderActions(row)}
+              </div>
+              <MobileListRow label="Sender ID" value={row.senderId} />
+              <MobileListRow label="Purpose" value={row.purpose || '—'} />
+              <MobileListRow label="Status" value={<Badge variant={senderIdStatusVariant[row.status]}>{senderIdStatusLabel[row.status]}</Badge>} />
+              {showReason && <MobileListRow label="Reason" value={row.rejectionReason || '—'} />}
+              {!showReason && <MobileListRow label="BMS status" value={row.bmsStatus || '—'} />}
+              <MobileListRow label="Submitted" value={new Date(row.submittedAt).toLocaleDateString()} />
+            </MobileListCard>
+          ))}
+        </MobileList>
+        {tabRows.length === 0 && <MobileListEmpty>{emptyLabel}</MobileListEmpty>}
+
+        <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-secondary hover:bg-secondary">
+                <TableHead>Church</TableHead>
+                <TableHead>Sender ID</TableHead>
+                <TableHead>Purpose</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>{showReason ? 'Reason' : 'BMS status'}</TableHead>
+                <TableHead>Submitted</TableHead>
+                <TableHead className="w-0">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tabRows.map((row) => (
+                <TableRow key={row.senderIdId}>
+                  <TableCell className="font-semibold">{row.churchName || 'Untitled organization'}</TableCell>
+                  <TableCell>{row.senderId}</TableCell>
+                  <TableCell className="max-w-[220px] truncate text-muted-foreground">{row.purpose}</TableCell>
+                  <TableCell>
+                    <Badge variant={senderIdStatusVariant[row.status]}>{senderIdStatusLabel[row.status]}</Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[220px] truncate text-muted-foreground">
+                    {showReason ? row.rejectionReason || '—' : row.bmsStatus || '—'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{new Date(row.submittedAt).toLocaleDateString()}</TableCell>
+                  <TableCell>{renderActions(row)}</TableCell>
+                </TableRow>
+              ))}
+              {tabRows.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-8 text-center text-muted-foreground">
+                    {emptyLabel}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
     );
   }
 
@@ -171,105 +297,22 @@ export function AdminSenderIdsPage() {
     <div>
       <div className="mb-6 text-[26px] font-extrabold">Sender ID Review</div>
 
-      <div className="mb-3 text-[13px] font-bold text-foreground/80">Pending review ({pending.data?.length ?? 0})</div>
-
-      <MobileList className="mb-7">
-        {pending.data?.map((entry) => (
-          <MobileListCard key={entry.senderIdId}>
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <span className="font-semibold">{entry.churchName || 'Untitled organization'}</span>
-              {renderPendingActions(entry)}
-            </div>
-            <MobileListRow label="Sender ID" value={entry.senderId} />
-            <MobileListRow label="Purpose" value={entry.purpose} />
-            <MobileListRow label="Submitted" value={new Date(entry.submittedAt).toLocaleDateString()} />
-          </MobileListCard>
-        ))}
-      </MobileList>
-      {pending.data?.length === 0 && <MobileListEmpty>Nothing awaiting review.</MobileListEmpty>}
-
-      <div className="mb-7 hidden overflow-hidden rounded-xl border border-border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary hover:bg-secondary">
-              <TableHead>Church</TableHead>
-              <TableHead>Sender ID</TableHead>
-              <TableHead>Purpose</TableHead>
-              <TableHead>Submitted</TableHead>
-              <TableHead className="w-0">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pending.data?.map((entry) => (
-              <TableRow key={entry.senderIdId}>
-                <TableCell className="font-semibold">{entry.churchName || 'Untitled organization'}</TableCell>
-                <TableCell>{entry.senderId}</TableCell>
-                <TableCell className="max-w-[280px] text-muted-foreground">{entry.purpose}</TableCell>
-                <TableCell className="text-muted-foreground">{new Date(entry.submittedAt).toLocaleDateString()}</TableCell>
-                <TableCell>{renderPendingActions(entry)}</TableCell>
-              </TableRow>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReviewTabKey)}>
+        <div className="mb-6 overflow-x-auto border-b">
+          <TabsList variant="line" className="group-data-[orientation=horizontal]/tabs:h-auto min-w-0 justify-start gap-6 p-0">
+            {TABS.map((tab) => (
+              <TabsTrigger key={tab.key} value={tab.key} className={cn('h-auto px-0 py-3', TRIGGER_CLASS)}>
+                <tab.icon className="h-3.5 w-3.5" /> {tab.label} ({tab.rows.length})
+              </TabsTrigger>
             ))}
-            {pending.data?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                  Nothing awaiting review.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+          </TabsList>
+        </div>
 
-      <div className="mb-3 text-[13px] font-bold text-foreground/80">All sender IDs</div>
-
-      <MobileList>
-        {all.data?.map((row) => (
-          <MobileListCard key={row.senderIdId}>
-            <div className="mb-2 flex items-start justify-between gap-2">
-              <span className="font-semibold">{row.churchName || 'Untitled organization'}</span>
-              {renderAllActions(row)}
-            </div>
-            <MobileListRow label="Sender ID" value={row.senderId} />
-            <MobileListRow label="Status" value={<Badge variant={senderIdStatusVariant[row.status]}>{senderIdStatusLabel[row.status]}</Badge>} />
-            <MobileListRow label="BMS status" value={row.bmsStatus || '—'} />
-          </MobileListCard>
-        ))}
-      </MobileList>
-      {all.data?.length === 0 && <MobileListEmpty>No sender ID requests yet.</MobileListEmpty>}
-
-      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-secondary hover:bg-secondary">
-              <TableHead>Church</TableHead>
-              <TableHead>Sender ID</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>BMS status</TableHead>
-              <TableHead className="w-0">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {all.data?.map((row) => (
-              <TableRow key={row.senderIdId}>
-                <TableCell className="font-semibold">{row.churchName || 'Untitled organization'}</TableCell>
-                <TableCell>{row.senderId}</TableCell>
-                <TableCell>
-                  <Badge variant={senderIdStatusVariant[row.status]}>{senderIdStatusLabel[row.status]}</Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{row.bmsStatus || '—'}</TableCell>
-                <TableCell>{renderAllActions(row)}</TableCell>
-              </TableRow>
-            ))}
-            {all.data?.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
-                  No sender ID requests yet.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+        <TabsContent value="pending">{renderTable(pendingRows, 'Nothing awaiting review.', false)}</TabsContent>
+        <TabsContent value="approved">{renderTable(approvedRows, 'No approved sender IDs yet.', false)}</TabsContent>
+        <TabsContent value="rejected">{renderTable(rejectedRows, 'No rejected sender IDs.', true)}</TabsContent>
+        <TabsContent value="deleted">{renderTable(deletedRows, 'No deleted sender IDs.', false)}</TabsContent>
+      </Tabs>
 
       <EditSenderIdDialog
         target={editTarget}
@@ -282,6 +325,12 @@ export function AdminSenderIdsPage() {
         onOpenChange={(open) => !open && setRejectTarget(null)}
         onConfirm={(reason) => reject.mutate(reason)}
         isPending={reject.isPending}
+      />
+      <DeleteSenderIdPermanentlyDialog
+        target={permanentDeleteTarget}
+        onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}
+        onConfirm={() => permanentlyDelete.mutate()}
+        isPending={permanentlyDelete.isPending}
       />
     </div>
   );

@@ -4,161 +4,163 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, Roboto, Helvetica, Arial, sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-stat-highlight-foreground: var(--stat-highlight-foreground);
-    --color-stat-highlight: var(--stat-highlight);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-    --color-success: var(--success);
-    --color-success-foreground: var(--success-foreground);
-    --color-warning: var(--warning);
-    --color-warning-foreground: var(--warning-foreground);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+  --font-heading: var(--font-sans);
+  --font-sans:
+    "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto,
+    Helvetica, Arial, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-stat-highlight-foreground: var(--stat-highlight-foreground);
+  --color-stat-highlight: var(--stat-highlight);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* FlockText brand palette - deep navy + warm gold. */
 :root {
-    --background: #F4F5FA;
-    --foreground: #161B2C;
-    --card: #FFFFFF;
-    --card-foreground: #161B2C;
-    --popover: #FFFFFF;
-    --popover-foreground: #161B2C;
-    --primary: #f0790e;
-    --primary-foreground: #FFFFFF;
-    --secondary: #EEF0F7;
-    --secondary-foreground: #161B2C;
-    --muted: #EEF0F7;
-    --muted-foreground: #676F8C;
-    --accent: #F4E9CD;
-    --accent-foreground: #7A5C14;
-    --destructive: #C1352A;
-    --destructive-foreground: #FBEAE8;
-    --success: #1E7A5B;
-    --success-foreground: #E2F1EA;
-    --warning: #B4790E;
-    --warning-foreground: #F6E7C7;
-    --border: #DFE2ED;
-    --input: #DFE2ED;
-    --ring: #C99A3B;
-    --chart-1: #C99A3B;
-    --chart-2: #1E7A5B;
-    --chart-3: #3B7DC9;
-    --chart-4: #7C5CC9;
-    --chart-5: #1AA6A6;
-    --radius: 0.5rem;
-    /* Highlight stat cards (e.g. wallet balance) stay solid orange in both themes. */
-    --stat-highlight: #F0790E;
-    --stat-highlight-foreground: #FFFFFF;
-    /* Sidebar is permanently dark, independent of the light/dark theme toggle. */
-    --sidebar: #171C2E;
-    --sidebar-foreground: #EEF0F7;
-    --sidebar-primary: #E0B24E;
-    --sidebar-primary-foreground: #171B2C;
-    --sidebar-accent: #1E2438;
-    --sidebar-accent-foreground: #EEF0F7;
-    --sidebar-border: rgba(238, 240, 247, 0.10);
-    --sidebar-ring: #E0B24E;
+  --background: #f4f5fa;
+  --foreground: #161b2c;
+  --card: #ffffff;
+  --card-foreground: #161b2c;
+  --popover: #ffffff;
+  --popover-foreground: #161b2c;
+  --primary: #f0790e;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f7;
+  --secondary-foreground: #161b2c;
+  --muted: #eef0f7;
+  --muted-foreground: #676f8c;
+  --accent: #f4e9cd;
+  --accent-foreground: #7a5c14;
+  --destructive: #c1352a;
+  --destructive-foreground: #fbeae8;
+  --success: #1e7a5b;
+  --success-foreground: #e2f1ea;
+  --warning: #b4790e;
+  --warning-foreground: #f6e7c7;
+  --border: #dfe2ed;
+  --input: #dfe2ed;
+  --ring: #c99a3b;
+  --chart-1: #c99a3b;
+  --chart-2: #1e7a5b;
+  --chart-3: #3b7dc9;
+  --chart-4: #7c5cc9;
+  --chart-5: #1aa6a6;
+  --radius: 0.5rem;
+  /* Highlight stat cards (e.g. wallet balance) stay solid orange in both themes. */
+  --stat-highlight: #f0790e;
+  --stat-highlight-foreground: #ffffff;
+  /* Sidebar is permanently dark, independent of the light/dark theme toggle. */
+  --sidebar: #171c2e;
+  --sidebar-foreground: #eef0f7;
+  --sidebar-primary: #e0b24e;
+  --sidebar-primary-foreground: #171b2c;
+  --sidebar-accent: #1e2438;
+  --sidebar-accent-foreground: #eef0f7;
+  --sidebar-border: rgba(238, 240, 247, 0.1);
+  --sidebar-ring: #e0b24e;
 }
 
 .dark {
-    --background: #0E1220;
-    --foreground: #EEF0F7;
-    --card: #171C2E;
-    --card-foreground: #EEF0F7;
-    --popover: #171C2E;
-    --popover-foreground: #EEF0F7;
-    --primary: #f0790e;
-    --primary-foreground: #FFFFFF;
-    --secondary: #1E2438;
-    --secondary-foreground: #EEF0F7;
-    --muted: #1E2438;
-    --muted-foreground: #9098B5;
-    --accent: #2C2A1C;
-    --accent-foreground: #E9C876;
-    --destructive: #E2584A;
-    --destructive-foreground: #2B1512;
-    --success: #4FAE83;
-    --success-foreground: #14261D;
-    --warning: #E3B457;
-    --warning-foreground: #3A2E12;
-    --border: rgba(238, 240, 247, 0.10);
-    --input: rgba(238, 240, 247, 0.13);
-    --ring: #E0B24E;
-    --chart-1: #E0B24E;
-    --chart-2: #4FAE83;
-    --chart-3: #5CA6E0;
-    --chart-4: #A78BFA;
-    --chart-5: #2DD4C7;
-    --stat-highlight: #F0790E;
-    --stat-highlight-foreground: #FFFFFF;
-    --sidebar: #171C2E;
-    --sidebar-foreground: #EEF0F7;
-    --sidebar-primary: #E0B24E;
-    --sidebar-primary-foreground: #171B2C;
-    --sidebar-accent: #1E2438;
-    --sidebar-accent-foreground: #EEF0F7;
-    --sidebar-border: rgba(238, 240, 247, 0.10);
-    --sidebar-ring: #E0B24E;
+  --background: #0e1220;
+  --foreground: #eef0f7;
+  --card: #171c2e;
+  --card-foreground: #eef0f7;
+  --popover: #171c2e;
+  --popover-foreground: #eef0f7;
+  --primary: #f0790e;
+  --primary-foreground: #ffffff;
+  --secondary: #1e2438;
+  --secondary-foreground: #eef0f7;
+  --muted: #1e2438;
+  --muted-foreground: #9098b5;
+  --accent: #2c2a1c;
+  --accent-foreground: #e9c876;
+  --destructive: #e2584a;
+  --destructive-foreground: #2b1512;
+  --success: #4fae83;
+  --success-foreground: #14261d;
+  --warning: #e3b457;
+  --warning-foreground: #3a2e12;
+  --border: rgba(238, 240, 247, 0.1);
+  --input: rgba(238, 240, 247, 0.13);
+  --ring: #e0b24e;
+  --chart-1: #e0b24e;
+  --chart-2: #4fae83;
+  --chart-3: #5ca6e0;
+  --chart-4: #a78bfa;
+  --chart-5: #2dd4c7;
+  --stat-highlight: #f0790e;
+  --stat-highlight-foreground: #ffffff;
+  --sidebar: #171c2e;
+  --sidebar-foreground: #eef0f7;
+  --sidebar-primary: #e0b24e;
+  --sidebar-primary-foreground: #171b2c;
+  --sidebar-accent: #1e2438;
+  --sidebar-accent-foreground: #eef0f7;
+  --sidebar-border: rgba(238, 240, 247, 0.1);
+  --sidebar-ring: #e0b24e;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
     @apply bg-background text-foreground;
-    }
+  }
   html {
     font-size: 1rem;
     font-family: var(--font-sans);
-    }
+  }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
-    }
+  }
   .no-scrollbar {
     scrollbar-width: none;
     -ms-overflow-style: none;
-    }
+  }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
-    }
+  }
 }

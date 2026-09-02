@@ -86,12 +86,10 @@ export function SchoolsPage() {
             <div>
               <div className="mb-3 text-sm font-bold tracking-widest text-primary uppercase">For Schools</div>
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-                SMS Platform for Schools in Ghana
+                Keep Your School Community Connected.
               </h1>
               <p className="mt-6 max-w-lg text-base leading-relaxed text-muted-foreground">
-                Reach students, parents, and staff the moment it matters. FlockText helps schools and institutions
-                in Ghana send exam timetables and lecture updates to students, fee reminders to parents, and
-                campus alerts to everyone — no app to download, no portal to check.
+                Reach parents, students, and staff instantly with important announcements, reminders, and updates.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button size="lg" className="h-12 rounded-full px-7 text-base" render={<Link to={isAuthed ? '/app' : '/signup'} />}>

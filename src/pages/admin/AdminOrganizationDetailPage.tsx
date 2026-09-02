@@ -75,11 +75,12 @@ import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
 import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
 
-type OrgTabKey = 'sender-ids' | 'users' | 'danger-zone';
+type OrgTabKey = 'sender-ids' | 'users' | 'api-access' | 'danger-zone';
 
 const ORG_TABS: { key: OrgTabKey; label: string; icon: LucideIcon }[] = [
   { key: 'users', label: 'Users', icon: UsersIcon },
   { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck },
+  { key: 'api-access', label: 'API Access', icon: KeyRound },
   { key: 'danger-zone', label: 'Danger Zone', icon: AlertTriangle },
 ];
 
@@ -416,6 +417,8 @@ export function AdminOrganizationDetailPage() {
     );
   }
 
+  const activeApiKeyCount = org.apiKeys.filter((k) => !k.revoked).length;
+
   const firstSenderIdAt = org.senderIds.map((s) => s.createdAt).sort()[0] ?? null;
   // Sender ID comes before Onboarding here, not after - the wizard's own step order is
   // organization profile -> sender ID -> contacts, and onboardingCompletedAt only flips
@@ -504,6 +507,20 @@ export function AdminOrganizationDetailPage() {
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="text-xs text-muted-foreground">Messages all-time</div>
           <div className="mt-1 text-xl font-extrabold">{org.messagesTotal}</div>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="text-xs text-muted-foreground">API access</div>
+          <div className="mt-1 flex items-center gap-1.5 text-xl font-extrabold">
+            {activeApiKeyCount > 0 ? (
+              <>
+                <KeyRound className="h-4 w-4 text-success" /> {activeApiKeyCount} active key{activeApiKeyCount === 1 ? '' : 's'}
+              </>
+            ) : org.apiKeys.length > 0 ? (
+              <span className="text-base text-muted-foreground">All keys revoked</span>
+            ) : (
+              <span className="text-base text-muted-foreground">Not connected</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -720,6 +737,77 @@ export function AdminOrganizationDetailPage() {
                       <div className="flex flex-col items-center gap-2">
                         <UsersIcon className="h-5 w-5 text-muted-foreground" />
                         No team members yet.
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="api-access">
+          <div className="mb-3 text-sm text-muted-foreground">
+            Keys this organization has generated to connect its own platform to the FlockText API. Raw key values are never
+            stored or shown here — only the label, prefix, and usage recorded at creation.
+          </div>
+
+          <MobileList>
+            {org.apiKeys.map((k) => (
+              <MobileListCard key={k.id}>
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <span className="font-semibold">{k.label}</span>
+                  <Badge variant={k.revoked ? 'destructive' : 'default'}>{k.revoked ? 'Revoked' : 'Active'}</Badge>
+                </div>
+                <MobileListRow label="Key prefix" value={<span className="font-mono text-xs">{k.keyPrefix}…</span>} />
+                <MobileListRow
+                  label="Created"
+                  value={new Date(k.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                />
+                <MobileListRow
+                  label="Last used"
+                  value={k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Never'}
+                />
+              </MobileListCard>
+            ))}
+          </MobileList>
+          {org.apiKeys.length === 0 && <MobileListEmpty>This organization hasn't generated any API keys.</MobileListEmpty>}
+
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary hover:bg-secondary">
+                  <TableHead>Label</TableHead>
+                  <TableHead>Key prefix</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Last used</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {org.apiKeys.map((k) => (
+                  <TableRow key={k.id}>
+                    <TableCell className="font-semibold">{k.label}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{k.keyPrefix}…</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(k.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {k.lastUsedAt
+                        ? new Date(k.lastUsedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                        : 'Never'}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={k.revoked ? 'destructive' : 'default'}>{k.revoked ? 'Revoked' : 'Active'}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {org.apiKeys.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2">
+                        <KeyRound className="h-5 w-5 text-muted-foreground" />
+                        This organization hasn't generated any API keys.
                       </div>
                     </TableCell>
                   </TableRow>

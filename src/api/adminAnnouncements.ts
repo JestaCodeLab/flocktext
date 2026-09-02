@@ -1,10 +1,21 @@
 import { adminApi } from '@/api/adminClient';
-import type { AdminAnnouncement } from '@/types/admin';
+import type { AdminAnnouncement, AnnouncementLinkItem, AnnouncementMediaItem, AnnouncementType } from '@/types/admin';
 
-export interface CreateAnnouncementPayload {
+export interface CreateSmsAnnouncementPayload {
+  type: 'sms';
   title: string;
   message: string;
 }
+
+export interface CreateFeatureAnnouncementPayload {
+  type: 'feature';
+  title: string;
+  subtext: string;
+  media: AnnouncementMediaItem[];
+  links: AnnouncementLinkItem[];
+}
+
+export type CreateAnnouncementPayload = CreateSmsAnnouncementPayload | CreateFeatureAnnouncementPayload;
 
 export interface AdminAnnouncementListResponse {
   announcements: AdminAnnouncement[];
@@ -13,8 +24,8 @@ export interface AdminAnnouncementListResponse {
   limit: number;
 }
 
-export async function fetchAdminAnnouncements(page = 1, limit = 25) {
-  const { data } = await adminApi.get<AdminAnnouncementListResponse>('/admin/announcements', { params: { page, limit } });
+export async function fetchAdminAnnouncements(type?: AnnouncementType, page = 1, limit = 25) {
+  const { data } = await adminApi.get<AdminAnnouncementListResponse>('/admin/announcements', { params: { type, page, limit } });
   return data;
 }
 
