@@ -573,8 +573,8 @@ function TemplatesTab() {
             <div>
               <div className="text-[15px] font-bold">Reusable message templates</div>
               <div className="mt-0.5 text-sm text-muted-foreground">
-                Available to every organization's own compose screen (alongside their custom templates) and in the Send
-                SMS dialog on an organization's details page.
+                For internal ops use only — available in the "Send SMS" dialog on an organization's details page. Not
+                visible to organizations in their own compose screen.
               </div>
             </div>
           </div>
