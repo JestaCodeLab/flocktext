@@ -6,6 +6,7 @@ import { initializeAddonPurchase, verifyAddonPurchase } from '@/api/addons';
 import { apiErrorMessage } from '@/api/client';
 import { addonsQueryKey } from '@/lib/addons';
 import { openPaystackPopup } from '@/lib/paystack';
+import { useHubtelCheckout } from '@/lib/hubtelCheckout';
 
 const FEATURE_BADGES = ['Retention', 'Automation'];
 
@@ -21,6 +22,11 @@ export function BirthdayPaywall({ priceGhs }: { priceGhs: number }) {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const hubtelCheckout = useHubtelCheckout({
+    onSuccess: (reference) => verify.mutate(reference),
+    onCancel: () => toast('Payment cancelled.'),
+  });
+
   const unlock = useMutation({
     mutationFn: () => initializeAddonPurchase('birthday_automation'),
     onSuccess: async (data) => {
@@ -29,9 +35,13 @@ export function BirthdayPaywall({ priceGhs }: { priceGhs: number }) {
         queryClient.invalidateQueries({ queryKey: addonsQueryKey() });
         return;
       }
+      if (data.authorization_url) {
+        hubtelCheckout.open({ reference: data.reference, url: data.authorization_url, displayMode: data.checkoutDisplay ?? 'redirect' });
+        return;
+      }
       try {
         await openPaystackPopup({
-          email: data.email,
+          email: data.email!,
           amountGHS: data.amountGHS,
           reference: data.reference,
           subaccountCode: data.subaccountCode,
@@ -73,6 +83,7 @@ export function BirthdayPaywall({ priceGhs }: { priceGhs: number }) {
         </Button>
         <div className="mt-3 text-xs text-muted-foreground">Standard messaging rates apply.</div>
       </div>
+      {hubtelCheckout.node}
     </div>
   );
 }

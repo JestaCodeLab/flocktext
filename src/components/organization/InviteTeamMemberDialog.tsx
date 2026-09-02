@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { CheckCircle2, RefreshCw, XCircle } from 'lucide-react';
@@ -18,6 +18,7 @@ import { fetchAccounts } from '@/api/memberships';
 import { initializeAddonPurchase, verifyAddonPurchase } from '@/api/addons';
 import { apiErrorMessage } from '@/api/client';
 import { openPaystackPopup } from '@/lib/paystack';
+import { useHubtelCheckout } from '@/lib/hubtelCheckout';
 import { addonsQueryKey, useAddonEntitlements } from '@/lib/addons';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
 import { useEntityLabels } from '@/lib/terminology';
@@ -152,6 +153,26 @@ function SingleAccountInviteForm({
   const busy = invite.isPending || payingForSeat;
   useEffect(() => onBusyChange(busy), [busy, onBusyChange]);
 
+  async function onSeatPurchaseConfirmed(reference: string) {
+    try {
+      await verifyAddonPurchase(reference, organizationId);
+      queryClient.invalidateQueries({ queryKey: addonsQueryKey(organizationId) });
+      invite.mutate();
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Payment went through but the seat could not be confirmed. Try inviting again.'));
+    } finally {
+      setPayingForSeat(false);
+    }
+  }
+
+  const hubtelCheckout = useHubtelCheckout({
+    onSuccess: onSeatPurchaseConfirmed,
+    onCancel: () => {
+      setPayingForSeat(false);
+      toast('Payment cancelled — no one was invited.');
+    },
+  });
+
   // Buy the seat, then invite with it. Ordered this way because the server
   // refuses an invite with no seat available (402), so the purchase has to
   // land first. The form is validated before any of this so a mistyped field
@@ -167,23 +188,22 @@ function SingleAccountInviteForm({
         return;
       }
 
+      if (purchase.authorization_url) {
+        hubtelCheckout.open({
+          reference: purchase.reference,
+          url: purchase.authorization_url,
+          displayMode: purchase.checkoutDisplay ?? 'redirect',
+        });
+        return;
+      }
+
       await openPaystackPopup({
-        email: purchase.email,
+        email: purchase.email!,
         amountGHS: purchase.amountGHS,
         reference: purchase.reference,
         subaccountCode: purchase.subaccountCode,
         metadata: { organizationId: purchase.organizationId, addonKey: purchase.addonKey, kind: 'addon' },
-        onSuccess: async (reference) => {
-          try {
-            await verifyAddonPurchase(reference, organizationId);
-            queryClient.invalidateQueries({ queryKey: addonsQueryKey(organizationId) });
-            invite.mutate();
-          } catch (err) {
-            toast.error(apiErrorMessage(err, 'Payment went through but the seat could not be confirmed. Try inviting again.'));
-          } finally {
-            setPayingForSeat(false);
-          }
-        },
+        onSuccess: onSeatPurchaseConfirmed,
         onClose: () => {
           setPayingForSeat(false);
           toast('Payment cancelled — no one was invited.');
@@ -259,6 +279,7 @@ function SingleAccountInviteForm({
           {submitLabel}
         </Button>
       </DialogFooter>
+      {hubtelCheckout.node}
     </>
   );
 }
@@ -343,6 +364,44 @@ function MultiAccountInviteForm({
   const busy = submit.isPending || retryingOrgId !== null;
   useEffect(() => onBusyChange(busy), [busy, onBusyChange]);
 
+  async function completeInviteForOrg(orgId: string) {
+    try {
+      const member = await inviteTeamMember({ name, email, phone: normalizePhone(phone), role }, orgId);
+      invalidateForOrg(orgId);
+      setResults((prev) =>
+        prev?.map((r) => (r.organizationId === orgId ? { organizationId: orgId, status: 'invited', member } : r)) ?? prev
+      );
+      toast.success(`Invited ${name} into ${churchNameFor(orgId)}.`);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Payment went through but the invite could not be sent. Try again.'));
+    } finally {
+      setRetryingOrgId(null);
+    }
+  }
+
+  async function onSeatPurchaseConfirmed(reference: string, orgId: string) {
+    try {
+      await verifyAddonPurchase(reference, orgId);
+    } catch (err) {
+      toast.error(apiErrorMessage(err, 'Payment went through but the seat could not be confirmed. Try inviting again.'));
+      setRetryingOrgId(null);
+      return;
+    }
+    await completeInviteForOrg(orgId);
+  }
+
+  // There's only ever one retry in flight at a time (tracked by retryingOrgId), so it's
+  // safe for this top-level callback to close over that state rather than needing a
+  // per-call ref - by the time Hubtel's dialog resolves, retryingOrgId still holds the
+  // account this specific checkout was opened for.
+  const hubtelCheckout = useHubtelCheckout({
+    onSuccess: (reference) => retryingOrgId && onSeatPurchaseConfirmed(reference, retryingOrgId),
+    onCancel: () => {
+      setRetryingOrgId(null);
+      toast('Payment cancelled.');
+    },
+  });
+
   // Same purchase-then-invite shape as the single-account flow, but scoped to
   // one account from the results list and via the single-account invite
   // endpoint - retrying the whole batch would re-attempt accounts that already
@@ -350,45 +409,30 @@ function MultiAccountInviteForm({
   async function retrySeatPurchase(orgId: string) {
     setRetryingOrgId(orgId);
 
-    async function completeInvite() {
-      try {
-        const member = await inviteTeamMember({ name, email, phone: normalizePhone(phone), role }, orgId);
-        invalidateForOrg(orgId);
-        setResults((prev) =>
-          prev?.map((r) => (r.organizationId === orgId ? { organizationId: orgId, status: 'invited', member } : r)) ?? prev
-        );
-        toast.success(`Invited ${name} into ${churchNameFor(orgId)}.`);
-      } catch (err) {
-        toast.error(apiErrorMessage(err, 'Payment went through but the invite could not be sent. Try again.'));
-      } finally {
-        setRetryingOrgId(null);
-      }
-    }
-
     try {
       const purchase = await initializeAddonPurchase('extra_team_seat', orgId);
 
       if (purchase.mode === 'stub') {
-        await completeInvite();
+        await completeInviteForOrg(orgId);
+        return;
+      }
+
+      if (purchase.authorization_url) {
+        hubtelCheckout.open({
+          reference: purchase.reference,
+          url: purchase.authorization_url,
+          displayMode: purchase.checkoutDisplay ?? 'redirect',
+        });
         return;
       }
 
       await openPaystackPopup({
-        email: purchase.email,
+        email: purchase.email!,
         amountGHS: purchase.amountGHS,
         reference: purchase.reference,
         subaccountCode: purchase.subaccountCode,
         metadata: { organizationId: purchase.organizationId, addonKey: purchase.addonKey, kind: 'addon' },
-        onSuccess: async (reference) => {
-          try {
-            await verifyAddonPurchase(reference, orgId);
-          } catch (err) {
-            toast.error(apiErrorMessage(err, 'Payment went through but the seat could not be confirmed. Try inviting again.'));
-            setRetryingOrgId(null);
-            return;
-          }
-          await completeInvite();
-        },
+        onSuccess: (reference) => onSeatPurchaseConfirmed(reference, orgId),
         onClose: () => {
           setRetryingOrgId(null);
           toast('Payment cancelled.');
@@ -452,6 +496,7 @@ function MultiAccountInviteForm({
             Done
           </Button>
         </DialogFooter>
+        {hubtelCheckout.node}
       </>
     );
   }

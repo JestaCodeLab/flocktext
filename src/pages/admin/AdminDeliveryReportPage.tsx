@@ -243,6 +243,9 @@ export function AdminDeliveryReportPage() {
     queryKey: ['admin-message-recipients', viewingId],
     queryFn: () => fetchAdminMessageRecipients(viewingId!),
     enabled: !!viewingId,
+    // Keep polling while delivery is still resolving so the breakdown updates live -
+    // same as MessageReportPage/AdminOrgMessageReportPage's single-message detail views.
+    refetchInterval: (query) => ((query.state.data?.stats.pending ?? 0) > 0 ? 3000 : false),
   });
 
   // The row list and this modal are fetched independently, so if delivery status

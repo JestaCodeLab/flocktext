@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X } from 'lucide-react';
+import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X, Tag, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { FeatureAnnouncementModal } from '@/components/announcements/FeatureAnnouncementModal';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
@@ -111,11 +112,30 @@ export function ComposePage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAddSenderId, setShowAddSenderId] = useState(false);
   const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
+  const [showSenderIdIntro, setShowSenderIdIntro] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setContactSearch(contactSearchInput.trim()), 300);
     return () => clearTimeout(t);
   }, [contactSearchInput]);
+
+  const senderIdIntroKey = session ? `flocktext.seenSenderIdIntro.${session.organization.id}` : null;
+
+  // Shown once to orgs that have never registered a sender ID at all - not
+  // orgs with a pending/rejected one, since they've already been through this.
+  // Persisted per-org (not per-user) since it's explaining an org-level concept.
+  useEffect(() => {
+    if (!senderIdIntroKey) return;
+    if (senderIds.length > 0) return;
+    if (localStorage.getItem(senderIdIntroKey)) return;
+    setShowSenderIdIntro(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [senderIdIntroKey]);
+
+  function dismissSenderIdIntro() {
+    if (senderIdIntroKey) localStorage.setItem(senderIdIntroKey, '1');
+    setShowSenderIdIntro(false);
+  }
 
   const groups = useQuery({ queryKey: ['groups'], queryFn: fetchGroups });
   const templates = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates });
@@ -967,6 +987,29 @@ export function ComposePage() {
       </Dialog>
 
       <AddSenderIdDialog open={showAddSenderId} onOpenChange={setShowAddSenderId} />
+
+      <FeatureAnnouncementModal
+        open={showSenderIdIntro}
+        onOpenChange={(open) => {
+          if (!open) dismissSenderIdIntro();
+        }}
+        title="Send from your own name, not ours"
+        subtext={`Register a Sender ID and every text your ${entity.plural} get shows your organization's name instead of "FLOCKTXT". It's free, and most are approved within a business day.`}
+        slides={[
+          { kind: 'icon', icon: Tag },
+          { kind: 'icon', icon: ShieldCheck },
+        ]}
+        links={[
+          { label: 'Maybe later', variant: 'outline', onClick: dismissSenderIdIntro },
+          {
+            label: 'Add Sender ID',
+            onClick: () => {
+              dismissSenderIdIntro();
+              setShowAddSenderId(true);
+            },
+          },
+        ]}
+      />
     </div>
   );
 }

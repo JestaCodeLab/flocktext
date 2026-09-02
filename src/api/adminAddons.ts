@@ -7,8 +7,20 @@ export interface AddonUpdatePayload {
   active?: boolean;
 }
 
+export interface AddonCreatePayload {
+  name: string;
+  description?: string;
+  ghs: number;
+  active?: boolean;
+}
+
 export async function fetchAdminAddons() {
   const { data } = await adminApi.get<AdminAddon[]>('/admin/addons');
+  return data;
+}
+
+export async function createAddon(payload: AddonCreatePayload) {
+  const { data } = await adminApi.post<AdminAddon>('/admin/addons', payload);
   return data;
 }
 
