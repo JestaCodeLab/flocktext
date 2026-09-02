@@ -45,6 +45,23 @@ export interface AdminSenderId {
   hubtelConfigured: boolean;
 }
 
+export interface AdminTemplate {
+  id: string;
+  name: string;
+  body: string;
+  preview: string;
+  createdAt: string;
+}
+
+export interface AdminApiKey {
+  id: string;
+  label: string;
+  keyPrefix: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+  revoked: boolean;
+}
+
 export interface AdminOrgDetail {
   id: string;
   churchName: string;
@@ -61,6 +78,7 @@ export interface AdminOrgDetail {
   deliveredThisMonth: number;
   onboardingCompletedAt: string | null;
   firstMessageSentAt: string | null;
+  apiKeys: AdminApiKey[];
 }
 
 export interface AdminPackage {
@@ -99,11 +117,26 @@ export interface AdminAddon {
 }
 
 export type AnnouncementStatus = 'queued' | 'sending' | 'sent' | 'failed';
+export type AnnouncementType = 'sms' | 'feature';
+
+export interface AnnouncementMediaItem {
+  kind: 'image' | 'video';
+  url: string;
+}
+
+export interface AnnouncementLinkItem {
+  label: string;
+  url: string;
+}
 
 export interface AdminAnnouncement {
   id: string;
+  type: AnnouncementType;
   title: string;
   message: string;
+  subtext: string;
+  media: AnnouncementMediaItem[];
+  links: AnnouncementLinkItem[];
   status: AnnouncementStatus;
   createdBy: { id: string; name: string } | null;
   orgsTargeted: number;

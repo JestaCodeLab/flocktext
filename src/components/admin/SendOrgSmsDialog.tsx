@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sendOrgSms } from '@/api/adminOrganizations';
+import { fetchAdminTemplates } from '@/api/adminTemplates';
 import { apiErrorMessage } from '@/api/client';
 import type { AdminOrgUser } from '@/types/admin';
 
@@ -27,9 +30,13 @@ export function SendOrgSmsDialog({
 }) {
   const queryClient = useQueryClient();
   const [body, setBody] = useState('');
+  const [templateId, setTemplateId] = useState('');
+
+  const templates = useQuery({ queryKey: ['admin-templates'], queryFn: fetchAdminTemplates, enabled: open });
 
   function reset() {
     setBody('');
+    setTemplateId('');
   }
 
   const send = useMutation({
@@ -60,6 +67,31 @@ export function SendOrgSmsDialog({
             Sent to {admins.length} admin{admins.length === 1 ? '' : 's'} — {admins.map((a) => a.name).join(', ') || '—'} — using
             FlockText's platform sender ID. Not billed against the organization's wallet.
           </div>
+          {templates.data && templates.data.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Start from a template</Label>
+              <Select
+                value={templateId}
+                onValueChange={(id) => {
+                  setTemplateId(id ?? '');
+                  const tpl = templates.data?.find((t) => t.id === id);
+                  if (tpl) setBody(tpl.body);
+                }}
+                items={templates.data.map((t) => ({ value: t.id, label: t.name }))}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="— Start from scratch —" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.data.map((t) => (
+                    <SelectItem key={t.id} className="cursor-pointer" value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Textarea
               placeholder="Type your message…"
