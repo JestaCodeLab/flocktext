@@ -186,12 +186,13 @@ export interface AdminDashboardSummary {
   messagesSent: number;
   messagesDelivered: number;
   pendingSenderIdCount: number;
+  totalTransactions: number;
   topOrganizations: AdminTopOrganization[];
 }
 
 export interface AdminDashboardChartBucket {
+  date: string;
   label: string;
-  newOrganizations: number;
   messagesSent: number;
   creditsUsed: number;
 }
