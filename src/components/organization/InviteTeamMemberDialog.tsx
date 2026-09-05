@@ -143,10 +143,6 @@ function SingleAccountInviteForm({
       queryClient.invalidateQueries({ queryKey: addonsQueryKey(organizationId) });
       onDone();
     },
-    // Deliberately leaves the dialog open with the form still filled. If this
-    // fired after a seat purchase, the seat is already on the account - the
-    // person just needs to fix whatever the server rejected and submit again,
-    // and the retry won't charge a second time because a seat is now free.
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 

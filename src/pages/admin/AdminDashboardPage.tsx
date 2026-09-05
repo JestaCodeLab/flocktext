@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Building2, Send, BadgeCheck, Radio, LifeBuoy, BarChart3 } from 'lucide-react';
+import { Building2, Send, BadgeCheck, Radio, Receipt, BarChart3 } from 'lucide-react';
 import { fetchAdminDashboardSummary, fetchAdminDashboardChart } from '@/api/adminDashboard';
-import { fetchBmsCredit, fetchHubtelWalletBalance } from '@/api/adminPackages';
+import { fetchBmsCredit } from '@/api/adminPackages';
 import { StatCard } from '@/components/admin/StatCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -37,26 +37,27 @@ function ChartEmptyState() {
 }
 
 export function AdminDashboardPage() {
+  // Drives the stat cards and the "Top organizations" chart/table below.
   const [range, setRange] = useState<DateRangeParams>({ preset: 'this_month' });
+  // Independent of `range` - the Platform SMS volume chart filters on its own,
+  // since it's plotting a time series rather than a point-in-time leaderboard.
+  const [volumeRange, setVolumeRange] = useState<DateRangeParams>({ preset: 'this_month' });
+
   const summary = useQuery({ queryKey: ['admin-dashboard-summary', range], queryFn: () => fetchAdminDashboardSummary(range) });
   const bmsCredit = useQuery({ queryKey: ['admin-bms-credit'], queryFn: fetchBmsCredit });
-  const hubtelWallet = useQuery({ queryKey: ['admin-hubtel-wallet'], queryFn: fetchHubtelWalletBalance });
-  const chart = useQuery({ queryKey: ['admin-dashboard-chart'], queryFn: fetchAdminDashboardChart });
+  const chart = useQuery({ queryKey: ['admin-dashboard-chart', volumeRange], queryFn: () => fetchAdminDashboardChart(volumeRange) });
   const d = summary.data;
   const buckets = chart.data?.buckets ?? [];
   const topOrgs = d?.topOrganizations ?? [];
 
-  const hasGrowthData = buckets.some((b) => b.newOrganizations > 0);
+  const hasTopOrgsData = topOrgs.length > 0;
   const hasVolumeData = buckets.some((b) => b.messagesSent > 0 || b.creditsUsed > 0);
 
   return (
     <div>
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-1 text-[26px] font-extrabold">Platform Overview</div>
-          <div className="text-sm text-muted-foreground">Growth and usage across every organization on FlockText.</div>
-        </div>
-        <DateRangeFilter range={range} onChange={setRange} />
+      <div className="mb-6">
+        <div className="mb-1 text-[26px] font-extrabold">Platform Overview</div>
+        <div className="text-sm text-muted-foreground">Growth and usage across every organization on FlockText.</div>
       </div>
 
       {summary.isLoading ? (
@@ -73,12 +74,7 @@ export function AdminDashboardPage() {
             value={bmsCredit.data?.balance != null ? bmsCredit.data.balance.toLocaleString() : '—'}
             tone={bmsCredit.data?.balance == null ? 'warning' : 'default'}
           />
-          <StatCard
-            icon={LifeBuoy}
-            label="Hubtel wallet balance"
-            value={hubtelWallet.data ? hubtelWallet.data.balance.toLocaleString() : '—'}
-            tone={hubtelWallet.data && hubtelWallet.data.balance <= 0 ? 'warning' : 'default'}
-          />
+          <StatCard icon={Receipt} label="Total transactions" value={(d?.totalTransactions ?? 0).toLocaleString()} sub={rangeLabel(range)} />
           <StatCard icon={Building2} label="Total organizations" value={d?.totalOrganizations ?? 0} accent="blue" />
           <StatCard icon={Send} label="Messages sent" value={(d?.messagesSent ?? 0).toLocaleString()} sub={rangeLabel(range)} accent="violet" />
           <StatCard icon={BadgeCheck} label="Sender IDs awaiting review" value={d?.pendingSenderIdCount ?? 0} tone={d?.pendingSenderIdCount ? 'warning' : 'default'} />
@@ -87,31 +83,47 @@ export function AdminDashboardPage() {
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-5">
-            <div className="text-[16px] font-bold">Organization growth</div>
-            <div className="text-[13px] text-muted-foreground">New organizations per month, trailing 12 months</div>
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-2.5">
+            <div>
+              <div className="text-[16px] font-bold">Top 10 organizations</div>
+              <div className="text-[13px] text-muted-foreground">By messages sent</div>
+            </div>
+            <DateRangeFilter range={range} onChange={setRange} size="sm" />
           </div>
-          {chart.isLoading ? (
-            <Skeleton className="h-[260px] w-full rounded-lg" />
-          ) : !hasGrowthData ? (
+          {summary.isLoading ? (
+            <Skeleton className="h-[300px] w-full rounded-lg" />
+          ) : !hasTopOrgsData ? (
             <ChartEmptyState />
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={buckets} barGap={4}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topOrgs} barGap={4} margin={{ bottom: 24 }}>
                 <CartesianGrid vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} />
+                <XAxis
+                  dataKey="churchName"
+                  tickLine={false}
+                  axisLine={false}
+                  interval={0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={50}
+                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                  tickFormatter={(value: string) => (value.length > 12 ? `${value.slice(0, 12)}…` : value)}
+                />
                 <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
                 <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
-                <Bar dataKey="newOrganizations" name="New organizations" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} maxBarSize={28} />
+                <Bar dataKey="messagesSent" name="Messages sent" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={36} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-5">
-            <div className="text-[16px] font-bold">Platform SMS volume</div>
-            <div className="text-[13px] text-muted-foreground">Messages sent and credits used, trailing 12 months</div>
+          <div className="mb-5 flex flex-wrap items-start justify-between gap-2.5">
+            <div>
+              <div className="text-[16px] font-bold">Platform SMS volume</div>
+              <div className="text-[13px] text-muted-foreground">Messages sent and credits used</div>
+            </div>
+            <DateRangeFilter range={volumeRange} onChange={setVolumeRange} size="sm" />
           </div>
           {chart.isLoading ? (
             <Skeleton className="h-[260px] w-full rounded-lg" />

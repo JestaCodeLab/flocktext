@@ -7,7 +7,7 @@ export async function fetchAdminDashboardSummary(range: DateRangeParams) {
   return data;
 }
 
-export async function fetchAdminDashboardChart() {
-  const { data } = await adminApi.get<AdminDashboardChart>('/admin/dashboard/chart');
+export async function fetchAdminDashboardChart(range: DateRangeParams) {
+  const { data } = await adminApi.get<AdminDashboardChart>('/admin/dashboard/chart', { params: range });
   return data;
 }
