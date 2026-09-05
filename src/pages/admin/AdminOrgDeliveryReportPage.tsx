@@ -344,6 +344,12 @@ export function AdminOrgDeliveryReportPage() {
   const queryClient = useQueryClient();
 
   const [range, setRange] = useState<DateRangeParams>({ preset: 'this_month' });
+  // Independent of `range` - the sent-message tabs filter on createdAt (a past
+  // event, so "this month" sensibly means "this month so far"), but scheduled
+  // sends filter on scheduleDate, which is inherently forward-looking. Reusing
+  // `range`'s this-month-so-far default here hid anything scheduled later in
+  // the month or beyond, so this defaults to all_time instead.
+  const [scheduledRange, setScheduledRange] = useState<DateRangeParams>({ preset: 'all_time' });
   const [activeTab, setActiveTab] = useState<AdminOrgMessageStatus | 'scheduled'>('scheduled');
   const [scheduledPage, setScheduledPage] = useState(1);
   const [deliveredPage, setDeliveredPage] = useState(1);
@@ -356,9 +362,12 @@ export function AdminOrgDeliveryReportPage() {
   const [isExporting, setIsExporting] = useState(false);
 
   // A new filter changes the result set, so a page number from the old one may no
-  // longer exist - snap every tab back to page 1 whenever the range changes.
+  // longer exist - snap every tab back to page 1 whenever its range changes.
   useEffect(() => {
     setScheduledPage(1);
+  }, [scheduledRange]);
+
+  useEffect(() => {
     setDeliveredPage(1);
     setPendingPage(1);
     setFailedPage(1);
@@ -380,8 +389,8 @@ export function AdminOrgDeliveryReportPage() {
   });
 
   const scheduled = useQuery({
-    queryKey: ['admin-org-scheduled-messages', orgId, range, scheduledPage],
-    queryFn: () => fetchAdminOrgScheduledMessages(orgId, range, { page: scheduledPage, pageSize: PAGE_SIZE }),
+    queryKey: ['admin-org-scheduled-messages', orgId, scheduledRange, scheduledPage],
+    queryFn: () => fetchAdminOrgScheduledMessages(orgId, scheduledRange, { page: scheduledPage, pageSize: PAGE_SIZE }),
   });
   const delivered = useQuery({
     queryKey: ['admin-org-messages', orgId, 'delivered', range, deliveredPage],
@@ -524,7 +533,14 @@ export function AdminOrgDeliveryReportPage() {
             <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
             Refresh
           </Button>
-          <DateRangeFilter range={range} onChange={setRange} size="sm" />
+          {/* Scheduled sends filter on scheduleDate (forward-looking, defaults to
+              all_time) instead of the createdAt-based `range` every other tab
+              uses - swap which state this filter controls based on the active tab. */}
+          {activeTab === 'scheduled' ? (
+            <DateRangeFilter range={scheduledRange} onChange={setScheduledRange} includeAllTime size="sm" />
+          ) : (
+            <DateRangeFilter range={range} onChange={setRange} size="sm" />
+          )}
         </div>
       </div>
 
