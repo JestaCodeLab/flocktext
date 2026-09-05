@@ -91,25 +91,27 @@ export function AdminDashboardPage() {
             <DateRangeFilter range={range} onChange={setRange} size="sm" />
           </div>
           {summary.isLoading ? (
-            <Skeleton className="h-[320px] w-full rounded-lg" />
+            <Skeleton className="h-[300px] w-full rounded-lg" />
           ) : !hasTopOrgsData ? (
             <ChartEmptyState />
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(220, topOrgs.length * 32)}>
-              <BarChart data={topOrgs} layout="vertical" barGap={4} margin={{ left: 8 }}>
-                <CartesianGrid horizontal={false} stroke="var(--color-border)" />
-                <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
-                <YAxis
-                  type="category"
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topOrgs} barGap={4} margin={{ bottom: 24 }}>
+                <CartesianGrid vertical={false} stroke="var(--color-border)" />
+                <XAxis
                   dataKey="churchName"
-                  width={140}
                   tickLine={false}
                   axisLine={false}
+                  interval={0}
+                  angle={-30}
+                  textAnchor="end"
+                  height={50}
                   tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
-                  tickFormatter={(value: string) => (value.length > 16 ? `${value.slice(0, 16)}…` : value)}
+                  tickFormatter={(value: string) => (value.length > 12 ? `${value.slice(0, 12)}…` : value)}
                 />
+                <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
                 <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
-                <Bar dataKey="messagesSent" name="Messages sent" fill="var(--color-chart-1)" radius={[0, 4, 4, 0]} maxBarSize={18} />
+                <Bar dataKey="messagesSent" name="Messages sent" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={36} />
               </BarChart>
             </ResponsiveContainer>
           )}
