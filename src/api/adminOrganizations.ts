@@ -1,15 +1,32 @@
 import { adminApi } from '@/api/adminClient';
-import type { AdminOrgDetail, AdminOrgListItem, AdminOrgUser } from '@/types/admin';
+import type { AdminOrgDetail, AdminOrgFunnelSummary, AdminOrgListItem, AdminOrgUser, OrgStage, OrgSubStage } from '@/types/admin';
+import type { DateRangeParams } from '@/lib/dateRange';
 
 export interface AdminOrgListResponse {
   organizations: AdminOrgListItem[];
   total: number;
   page: number;
-  limit: number;
+  pageSize: number;
 }
 
-export async function fetchAdminOrganizations(params?: { search?: string; status?: string; page?: number }) {
+export type AdminOrgListParams = {
+  search?: string;
+  status?: string;
+  stage?: OrgStage;
+  subStage?: OrgSubStage;
+  page?: number;
+  pageSize?: number;
+} & Partial<DateRangeParams>;
+
+export async function fetchAdminOrganizations(params?: AdminOrgListParams) {
   const { data } = await adminApi.get<AdminOrgListResponse>('/admin/organizations', { params });
+  return data;
+}
+
+// Stage counts for the lifecycle funnel's stat cards - same cohort date-range
+// semantics as fetchAdminOrganizations (which registrations to look at).
+export async function fetchAdminOrgFunnelSummary(range: DateRangeParams) {
+  const { data } = await adminApi.get<AdminOrgFunnelSummary>('/admin/organizations/funnel-summary', { params: range });
   return data;
 }
 
@@ -82,6 +99,14 @@ export async function deleteOrganizationUser(id: string, userId: string) {
 // team member with isVerified: false. Sends a fresh code + resume link over SMS only.
 export async function sendVerificationReminder(id: string, userId: string) {
   const { data } = await adminApi.post<{ sent: true }>(`/admin/organizations/${id}/users/${userId}/send-verification-reminder`);
+  return data;
+}
+
+// Admin override for someone stuck on OTP verification that sales/support has already
+// confirmed by phone - skips the code-entry flow but still seeds the org's default
+// group/free-trial credit, same as a normal first verification.
+export async function manuallyVerifyUser(id: string, userId: string) {
+  const { data } = await adminApi.post<{ isVerified: true; verifiedAt: string }>(`/admin/organizations/${id}/users/${userId}/verify`);
   return data;
 }
 

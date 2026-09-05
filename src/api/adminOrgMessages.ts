@@ -1,6 +1,6 @@
 import { adminApi } from '@/api/adminClient';
 import type { DateRangeParams } from '@/lib/dateRange';
-import type { MessageDetail } from '@/api/messages';
+import type { MessageDetail, Paginated, ScheduledMessage } from '@/api/messages';
 
 export type AdminOrgMessageStatus = 'delivered' | 'pending' | 'failed' | 'rejected';
 
@@ -11,6 +11,7 @@ export interface AdminOrgMessagesSummary {
   pending: number;
   deliveryRate: number;
   creditsUsed: number;
+  scheduledCount: number;
 }
 
 export async function fetchAdminOrgMessagesSummary(orgId: string, range: DateRangeParams) {
@@ -71,6 +72,17 @@ export async function fetchAdminOrgMessages(
 ) {
   const { data } = await adminApi.get<AdminOrgMessageListResponse>(`/admin/organizations/${orgId}/messages`, {
     params: { status, ...range, ...page },
+  });
+  return data;
+}
+
+export async function fetchAdminOrgScheduledMessages(
+  orgId: string,
+  range: DateRangeParams,
+  page: { page: number; pageSize: number }
+) {
+  const { data } = await adminApi.get<Paginated<ScheduledMessage>>(`/admin/organizations/${orgId}/messages/scheduled`, {
+    params: { ...range, ...page },
   });
   return data;
 }

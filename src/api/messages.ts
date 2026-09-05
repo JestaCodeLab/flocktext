@@ -75,6 +75,10 @@ export interface ScheduledMessage {
   contactCount: number;
   phone?: string;
   recipientName?: string;
+  // Only populated by the admin console's scheduled-messages endpoint (see
+  // adminOrgMessagesController.serializeScheduled) - the org's own self-service
+  // /messages/scheduled list doesn't need it since it's always the org's own IDs.
+  senderId?: string;
   sendMode: SendMode;
   scheduleDate: string;
   recurringFreq?: RecurringFreq;

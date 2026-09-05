@@ -17,6 +17,8 @@ import {
   Clock,
   CreditCard,
   TrendingUp,
+  CalendarClock,
+  Repeat,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -33,12 +35,14 @@ import {
   fetchAdminOrgMessagesSummary,
   fetchAdminOrgMessagesChart,
   fetchAdminOrgMessages,
+  fetchAdminOrgScheduledMessages,
   fetchAdminOrgMessageRecipients,
   fetchAdminOrgMessagesExport,
   resendPendingMessage,
   type AdminOrgMessageStatus,
   type AdminOrgMessageSummary,
 } from '@/api/adminOrgMessages';
+import type { ScheduledMessage } from '@/api/messages';
 import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
 import type { DateRangeParams } from '@/lib/dateRange';
@@ -55,6 +59,30 @@ function messageStatusBadge(stats: AdminOrgMessageSummary['stats']) {
   if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
   if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
   return { variant: 'success' as const, label: 'Delivered', className: '' };
+}
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function ordinal(n: number) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// Mirrors ReportsPage's version on the org self-service side (same fields, same
+// wording) - kept local since that file doesn't export it.
+function scheduledRecurringSummary(m: ScheduledMessage) {
+  if (m.recurringFreq === 'daily') return `Daily at ${m.recurringTime}`;
+  if (m.recurringFreq === 'weekly') return `Weekly on ${WEEKDAYS[m.recurringDayOfWeek ?? 0]} at ${m.recurringTime}`;
+  return `Monthly on the ${ordinal(m.recurringDayOfMonth ?? 1)} at ${m.recurringTime}`;
+}
+
+function scheduledRecipientSummary(m: ScheduledMessage) {
+  if (m.recipientType === 'single') return m.recipientName ? `${m.recipientName} (${m.phone})` : m.phone || '—';
+  if (m.recipientType === 'all') return 'All contacts';
+  if (m.recipientType === 'selection') return `${m.contactCount} selected contact${m.contactCount === 1 ? '' : 's'}`;
+  if (m.recipientType === 'list') return `${m.contactCount} recipient${m.contactCount === 1 ? '' : 's'}`;
+  return m.groups.map((g) => g.name).join(', ') || '—';
 }
 
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
@@ -226,6 +254,89 @@ function MessagesTable({
   );
 }
 
+// Read-only - unlike ReportsPage's own ScheduledTable (which lets an org cancel
+// its own send), there's no cancel action here since a superadmin acting on
+// another organization's not-yet-sent message is a bigger call than just
+// surfacing it for visibility, which is all this tab is for.
+function ScheduledMessagesTable({ rows, onView }: { rows: ScheduledMessage[]; onView: (row: ScheduledMessage) => void }) {
+  return (
+    <>
+      <MobileList>
+        {rows.map((m) => (
+          <MobileListCard key={m.id} onClick={() => onView(m)}>
+            <div className="mb-2 flex items-start justify-between gap-2">
+              <div className="min-w-0 text-xs text-muted-foreground">
+                {new Date(m.scheduleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              </div>
+              <Badge variant="secondary" className="gap-1">
+                {m.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                {m.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
+              </Badge>
+            </div>
+            <MobileListRow label="Message" value={m.body} />
+            <MobileListRow label="Recipients" value={scheduledRecipientSummary(m)} />
+            <MobileListRow label="Sender ID" value={m.senderId} />
+          </MobileListCard>
+        ))}
+      </MobileList>
+      {rows.length === 0 && <MobileListEmpty>No scheduled or recurring sends here.</MobileListEmpty>}
+
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-secondary hover:bg-secondary">
+              <TableHead>Next send</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Recipients</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Sender ID</TableHead>
+              <TableHead className="w-0">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>
+                  <div className="font-medium text-foreground">
+                    {new Date(m.scheduleDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(m.scheduleDate).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary" className="gap-1">
+                    {m.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                    {m.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
+                  </Badge>
+                </TableCell>
+                <TableCell className="max-w-[180px] truncate text-muted-foreground">{scheduledRecipientSummary(m)}</TableCell>
+                <TableCell className="max-w-[260px] truncate text-muted-foreground">{m.body}</TableCell>
+                <TableCell className="text-muted-foreground">{m.senderId}</TableCell>
+                <TableCell>
+                  <Button size="icon-sm" variant="ghost" title="View details" onClick={() => onView(m)}>
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {rows.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="py-10 text-center text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                    No scheduled or recurring sends here.
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </>
+  );
+}
+
 export function AdminOrgDeliveryReportPage() {
   const { id } = useParams<{ id: string }>();
   const orgId = id!;
@@ -233,18 +344,21 @@ export function AdminOrgDeliveryReportPage() {
   const queryClient = useQueryClient();
 
   const [range, setRange] = useState<DateRangeParams>({ preset: 'this_month' });
-  const [activeTab, setActiveTab] = useState<AdminOrgMessageStatus>('delivered');
+  const [activeTab, setActiveTab] = useState<AdminOrgMessageStatus | 'scheduled'>('scheduled');
+  const [scheduledPage, setScheduledPage] = useState(1);
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [pendingPage, setPendingPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
   const [rejectedPage, setRejectedPage] = useState(1);
   const [viewingId, setViewingId] = useState<string | null>(null);
+  const [viewingScheduled, setViewingScheduled] = useState<ScheduledMessage | null>(null);
   const [resendConfirmId, setResendConfirmId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   // A new filter changes the result set, so a page number from the old one may no
   // longer exist - snap every tab back to page 1 whenever the range changes.
   useEffect(() => {
+    setScheduledPage(1);
     setDeliveredPage(1);
     setPendingPage(1);
     setFailedPage(1);
@@ -265,6 +379,10 @@ export function AdminOrgDeliveryReportPage() {
     queryFn: () => fetchAdminOrgMessagesChart(orgId, range),
   });
 
+  const scheduled = useQuery({
+    queryKey: ['admin-org-scheduled-messages', orgId, range, scheduledPage],
+    queryFn: () => fetchAdminOrgScheduledMessages(orgId, range, { page: scheduledPage, pageSize: PAGE_SIZE }),
+  });
   const delivered = useQuery({
     queryKey: ['admin-org-messages', orgId, 'delivered', range, deliveredPage],
     queryFn: () => fetchAdminOrgMessages(orgId, 'delivered', range, { page: deliveredPage, pageSize: PAGE_SIZE }),
@@ -331,6 +449,9 @@ export function AdminOrgDeliveryReportPage() {
   }
 
   async function exportFiltered() {
+    // Scheduled sends have no delivered/failed/pending/rejected breakdown to
+    // export - the button is hidden for this tab (see the Export Button below).
+    if (activeTab === 'scheduled') return;
     setIsExporting(true);
     try {
       const data = await fetchAdminOrgMessagesExport(orgId, activeTab, range);
@@ -359,7 +480,13 @@ export function AdminOrgDeliveryReportPage() {
   }
 
   const isFetching =
-    delivered.isFetching || pending.isFetching || failed.isFetching || rejected.isFetching || summary.isFetching || chart.isFetching;
+    scheduled.isFetching ||
+    delivered.isFetching ||
+    pending.isFetching ||
+    failed.isFetching ||
+    rejected.isFetching ||
+    summary.isFetching ||
+    chart.isFetching;
   const buckets = chart.data?.buckets ?? [];
   const detailStatus = detail.data ? messageStatusBadge(detail.data.stats) : null;
 
@@ -387,6 +514,7 @@ export function AdminOrgDeliveryReportPage() {
             onClick={() => {
               summary.refetch();
               chart.refetch();
+              scheduled.refetch();
               delivered.refetch();
               pending.refetch();
               failed.refetch();
@@ -401,13 +529,14 @@ export function AdminOrgDeliveryReportPage() {
       </div>
 
       {summary.isLoading ? (
-        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-4 lg:grid-cols-7">
+          {Array.from({ length: 7 }).map((_, i) => (
             <Skeleton key={i} className="h-[68px] rounded-xl" />
           ))}
         </div>
       ) : (
-        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="mb-6 grid grid-cols-2 gap-3.5 sm:grid-cols-4 lg:grid-cols-7">
+          <MiniStatCard icon={CalendarClock} label="Scheduled" value={summary.data?.scheduledCount ?? 0} tint="blue" />
           <MiniStatCard icon={Send} label="Sent" value={summary.data?.messagesSent ?? 0} tint="muted" />
           <MiniStatCard icon={CheckCircle2} label="Delivered" value={summary.data?.delivered ?? 0} tint="success" />
           <MiniStatCard icon={XCircle} label="Failed" value={summary.data?.failed ?? 0} tint="destructive" />
@@ -445,6 +574,16 @@ export function AdminOrgDeliveryReportPage() {
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2.5">
         <div className="no-scrollbar flex w-full max-w-full overflow-x-auto rounded-lg border border-border p-0.5 sm:w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveTab('scheduled')}
+            className={cn(
+              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
+              activeTab === 'scheduled' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Scheduled ({scheduled.data?.total ?? 0})
+          </button>
           <button
             type="button"
             onClick={() => setActiveTab('delivered')}
@@ -487,10 +626,26 @@ export function AdminOrgDeliveryReportPage() {
           </button>
         </div>
 
-        <Button size="sm" variant="outline" disabled={isExporting} onClick={exportFiltered}>
-          <Download className="h-3.5 w-3.5" /> {isExporting ? 'Exporting…' : 'Export'}
-        </Button>
+        {activeTab !== 'scheduled' && (
+          <Button size="sm" variant="outline" disabled={isExporting} onClick={exportFiltered}>
+            <Download className="h-3.5 w-3.5" /> {isExporting ? 'Exporting…' : 'Export'}
+          </Button>
+        )}
       </div>
+
+      {activeTab === 'scheduled' &&
+        (scheduled.isLoading ? (
+          <div className="space-y-2.5">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[52px] rounded-xl" />
+            ))}
+          </div>
+        ) : (
+          <>
+            <ScheduledMessagesTable rows={scheduled.data?.rows ?? []} onView={setViewingScheduled} />
+            <PaginationControls page={scheduledPage} total={scheduled.data?.total ?? 0} onPageChange={setScheduledPage} />
+          </>
+        ))}
 
       {activeTab === 'delivered' &&
         (delivered.isLoading ? (
@@ -588,6 +743,52 @@ export function AdminOrgDeliveryReportPage() {
         isPending={resend.isPending}
         onConfirm={() => resend.mutate(resendConfirmId!, { onSuccess: () => setResendConfirmId(null) })}
       />
+
+      <Dialog open={!!viewingScheduled} onOpenChange={(open) => !open && setViewingScheduled(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Scheduled send</DialogTitle>
+          </DialogHeader>
+          {viewingScheduled && (
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="gap-1">
+                  {viewingScheduled.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
+                  {viewingScheduled.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
+                </Badge>
+                <span className="text-muted-foreground">
+                  {viewingScheduled.sendMode === 'recurring'
+                    ? scheduledRecurringSummary(viewingScheduled)
+                    : new Date(viewingScheduled.scheduleDate).toLocaleString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                </span>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Recipients</div>
+                <div className="text-foreground">{scheduledRecipientSummary(viewingScheduled)}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Sender ID</div>
+                <div className="text-foreground">{viewingScheduled.senderId}</div>
+              </div>
+              <div>
+                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Message</div>
+                <div className="whitespace-pre-wrap rounded-lg border border-border bg-secondary/50 p-3 text-foreground">
+                  {viewingScheduled.body}
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Not yet sent — no delivery data exists until this fires on its scheduled date.
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

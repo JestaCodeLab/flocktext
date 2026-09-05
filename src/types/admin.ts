@@ -8,6 +8,11 @@ export interface AdminSession {
   admin: AdminSessionAdmin;
 }
 
+// Product-lifecycle stage - distinct from `status` (account standing: active/suspended).
+// See api/services/orgLifecycle.js for the classification rules.
+export type OrgStage = 'otp_pending' | 'onboarding_incomplete' | 'onboarded_no_sms' | 'activated';
+export type OrgSubStage = 'engaged' | 'at_risk' | 'dormant';
+
 export interface AdminOrgListItem {
   id: string;
   churchName: string;
@@ -16,6 +21,25 @@ export interface AdminOrgListItem {
   memberCount: number;
   messageCount: number;
   createdAt: string;
+  stage: OrgStage;
+  subStage: OrgSubStage | null;
+  founderUserId: string | null;
+  founderEmail: string | null;
+  founderPhone: string | null;
+  founderVerifiedAt: string | null;
+  onboardingCurrentStep: number;
+  onboardingCompletedAt: string | null;
+  senderIdStatus: SenderIdStatus | null;
+  firstSentAt: string | null;
+  lastSentAt: string | null;
+}
+
+export interface AdminOrgFunnelSummary {
+  total: number;
+  otpPending: number;
+  onboardingIncomplete: number;
+  onboardedNoSms: number;
+  activated: { total: number; engaged: number; atRisk: number; dormant: number };
 }
 
 export interface AdminOrgUser {
