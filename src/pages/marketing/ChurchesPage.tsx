@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarClock, CircleCheck, Gift, HandCoins, Users } from 'lucide-react';
+import { ArrowRight, CalendarClock, Church, CircleCheck, Gift, HandCoins, MapPin, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { FaqList } from '@/pages/marketing/components/FaqList';
+import { OrgTreeSection } from '@/pages/marketing/components/OrgTreeSection';
 import { routeSeo } from '@/pages/marketing/data/seo';
-import { sharedFaqs } from '@/pages/marketing/data/faq';
+import { churchFaqs } from '@/pages/marketing/data/faq';
 import churchImage from '@/assets/images/church.png';
 import pastorsImage from '@/assets/images/pastors.png';
 
@@ -42,13 +43,17 @@ const highlights = [
   'Reaches members who may not check email or social media',
 ];
 
-const churchFaqs = [
-  {
-    question: 'How do I send bulk SMS to church members in Ghana?',
-    answer:
-      "Import your congregation's phone numbers into FlockText, group them by ministry or department if needed, then compose and send your message — or schedule it for a future date. Delivery reports let you confirm who received it.",
-  },
-  ...sharedFaqs,
+const branchNodes = [
+  { icon: MapPin, label: 'Accra Branch' },
+  { icon: MapPin, label: 'Kumasi Branch' },
+  { icon: MapPin, label: 'Takoradi Branch' },
+  { icon: MapPin, label: 'Tema Branch' },
+];
+
+const branchHighlights = [
+  "Each branch keeps its own contacts, Sender ID, and SMS balance",
+  'Switch between branches in one click — no separate logins for each',
+  'Reports and messaging history stay separate per branch, visible church-wide when you need them',
 ];
 
 export function ChurchesPage() {
@@ -115,6 +120,19 @@ export function ChurchesPage() {
           </div>
         </div>
       </section>
+
+      <OrgTreeSection
+        kicker="Multiple branches?"
+        heading="One Account. Every Branch."
+        description="Manage SMS communication across your entire church network while keeping each branch's contacts, Sender ID, SMS balance, and reports separate."
+        highlights={branchHighlights}
+        rootLabel="Your Church"
+        rootIcon={Church}
+        branches={branchNodes}
+        ctaLabel="Manage Your Branches"
+        ctaTo="/signup"
+        isAuthed={isAuthed}
+      />
 
       <section className="border-t border-border">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">

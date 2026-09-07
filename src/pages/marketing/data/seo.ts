@@ -1,4 +1,5 @@
 import { blogPosts } from '@/pages/marketing/data/blog';
+import { agencyFaqs, businessFaqs, churchFaqs, schoolsFaqs, toFaqJsonLd } from '@/pages/marketing/data/faq';
 
 export const SITE_URL = 'https://www.flocktext.com';
 
@@ -74,6 +75,7 @@ export const routeSeo: Record<string, RouteSeo> = {
     image: `${SITE_URL}/og/og-business.png`,
     imageWidth: 1448,
     imageHeight: 1086,
+    jsonLd: toFaqJsonLd(businessFaqs),
   },
   '/churches': {
     title: 'FlockText | SMS Software for Churches & Congregations in Ghana',
@@ -83,6 +85,7 @@ export const routeSeo: Record<string, RouteSeo> = {
     image: `${SITE_URL}/og/og-church.png`,
     imageWidth: 1448,
     imageHeight: 1086,
+    jsonLd: toFaqJsonLd(churchFaqs),
   },
   '/schools': {
     title: 'FlockText | Bulk SMS for Schools in Ghana',
@@ -92,6 +95,17 @@ export const routeSeo: Record<string, RouteSeo> = {
     image: `${SITE_URL}/og/og-school.jpg`,
     imageWidth: 1200,
     imageHeight: 630,
+    jsonLd: toFaqJsonLd(schoolsFaqs),
+  },
+  '/agencies': {
+    title: 'FlockText | Bulk SMS for Agencies in Ghana',
+    description:
+      'Manage SMS campaigns for multiple clients from one FlockText account — separate contacts, Sender IDs, balances, and reports per client, one login for your agency.',
+    url: `${SITE_URL}/agencies`,
+    image: `${SITE_URL}/og/og-agency.png`,
+    imageWidth: 1672,
+    imageHeight: 941,
+    jsonLd: toFaqJsonLd(agencyFaqs),
   },
   '/blog': {
     title: 'FlockText | Blog — Bulk SMS Tips for Ghana Businesses & Churches',

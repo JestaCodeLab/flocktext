@@ -73,6 +73,10 @@ export function AccountsCard() {
   // Deleting your only account isn't supported here (see membershipController.deleteAccount's
   // "only account" guard) - hide the action rather than let someone click into a 422.
   const canDeleteAccounts = (accounts.data?.length ?? 0) > 1;
+  // Only the owner of the org you're currently in may create a sibling org
+  // (see membershipController.create) - hide the button for anyone else
+  // rather than let them click into a 403.
+  const canCreateAccount = accounts.data?.find((a) => a.isActive)?.isFounder ?? false;
 
   return (
     <>
@@ -82,9 +86,11 @@ export function AccountsCard() {
         description="Every organization you belong to. Open one to manage who has access to it."
         tint="primary"
         action={
-          <Button size="sm" disabled={busy} onClick={() => create.mutate()}>
-            <Plus className="h-[15px] w-[15px]" /> {create.isPending ? 'Creating…' : 'Add account'}
-          </Button>
+          canCreateAccount ? (
+            <Button size="sm" disabled={busy} onClick={() => create.mutate()}>
+              <Plus className="h-[15px] w-[15px]" /> {create.isPending ? 'Creating…' : 'Add account'}
+            </Button>
+          ) : undefined
         }
       >
         {accounts.isLoading && (

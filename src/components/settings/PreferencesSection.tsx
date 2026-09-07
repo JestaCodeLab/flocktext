@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Sun, Moon, Monitor, PaintBucket, Church, Briefcase, Landmark } from 'lucide-react';
+import { Sun, Moon, Monitor, PaintBucket, Church, Briefcase, Landmark, Network } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { updateOrganizationProfile } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
@@ -20,6 +20,7 @@ const CATEGORY_OPTIONS: { value: OrganizationType; label: string; description: s
   { value: 'church', label: 'Church', description: 'Contacts are called members', icon: Church },
   { value: 'business', label: 'Business', description: 'Contacts are called customers', icon: Briefcase },
   { value: 'institution', label: 'Institution', description: 'Contacts are called contacts', icon: Landmark },
+  { value: 'agency', label: 'Agency', description: 'Contacts are called clients', icon: Network },
 ];
 
 export function PreferencesSection() {
@@ -79,7 +80,7 @@ export function PreferencesSection() {
         tint="gold"
         className="lg:flex-1"
       >
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {CATEGORY_OPTIONS.map((option) => (
             <button
               key={option.value}

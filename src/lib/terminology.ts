@@ -1,6 +1,6 @@
 import { useAuthStore } from '@/store/authStore';
 
-export type OrganizationType = 'church' | 'business' | 'institution';
+export type OrganizationType = 'church' | 'business' | 'institution' | 'agency';
 
 export interface EntityLabels {
   singular: string;
@@ -13,6 +13,7 @@ const ENTITY_LABELS: Record<OrganizationType, EntityLabels> = {
   church: { singular: 'member', plural: 'members', singularCap: 'Member', pluralCap: 'Members' },
   business: { singular: 'customer', plural: 'customers', singularCap: 'Customer', pluralCap: 'Customers' },
   institution: { singular: 'contact', plural: 'contacts', singularCap: 'Contact', pluralCap: 'Contacts' },
+  agency: { singular: 'client', plural: 'clients', singularCap: 'Client', pluralCap: 'Clients' },
 };
 
 export function getEntityLabels(organizationType: OrganizationType | undefined): EntityLabels {
