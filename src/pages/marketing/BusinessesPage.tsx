@@ -9,10 +9,12 @@ import {
   ChevronRight,
   CircleCheck,
   Gift,
+  MapPin,
   Megaphone,
   Scissors,
   ShoppingBag,
   Stethoscope,
+  Store,
   Truck,
   UtensilsCrossed,
 } from 'lucide-react';
@@ -20,8 +22,9 @@ import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { FaqList } from '@/pages/marketing/components/FaqList';
+import { OrgTreeSection } from '@/pages/marketing/components/OrgTreeSection';
 import { routeSeo } from '@/pages/marketing/data/seo';
-import { sharedFaqs } from '@/pages/marketing/data/faq';
+import { businessFaqs } from '@/pages/marketing/data/faq';
 import businessImage from '@/assets/images/retail-depot.png';
 import shopsImage from '@/assets/images/shops.png';
 
@@ -91,13 +94,17 @@ const highlights = [
   'Live delivery reports for every campaign',
 ];
 
-const businessFaqs = [
-  {
-    question: "What's the best bulk SMS app for small businesses in Ghana?",
-    answer:
-      'The right tool depends on your needs, but look for local network coverage (MTN, Vodafone, AirtelTigo), scheduling, contact management, and real-time delivery tracking — all of which FlockText provides out of the box.',
-  },
-  ...sharedFaqs,
+const orgBranches = [
+  { icon: Store, label: 'Business A' },
+  { icon: Store, label: 'Business B' },
+  { icon: MapPin, label: 'Accra Branch' },
+  { icon: MapPin, label: 'Kumasi Branch' },
+];
+
+const orgHighlights = [
+  'Each business keeps its own contacts, Sender ID, and SMS balance',
+  'Switch between businesses in one click — no separate logins',
+  'Separate campaigns, messaging history, and delivery reports per business',
 ];
 
 export function BusinessesPage() {
@@ -221,6 +228,19 @@ export function BusinessesPage() {
           </div>
         </div>
       </section>
+
+      <OrgTreeSection
+        kicker="Multiple locations?"
+        heading="Manage Multiple Businesses From One Account"
+        description="Running more than one business, brand, or branch? Manage each one separately — its own contacts, Sender ID, and SMS balance — while accessing everything from one FlockText account."
+        highlights={orgHighlights}
+        rootLabel="One FlockText Account"
+        rootIcon={Building2}
+        branches={orgBranches}
+        ctaLabel="Manage Multiple Organizations"
+        ctaTo="/signup"
+        isAuthed={isAuthed}
+      />
 
       <section className="border-t border-border">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">

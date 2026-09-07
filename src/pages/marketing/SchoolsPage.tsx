@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarClock, CircleCheck, FileText, HandCoins, Megaphone } from 'lucide-react';
+import { ArrowRight, CalendarClock, CircleCheck, FileText, GraduationCap, HandCoins, Megaphone, School } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/store/authStore';
 import { Seo } from '@/pages/marketing/components/Seo';
 import { FaqList } from '@/pages/marketing/components/FaqList';
+import { OrgTreeSection } from '@/pages/marketing/components/OrgTreeSection';
 import { routeSeo } from '@/pages/marketing/data/seo';
-import { sharedFaqs } from '@/pages/marketing/data/faq';
+import { schoolsFaqs } from '@/pages/marketing/data/faq';
 import adminImage from '@/assets/images/schools.png';
 import idCardImage from '@/assets/images/school-card.png';
 import examsImage from '@/assets/images/school-exams.png';
@@ -56,13 +57,16 @@ const useCases = [
   },
 ];
 
-const schoolsFaqs = [
-  {
-    question: 'How do schools and institutions in Ghana send bulk SMS to students and parents?',
-    answer:
-      'Import student, parent, and staff phone numbers into FlockText, group them by class, department, or level, then compose and send — or schedule a message for later, like a fee reminder ahead of term or an exam timetable release. Delivery reports confirm who received it.',
-  },
-  ...sharedFaqs,
+const campusNodes = [
+  { icon: School, label: 'Primary Campus' },
+  { icon: School, label: 'JHS Campus' },
+  { icon: School, label: 'SHS Campus' },
+];
+
+const campusHighlights = [
+  'Each campus keeps its own contacts, Sender ID, and SMS balance',
+  'Switch between campuses in one click — no separate logins for each',
+  'Separate reports per campus, one FlockText account for the whole group',
 ];
 
 export function SchoolsPage() {
@@ -147,6 +151,19 @@ export function SchoolsPage() {
           </div>
         </div>
       </section>
+
+      <OrgTreeSection
+        kicker="Multiple campuses?"
+        heading="Manage Multiple Campuses From One Account"
+        description="Running more than one campus or location? Create a separate organization for each campus and manage their SMS communication from one FlockText account."
+        highlights={campusHighlights}
+        rootLabel="ABC Schools"
+        rootIcon={GraduationCap}
+        branches={campusNodes}
+        ctaLabel="Manage Multiple Campuses"
+        ctaTo="/signup"
+        isAuthed={isAuthed}
+      />
 
       <section className="border-t border-border">
         <div className="mx-auto w-full max-w-7xl px-5 py-20 sm:px-8 lg:py-24">

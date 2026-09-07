@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { Church, Briefcase, Landmark } from 'lucide-react';
+import { Church, Briefcase, Landmark, Network } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +18,7 @@ const CATEGORY_OPTIONS: { value: OrganizationType; label: string; description: s
   { value: 'church', label: 'Church', description: 'Your contacts are called members', icon: Church },
   { value: 'business', label: 'Business', description: 'Your contacts are called customers', icon: Briefcase },
   { value: 'institution', label: 'Institution', description: 'Your contacts are called contacts', icon: Landmark },
+  { value: 'agency', label: 'Agency', description: 'You manage SMS for multiple clients', icon: Network },
 ];
 
 export function OrganizationStep() {
@@ -60,7 +61,7 @@ export function OrganizationStep() {
 
       <div className="mb-4 space-y-1.5">
         <Label>What best describes you?</Label>
-        <div className="grid grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {CATEGORY_OPTIONS.map((option) => (
             <button
               key={option.value}

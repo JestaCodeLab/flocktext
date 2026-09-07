@@ -10,6 +10,7 @@ import { SupportPage } from '@/pages/marketing/SupportPage';
 import { BusinessesPage } from '@/pages/marketing/BusinessesPage';
 import { ChurchesPage } from '@/pages/marketing/ChurchesPage';
 import { SchoolsPage } from '@/pages/marketing/SchoolsPage';
+import { AgenciesPage } from '@/pages/marketing/AgenciesPage';
 import { BlogPage } from '@/pages/marketing/BlogPage';
 import { BlogPostPage } from '@/pages/marketing/BlogPostPage';
 import { routeSeo } from '@/pages/marketing/data/seo';
@@ -32,6 +33,7 @@ export function render(path: string) {
             <Route path="/businesses" element={<BusinessesPage />} />
             <Route path="/churches" element={<ChurchesPage />} />
             <Route path="/schools" element={<SchoolsPage />} />
+            <Route path="/agencies" element={<AgenciesPage />} />
             <Route path="/blog" element={<BlogPage />} />
             <Route path="/blog/:slug" element={<BlogPostPage />} />
           </Route>

@@ -329,14 +329,18 @@ export function AppShell() {
                     </span>
                   </DropdownMenuItem>
                 )}
-                <DropdownMenuSeparator className="my-1.5" />
-                <DropdownMenuItem
-                  className="cursor-pointer gap-2.5 px-2.5 py-2 text-[13px]"
-                  disabled={createAccountMutation.isPending}
-                  onClick={() => createAccountMutation.mutate()}
-                >
-                  <Plus className="h-4 w-4 shrink-0" /> Add another account
-                </DropdownMenuItem>
+                {membership.isFounder && (
+                  <>
+                    <DropdownMenuSeparator className="my-1.5" />
+                    <DropdownMenuItem
+                      className="cursor-pointer gap-2.5 px-2.5 py-2 text-[13px]"
+                      disabled={createAccountMutation.isPending}
+                      onClick={() => createAccountMutation.mutate()}
+                    >
+                      <Plus className="h-4 w-4 shrink-0" /> Add another account
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
 

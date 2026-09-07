@@ -5,7 +5,7 @@ export async function updateOrganizationProfile(payload: {
   churchName: string;
   address: string;
   contactEmail?: string;
-  organizationType: 'church' | 'business' | 'institution';
+  organizationType: 'church' | 'business' | 'institution' | 'agency';
 }) {
   const { data } = await api.patch<SessionOrganization>('/organization', payload);
   return data;
