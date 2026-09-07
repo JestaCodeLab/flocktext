@@ -95,6 +95,8 @@ export interface AdminOrgDetail {
   walletBalanceCredits: number;
   senderIds: AdminSenderId[];
   createdAt: string;
+  founderIsVerified: boolean;
+  founderVerifiedAt: string | null;
   users: AdminOrgUser[];
   contactsCount: number;
   messagesTotal: number;
