@@ -7,6 +7,11 @@ export interface OrgProgressStep {
   label: string;
   icon: LucideIcon;
   completedAt: string | null;
+  // Overrides the completedAt-derived "done" check for a milestone whose
+  // completion doesn't reliably carry a timestamp (e.g. a boolean verified
+  // flag on accounts old enough to predate its own verifiedAt field). Falls
+  // back to Boolean(completedAt) when omitted.
+  done?: boolean;
 }
 
 function formatStamp(iso: string) {
@@ -20,11 +25,11 @@ function formatStamp(iso: string) {
   });
 }
 
-// A horizontal milestone tracker for the four checkpoints of an org actually
-// putting the product to use - registration alone doesn't mean much, this shows
-// how far past it they got. Purely derived from existing timestamps (org.createdAt,
-// onboarding.completedAt, the earliest senderIds entry, the earliest non-admin
-// sent Message) - no separate event-log model to maintain.
+// A horizontal milestone tracker for the checkpoints of an org actually putting
+// the product to use - registration alone doesn't mean much, this shows how far
+// past it they got. Purely derived from existing timestamps (org.createdAt, the
+// founder's verifiedAt, onboarding.completedAt, the earliest senderIds entry,
+// the earliest non-admin sent Message) - no separate event-log model to maintain.
 export function OrgProgressTimeline({ steps }: { steps: OrgProgressStep[] }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 pt-6">
@@ -32,7 +37,7 @@ export function OrgProgressTimeline({ steps }: { steps: OrgProgressStep[] }) {
       <div className="no-scrollbar overflow-x-auto">
         <div className="flex items-start">
           {steps.map((step, i) => {
-            const done = Boolean(step.completedAt);
+            const done = step.done ?? Boolean(step.completedAt);
             const lineActive = done && i < steps.length - 1;
             return (
               <Fragment key={step.key}>
@@ -49,7 +54,7 @@ export function OrgProgressTimeline({ steps }: { steps: OrgProgressStep[] }) {
                     {step.label}
                   </div>
                   <div className={cn('mt-0.5 text-xs', done ? 'text-grey' : 'text-muted-foreground/70')}>
-                    {step.completedAt ? formatStamp(step.completedAt) : 'Not yet'}
+                    {step.completedAt ? formatStamp(step.completedAt) : done ? 'Yes' : 'Not yet'}
                   </div>
                 </div>
                 {i < steps.length - 1 && (

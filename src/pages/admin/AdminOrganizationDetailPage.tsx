@@ -420,16 +420,26 @@ export function AdminOrganizationDetailPage() {
   const activeApiKeyCount = org.apiKeys.filter((k) => !k.revoked).length;
 
   const firstSenderIdAt = org.senderIds.map((s) => s.createdAt).sort()[0] ?? null;
-  // Sender ID comes before Onboarding here, not after - the wizard's own step order is
-  // organization profile -> sender ID -> contacts, and onboardingCompletedAt only flips
-  // once the *last* step (contacts) is done, so it always lands at or after firstSenderIdAt
-  // for anyone following the wizard in order. Ordering these to match keeps someone who's
-  // submitted a sender ID but hasn't finished contacts yet from looking like they
-  // regressed (Sender ID done, but an earlier-looking "Onboarding" still not).
+  // Registered -> OTP verified -> Onboarding -> Sender ID -> First SMS sent - the
+  // intended signup flow order. Note Sender ID can, in practice, land before
+  // Onboarding finishes (onboardingCompletedAt only flips once the wizard's last
+  // step - contacts - is done, and someone can submit a sender ID mid-wizard),
+  // so this ordering can show a "later" step done before an "earlier" one for
+  // that case - accepted as a rarer edge case than the OTP/Onboarding ordering
+  // this is meant to reflect.
   const progressSteps: OrgProgressStep[] = [
     { key: 'registered', label: 'Registered', icon: UserPlus, completedAt: org.createdAt },
-    { key: 'sender-id', label: 'Sender ID', icon: BadgeCheck, completedAt: firstSenderIdAt },
+    {
+      key: 'otp-verified',
+      label: 'OTP verification',
+      icon: ShieldCheck,
+      completedAt: org.founderVerifiedAt,
+      // isVerified, not just Boolean(founderVerifiedAt) - verifiedAt stays null
+      // for accounts that predate that field even when they're actually verified.
+      done: org.founderIsVerified,
+    },
     { key: 'onboarded', label: 'Onboarding', icon: Rocket, completedAt: org.onboardingCompletedAt },
+    { key: 'sender-id', label: 'Sender ID', icon: BadgeCheck, completedAt: firstSenderIdAt },
     { key: 'first-send', label: 'First SMS sent', icon: Send, completedAt: org.firstMessageSentAt },
   ];
 
