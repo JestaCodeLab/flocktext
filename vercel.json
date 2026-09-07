@@ -6,6 +6,10 @@
     { "source": "/support", "destination": "/support/index.html" },
     { "source": "/businesses", "destination": "/businesses/index.html" },
     { "source": "/churches", "destination": "/churches/index.html" },
+    { "source": "/schools", "destination": "/schools/index.html" },
+    { "source": "/agencies", "destination": "/agencies/index.html" },
+    { "source": "/blog", "destination": "/blog/index.html" },
+    { "source": "/blog/:slug", "destination": "/blog/:slug/index.html" },
     { "source": "/(.*)", "destination": "/app-shell.html" }
   ]
 }
