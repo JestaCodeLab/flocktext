@@ -72,7 +72,7 @@ import {
   updateHubtelCredentials,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
-import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
+import { senderIdStatusLabel, senderIdStatusVariant, isBmsRejected } from '@/lib/senderIdStatus';
 import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
 
 type OrgTabKey = 'sender-ids' | 'users' | 'api-access' | 'danger-zone';
@@ -360,9 +360,11 @@ export function AdminOrganizationDetailPage() {
               <DropdownMenuItem className="cursor-pointer" disabled={syncBms.isPending} onClick={() => syncBms.mutate(s.id)}>
                 <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
-                <ShieldCheck className="h-3.5 w-3.5" /> Approve
-              </DropdownMenuItem>
+              {!isBmsRejected(s.bmsStatus) && (
+                <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(s.id)}>
+                  <ShieldCheck className="h-3.5 w-3.5" /> Approve
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 className="cursor-pointer"
                 onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
