@@ -39,7 +39,7 @@ import {
   permanentlyDeleteSenderId,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
-import { senderIdStatusLabel, senderIdStatusVariant } from '@/lib/senderIdStatus';
+import { senderIdStatusLabel, senderIdStatusVariant, isBmsRejected } from '@/lib/senderIdStatus';
 import { cn } from '@/lib/utils';
 import type { AdminSenderIdRow } from '@/types/admin';
 
@@ -178,9 +178,11 @@ export function AdminSenderIdsPage() {
               <DropdownMenuItem className="cursor-pointer" disabled={sync.isPending} onClick={() => sync.mutate(row)}>
                 <RefreshCw className="h-3.5 w-3.5" /> Check BMS status
               </DropdownMenuItem>
-              <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(row)}>
-                <ShieldCheck className="h-3.5 w-3.5" /> Approve
-              </DropdownMenuItem>
+              {!isBmsRejected(row.bmsStatus) && (
+                <DropdownMenuItem className="cursor-pointer" disabled={approve.isPending} onClick={() => approve.mutate(row)}>
+                  <ShieldCheck className="h-3.5 w-3.5" /> Approve
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(row)}>
                 <X className="h-3.5 w-3.5" /> Reject
