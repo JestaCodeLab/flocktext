@@ -19,7 +19,7 @@ export function statusBadgeVariant(status: 'pending' | 'delivered' | 'failed' | 
 
 // 'rejected' has no dedicated Badge variant token, so it's rendered with the same
 // outline+warning-tint pattern already used elsewhere in the app (e.g.
-// ImportContactsPanel.tsx's "possible duplicate" badge) rather than adding a new variant.
+// ImportPreviewTable.tsx's "possible duplicate" badge) rather than adding a new variant.
 export function StatusBadge({ status }: { status: 'pending' | 'delivered' | 'failed' | 'rejected' }) {
   if (status === 'rejected') {
     return (

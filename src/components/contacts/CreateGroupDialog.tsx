@@ -89,7 +89,7 @@ export function CreateGroupDialog({
         if (!next) reset();
       }}
     >
-      <DialogContent className={createdGroup ? 'sm:max-w-lg' : undefined}>
+      <DialogContent className={createdGroup ? 'sm:max-w-3xl' : undefined}>
         <Stepper step={createdGroup ? 2 : 1} addStepLabel={`Add ${entity.plural}`} />
 
         {!createdGroup ? (

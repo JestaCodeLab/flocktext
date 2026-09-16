@@ -22,7 +22,7 @@ export function PaginationControls({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div className="mt-3 flex items-center justify-between">
+    <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
       <div className="text-xs text-muted-foreground">
         Showing {start}–{end} of {total}
       </div>

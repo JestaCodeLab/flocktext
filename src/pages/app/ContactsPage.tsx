@@ -5,8 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
-import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
-import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
+import { ImportContactsWizard } from '@/components/contacts/ImportContactsWizard';
 import { AddContactDialog } from '@/components/contacts/AddContactDialog';
 import { ContactsTable } from '@/components/contacts/ContactsTable';
 import { PaginationControls } from '@/components/ui/pagination-controls';
@@ -132,23 +131,20 @@ export function ContactsPage() {
       )}
 
       <Dialog open={showImport} onOpenChange={setShowImport}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Import {entity.plural}</DialogTitle>
+            <DialogTitle>{entity.pluralCap}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <ImportContactsPanel
-              onImported={(result) => {
-                if (result.imported > 0) {
-                  setPage(1);
-                  updateOrganization({ contactsStatus: 'done' });
-                  queryClient.invalidateQueries({ queryKey: ['contacts'] });
-                  queryClient.invalidateQueries({ queryKey: ['groups'] });
-                }
-              }}
-            />
-            <ShareLinkPanel />
-          </div>
+          <ImportContactsWizard
+            onImported={(result) => {
+              if (result.imported > 0) {
+                setPage(1);
+                updateOrganization({ contactsStatus: 'done' });
+                queryClient.invalidateQueries({ queryKey: ['contacts'] });
+                queryClient.invalidateQueries({ queryKey: ['groups'] });
+              }
+            }}
+          />
           <DialogFooter showCloseButton />
         </DialogContent>
       </Dialog>

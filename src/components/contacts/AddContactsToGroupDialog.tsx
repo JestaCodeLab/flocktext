@@ -20,7 +20,7 @@ export function AddContactsToGroupDialog({
   const entity = useEntityLabels();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>
             Add {entity.plural} to "{groupName}"
