@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
-import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
-import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
+import { ImportContactsWizard } from '@/components/contacts/ImportContactsWizard';
 import { completeOnboarding } from '@/api/organization';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
@@ -40,9 +39,8 @@ export function ContactsStep() {
         this later from {entity.pluralCap}.
       </div>
 
-      <div className="mb-4 space-y-3.5">
-        <ImportContactsPanel onImported={handleImported} />
-        <ShareLinkPanel />
+      <div className="mb-4">
+        <ImportContactsWizard onImported={handleImported} />
       </div>
 
       <Button

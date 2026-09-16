@@ -25,6 +25,13 @@ export interface ApiEndpointDoc {
   errors: ApiErrorResponse[];
 }
 
+// `process.env` isn't a real global in a Vite-bundled browser app (that's a webpack/CRA
+// convention) - `import.meta.env.PROD` is Vite's own build-mode flag and is what
+// api/client.ts already uses for the live API base URL, so this matches that pattern.
+export function apiBaseUrl() {
+  return import.meta.env.PROD ? 'https://api.flocktext.com/api' : 'https://apiuat.flocktext.com/api';
+}
+
 export const STATUS_TEXT: Record<number, string> = {
   200: 'OK',
   201: 'Created',

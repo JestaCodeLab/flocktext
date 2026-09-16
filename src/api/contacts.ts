@@ -1,5 +1,6 @@
 import { api } from '@/api/client';
 import type { DateRangeParams } from '@/lib/dateRange';
+import type { PreviewRow } from '@/lib/contactImport';
 
 export interface Contact {
   id: string;
@@ -81,16 +82,35 @@ export async function bulkDeleteContacts(ids: string[]) {
 export interface ImportResult {
   imported: number;
   skipped: number;
+  errors: { row: number | null; reason: string }[];
+}
+
+export type ImportFileFormat = 'csv' | 'xlsx' | 'txt' | 'pdf';
+
+export interface ImportPreviewResult {
+  rows: PreviewRow[];
   errors: { row: number; reason: string }[];
 }
 
-export async function importContactsCsv(file: File, groupId?: string) {
+export async function previewImportFile(file: File, format: ImportFileFormat) {
   const formData = new FormData();
   formData.append('file', file);
-  if (groupId) formData.append('groupId', groupId);
-  const { data } = await api.post<ImportResult>('/contacts/import', formData, {
+  formData.append('format', format);
+  const { data } = await api.post<ImportPreviewResult>('/contacts/import/preview', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data;
+}
+
+export async function importContacts(rows: PreviewRow[], groupId?: string) {
+  const { data } = await api.post<ImportResult>('/contacts/import', { rows, groupId });
+  return data;
+}
+
+// CSV/TXT templates are simple enough to build client-side (see ImportContactsWizard) -
+// XLSX/PDF need a real binary file, generated server-side.
+export async function fetchImportTemplateFile(format: 'xlsx' | 'pdf') {
+  const { data } = await api.get<Blob>('/contacts/import/template', { params: { format }, responseType: 'blob' });
   return data;
 }
 

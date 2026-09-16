@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DialogFooter } from '@/components/ui/dialog';
-import { ImportContactsPanel } from '@/components/contacts/ImportContactsPanel';
+import { ImportContactsWizard } from '@/components/contacts/ImportContactsWizard';
 import { addContactsToGroup, fetchContacts } from '@/api/contacts';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
@@ -127,7 +127,7 @@ export function AddContactsPanel({
         </>
       ) : (
         <>
-          <ImportContactsPanel groupId={groupId} onImported={() => onAdded?.()} />
+          <ImportContactsWizard groupId={groupId} initialStage="format" onImported={() => onAdded?.()} />
           <DialogFooter>
             <Button className="w-full" variant="outline" onClick={onFinish}>
               Done

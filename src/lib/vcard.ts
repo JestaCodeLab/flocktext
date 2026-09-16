@@ -1,8 +1,6 @@
-export interface PreviewRow {
-  name: string;
-  phone: string;
-  dateOfBirth: string;
-}
+import type { PreviewRow } from './contactImport';
+
+export type { PreviewRow };
 
 // vCard lines are "folded" at 75 octets: a continuation line starts with a
 // single space or tab, which must be stripped and joined to the previous line
