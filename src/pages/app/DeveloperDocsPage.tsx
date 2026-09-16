@@ -6,17 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { API_ENDPOINTS, STATUS_TEXT, statusBadgeVariant, type ApiEndpointDoc, type ApiParam } from '@/lib/apiDocs';
+import { API_ENDPOINTS, STATUS_TEXT, apiBaseUrl, statusBadgeVariant, type ApiEndpointDoc, type ApiParam } from '@/lib/apiDocs';
 
 const GROUPS: { key: ApiEndpointDoc['group']; title: string; description: string }[] = [
   { key: 'Wallet', title: 'Wallet', description: 'Check your organization’s SMS credit balance.' },
   { key: 'Sender IDs', title: 'Sender IDs', description: 'Register, list, check, and remove the names your messages send from.' },
   { key: 'Messages', title: 'Messages', description: 'Send SMS to a phone number, group, selection, or your full contact list.' },
 ];
-
-function apiBaseUrl() {
-  return process.env.NODE_ENV === 'production' ? 'https://api.flocktext.com/api' : 'https://apiuat.flocktext.com/api';
-}
 
 function examplePathFor(e: ApiEndpointDoc): string {
   if (e.id === 'sender-ids-delete') return '/v1/sender-ids/665f1c2e9b1d4a0012a3f8d2';

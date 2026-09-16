@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import { fetchApiKeys, createApiKey, revokeApiKey, type ApiKey } from '@/api/developer';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
-import { API_ENDPOINTS, STATUS_TEXT, endpointKey, statusBadgeVariant } from '@/lib/apiDocs';
+import { API_ENDPOINTS, STATUS_TEXT, apiBaseUrl, endpointKey, statusBadgeVariant } from '@/lib/apiDocs';
 import { SettingsCard } from './SettingsCard';
 
 export function DeveloperSection() {
@@ -155,7 +155,7 @@ export function DeveloperSection() {
         </div>
         <div className="mb-4 space-y-1 text-sm">
           <div className="text-muted-foreground">
-            Base URL: <span className="font-mono text-foreground">`${process.env.NODE_ENV === 'production' ? 'https://api.flocktext.com/api' : 'https://apiuat.flocktext.com/api'}`/api</span>
+            Base URL: <span className="font-mono text-foreground">{apiBaseUrl()}</span>
           </div>
           <div className="text-muted-foreground">
             Auth header: <span className="font-mono text-foreground">Authorization: Bearer &lt;your key&gt;</span>
