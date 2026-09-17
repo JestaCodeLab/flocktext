@@ -39,7 +39,7 @@ export function EditContactDialog({
   }, [contact]);
 
   const saveContact = useMutation({
-    mutationFn: (payload: { firstName: string; lastName?: string; phone: string; dateOfBirth?: string }) =>
+    mutationFn: (payload: { firstName?: string; lastName?: string; phone: string; dateOfBirth?: string }) =>
       updateContact(contact!.id, payload),
     onSuccess: (updated) => {
       onOpenChange(false);
@@ -50,30 +50,20 @@ export function EditContactDialog({
   });
 
   function handleSubmit() {
-    if (!firstName || !phone) {
-      toast.error('First name and phone are required.');
+    if (!phone) {
+      toast.error('Phone number is required.');
       return;
     }
-    saveContact.mutate({ firstName, lastName: lastName || undefined, phone, dateOfBirth: dateOfBirth || undefined });
+    saveContact.mutate({ firstName: firstName || undefined, lastName: lastName || undefined, phone, dateOfBirth: dateOfBirth || undefined });
   }
 
   return (
     <Dialog open={!!contact} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit {entity.singular}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="edit-contact-first-name">First name</Label>
-              <Input id="edit-contact-first-name" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="edit-contact-last-name">Last name</Label>
-              <Input id="edit-contact-last-name" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
-          </div>
           <div className="space-y-2">
             <Label htmlFor="edit-contact-phone">Phone</Label>
             <Input
@@ -83,6 +73,14 @@ export function EditContactDialog({
               value={phone}
               onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-contact-first-name">First name (optional)</Label>
+            <Input id="edit-contact-first-name" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-contact-last-name">Last name (optional)</Label>
+            <Input id="edit-contact-last-name" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-contact-dob">Date of birth (optional)</Label>

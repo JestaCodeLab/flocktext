@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X, Tag, ShieldCheck } from 'lucide-react';
+import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import senderIdSlide from '@/assets/auth-slides/slider_3.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -993,16 +994,13 @@ export function ComposePage() {
         onOpenChange={(open) => {
           if (!open) dismissSenderIdIntro();
         }}
-        title="Send from your own name, not ours"
-        subtext={`Register a Sender ID and every text your ${entity.plural} get shows your organization's name instead of "FLOCKTXT". It's free, and most are approved within a business day.`}
-        slides={[
-          { kind: 'icon', icon: Tag },
-          { kind: 'icon', icon: ShieldCheck },
-        ]}
+        title="Register your sender ID first"
+        subtext={`Before you send, register a Sender ID — like JESTAFOODS or JestaFoods — so your ${entity.plural} see your business name. It's free and usually approved within a business day.`}
+        slides={[{ kind: 'image', url: senderIdSlide, alt: 'Send from your own name' }]}
         links={[
           { label: 'Maybe later', variant: 'outline', onClick: dismissSenderIdIntro },
           {
-            label: 'Add Sender ID',
+            label: 'Register Sender ID',
             onClick: () => {
               dismissSenderIdIntro();
               setShowAddSenderId(true);

@@ -44,11 +44,11 @@ export function AddContactDialog({
   });
 
   function handleSubmit() {
-    if (!firstName || !phone) {
-      toast.error('First name and phone are required.');
+    if (!phone) {
+      toast.error('Phone number is required.');
       return;
     }
-    addContact.mutate({ firstName, lastName: lastName || undefined, phone, dateOfBirth: dateOfBirth || undefined });
+    addContact.mutate({ firstName: firstName || undefined, lastName: lastName || undefined, phone, dateOfBirth: dateOfBirth || undefined });
   }
 
   return (
@@ -59,30 +59,29 @@ export function AddContactDialog({
         if (!next) reset();
       }}
     >
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Add {entity.singular}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="contact-first-name">First name</Label>
-              <Input id="contact-first-name" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="contact-last-name">Last name</Label>
-              <Input id="contact-last-name" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
-          </div>
           <div className="space-y-2">
             <Label htmlFor="contact-phone">Phone</Label>
             <Input
               id="contact-phone"
+              autoFocus
               placeholder="024 xxx xxxx"
               inputMode="numeric"
               value={phone}
               onChange={(e) => setPhone(formatPhoneInput(e.target.value))}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contact-first-name">First name (optional)</Label>
+            <Input id="contact-first-name" placeholder="First name" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="contact-last-name">Last name (optional)</Label>
+            <Input id="contact-last-name" placeholder="Last name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="contact-dob">Date of birth (optional)</Label>

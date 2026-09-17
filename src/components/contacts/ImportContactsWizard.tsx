@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ImportPreviewTable } from '@/components/contacts/ImportPreviewTable';
+import { ImportGroupPrompt } from '@/components/contacts/ImportGroupPrompt';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
 import {
   previewImportFile,
@@ -44,12 +45,12 @@ const FORMAT_META: Record<Format, { label: string; icon: typeof FileText; accept
 
 const TEMPLATES: Partial<Record<Format, { content: string; type: string; filename: string }>> = {
   csv: {
-    content: 'Name,Phone,Date of Birth\nJane Doe,+15551234567,1990-05-14\n',
+    content: 'Phone,Name,Date of Birth\n+15551234567,Jane Doe,1990-05-14\n',
     type: 'text/csv;charset=utf-8;',
     filename: 'contacts-template.csv',
   },
   txt: {
-    content: 'Jane Doe, +15551234567\nJohn Smith, +15559876543\n',
+    content: '+15551234567, Jane Doe\n+15559876543, John Smith\n',
     type: 'text/plain;charset=utf-8;',
     filename: 'contacts-template.txt',
   },
@@ -91,6 +92,7 @@ export function ImportContactsWizard({
   const [rawRows, setRawRows] = useState<PreviewRow[] | null>(null);
   const [skippedCount, setSkippedCount] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [groupPromptDismissed, setGroupPromptDismissed] = useState(false);
 
   const existingPhones = useQuery({
     queryKey: ['contacts', 'phones'],
@@ -156,6 +158,7 @@ export function ImportContactsWizard({
     setRawRows(null);
     setSkippedCount(0);
     setResult(null);
+    setGroupPromptDismissed(false);
   }
 
   function chooseFormat(next: Format) {
@@ -366,7 +369,7 @@ export function ImportContactsWizard({
 
           {skippedCount > 0 && (
             <div className="mb-3 text-sm text-muted-foreground">
-              {skippedCount} row{skippedCount === 1 ? '' : 's'} skipped — missing a name or phone number.
+              {skippedCount} row{skippedCount === 1 ? '' : 's'} skipped — missing a phone number.
             </div>
           )}
 
@@ -403,7 +406,12 @@ export function ImportContactsWizard({
               ))}
             </div>
           )}
-          <Button variant="outline" className="w-full sm:w-auto" onClick={reset}>
+
+          {result.imported > 0 && !groupId && !groupPromptDismissed && (
+            <ImportGroupPrompt contactIds={result.contactIds} onDone={() => setGroupPromptDismissed(true)} />
+          )}
+
+          <Button variant="outline" className="mt-4 w-full sm:w-auto" onClick={reset}>
             Import another file
           </Button>
         </div>
