@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { cn } from '@/lib/utils';
+import { displayName } from '@/lib/name';
 import type { ImportRow } from '@/lib/contactImport';
 
 const PAGE_SIZE = 100;
@@ -48,16 +49,15 @@ export function ImportPreviewTable({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-sm">Name</TableHead>
               <TableHead className="text-sm">Phone</TableHead>
+              <TableHead className="text-sm">Name</TableHead>
               <TableHead className="text-sm">Date of birth</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {preview.map((row, i) => (
               <TableRow key={start + i} className={cn(row.duplicateType && 'bg-warning/10')}>
-                <TableCell className={cn('font-semibold', !row.name && 'text-destructive')}>{row.name || 'Missing'}</TableCell>
-                <TableCell className={cn('text-muted-foreground', !row.phone && 'text-destructive')}>
+                <TableCell className={cn('font-semibold', !row.phone && 'text-destructive')}>
                   <span className="inline-flex items-center gap-1.5">
                     {row.phone || 'Missing'}
                     {row.duplicateType === 'file' && (
@@ -72,6 +72,7 @@ export function ImportPreviewTable({
                     )}
                   </span>
                 </TableCell>
+                <TableCell className="text-muted-foreground">{displayName(row.name, row.phone) || '—'}</TableCell>
                 <TableCell className="text-muted-foreground">{row.dateOfBirth || '—'}</TableCell>
               </TableRow>
             ))}

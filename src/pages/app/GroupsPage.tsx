@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Pencil, Trash2, Search, Users, Check, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Users, Check, X, Table2, LayoutGrid } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CreateGroupDialog } from '@/components/contacts/CreateGroupDialog';
 import { fetchGroups, updateGroup, deleteGroup, type Group } from '@/api/contacts';
@@ -15,6 +16,7 @@ import { useEntityLabels } from '@/lib/terminology';
 export function GroupsPage() {
   const queryClient = useQueryClient();
   const entity = useEntityLabels();
+  const [view, setView] = useState<'table' | 'card'>('table');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -81,9 +83,19 @@ export function GroupsPage() {
           <div className="text-[22px] font-extrabold sm:text-[26px]">Groups</div>
           <div className="mt-0.5 text-sm text-muted-foreground">{groups.data?.length ?? 0} groups</div>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
-          <Plus className="h-[15px] w-[15px]" /> New group
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5 rounded-lg border border-border p-0.5">
+            <Button size="icon-sm" variant={view === 'table' ? 'secondary' : 'ghost'} onClick={() => setView('table')} aria-label="Table view">
+              <Table2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="icon-sm" variant={view === 'card' ? 'secondary' : 'ghost'} onClick={() => setView('card')} aria-label="Card view">
+              <LayoutGrid className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <Button onClick={() => setShowCreate(true)}>
+            <Plus className="h-[15px] w-[15px]" /> New group
+          </Button>
+        </div>
       </div>
 
       <div className="mb-4.5 flex flex-wrap items-center gap-2.5">
@@ -126,6 +138,90 @@ export function GroupsPage() {
         </div>
       )}
 
+      {view === 'table' && filtered.length > 0 && (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-[13px]">Group</TableHead>
+                <TableHead className="text-[13px]">Contacts</TableHead>
+                <TableHead className="w-0 text-[13px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((g, i) => (
+                <TableRow key={g.id}>
+                  <TableCell className="font-semibold">
+                    {editingId === g.id ? (
+                      <Input
+                        autoFocus
+                        className="h-8 max-w-64 text-sm"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') commitEdit(g.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                      />
+                    ) : (
+                      <Link to={`/app/contacts/groups/${g.id}`} className="flex items-center gap-2.5 hover:text-primary">
+                        <div
+                          className={cn(
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold',
+                            AVATAR_COLORS[i % AVATAR_COLORS.length]
+                          )}
+                        >
+                          {getInitials(g.name)}
+                        </div>
+                        {g.name}
+                      </Link>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {g.count} contact{g.count === 1 ? '' : 's'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-0.5">
+                      {editingId === g.id ? (
+                        <>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            className="text-success hover:text-success"
+                            disabled={renameGroup.isPending}
+                            onClick={() => commitEdit(g.id)}
+                          >
+                            <Check className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button size="icon-sm" variant="ghost" onClick={() => setEditingId(null)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button size="icon-sm" variant="ghost" className="text-chart-3 hover:text-chart-3" onClick={() => startEditing(g)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon-sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setConfirmingDelete(g)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {view === 'card' && (
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {filtered.map((g, i) => (
           <div
@@ -214,6 +310,7 @@ export function GroupsPage() {
           </div>
         ))}
       </div>
+      )}
 
       <CreateGroupDialog open={showCreate} onOpenChange={setShowCreate} onDone={invalidate} />
 

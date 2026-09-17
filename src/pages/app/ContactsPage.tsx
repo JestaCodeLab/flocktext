@@ -15,7 +15,7 @@ import { useEntityLabels } from '@/lib/terminology';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 export function ContactsPage() {
   const queryClient = useQueryClient();
@@ -91,7 +91,7 @@ export function ContactsPage() {
       />
 
       <div className="mb-4 flex items-center gap-1.5 sm:flex-wrap sm:gap-2.5">
-        <div className="relative min-w-0 flex-1 sm:min-w-[200px]">
+        <div className="relative min-w-0 flex-1 sm:w-72 sm:flex-none">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by name or number…"

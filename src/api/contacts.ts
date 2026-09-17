@@ -49,7 +49,7 @@ export async function fetchContactPhones() {
 }
 
 export async function createContact(payload: {
-  firstName: string;
+  firstName?: string;
   lastName?: string;
   phone: string;
   dateOfBirth?: string;
@@ -64,7 +64,7 @@ export async function fetchBirthdays() {
   return data;
 }
 
-export async function updateContact(id: string, payload: { firstName: string; lastName?: string; phone: string; dateOfBirth?: string }) {
+export async function updateContact(id: string, payload: { firstName?: string; lastName?: string; phone: string; dateOfBirth?: string }) {
   const { data } = await api.patch<Contact>(`/contacts/${id}`, payload);
   return data;
 }
@@ -83,6 +83,7 @@ export interface ImportResult {
   imported: number;
   skipped: number;
   errors: { row: number | null; reason: string }[];
+  contactIds: string[];
 }
 
 export type ImportFileFormat = 'csv' | 'xlsx' | 'txt' | 'pdf';
