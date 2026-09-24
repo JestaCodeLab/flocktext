@@ -106,6 +106,16 @@ export async function resendPendingMessage(orgId: string, messageId: string) {
   return data;
 }
 
+export interface DeleteMessageResult {
+  deleted: true;
+  walletBalanceCredits: number;
+}
+
+export async function deleteAdminOrgMessage(orgId: string, messageId: string) {
+  const { data } = await adminApi.delete<DeleteMessageResult>(`/admin/organizations/${orgId}/messages/${messageId}`);
+  return data;
+}
+
 export interface AdminOrgMessageExportRow {
   id: string;
   date: string;

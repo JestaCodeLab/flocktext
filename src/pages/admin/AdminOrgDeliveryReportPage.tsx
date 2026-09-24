@@ -19,6 +19,7 @@ import {
   TrendingUp,
   CalendarClock,
   Repeat,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { MessageDetailBody, MiniStatCard, downloadCsv, sourceBadge } from '@/components/messages/MessageDetailBody';
 import { ResendPendingDialog } from '@/components/admin/ResendPendingDialog';
+import { DeleteMessageDialog } from '@/components/admin/DeleteMessageDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
   fetchAdminOrgMessagesSummary,
@@ -39,6 +41,7 @@ import {
   fetchAdminOrgMessageRecipients,
   fetchAdminOrgMessagesExport,
   resendPendingMessage,
+  deleteAdminOrgMessage,
   type AdminOrgMessageStatus,
   type AdminOrgMessageSummary,
 } from '@/api/adminOrgMessages';
@@ -138,11 +141,15 @@ function MessagesTable({
   onView,
   onResendPending,
   resendingId,
+  onDelete,
+  deletingId,
 }: {
   rows: AdminOrgMessageSummary[];
   onView: (row: AdminOrgMessageSummary) => void;
   onResendPending?: (id: string) => void;
   resendingId?: string | null;
+  onDelete: (id: string) => void;
+  deletingId?: string | null;
 }) {
   function renderActions(m: AdminOrgMessageSummary) {
     return (
@@ -163,6 +170,13 @@ function MessagesTable({
               <RotateCcw className="h-3 w-3" /> Resend
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem
+            className="cursor-pointer text-destructive focus:text-destructive"
+            disabled={deletingId === m.id}
+            onClick={() => onDelete(m.id)}
+          >
+            <Trash2 className="h-3 w-3" /> Delete
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );
@@ -359,6 +373,7 @@ export function AdminOrgDeliveryReportPage() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [viewingScheduled, setViewingScheduled] = useState<ScheduledMessage | null>(null);
   const [resendConfirmId, setResendConfirmId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
   // A new filter changes the result set, so a page number from the old one may no
@@ -437,6 +452,17 @@ export function AdminOrgDeliveryReportPage() {
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
       invalidateAll();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const deleteMsg = useMutation({
+    mutationFn: (messageId: string) => deleteAdminOrgMessage(orgId, messageId),
+    onSuccess: () => {
+      toast.success('Message deleted and credits refunded.');
+      invalidateAll();
+      queryClient.invalidateQueries({ queryKey: ['admin-org-detail', orgId] });
+      setDeleteConfirmId(null);
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -672,7 +698,12 @@ export function AdminOrgDeliveryReportPage() {
           </div>
         ) : (
           <>
-            <MessagesTable rows={delivered.data?.rows ?? []} onView={handleView} />
+            <MessagesTable
+              rows={delivered.data?.rows ?? []}
+              onView={handleView}
+              onDelete={(messageId) => setDeleteConfirmId(messageId)}
+              deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
+            />
             <PaginationControls page={deliveredPage} total={delivered.data?.total ?? 0} onPageChange={setDeliveredPage} />
           </>
         ))}
@@ -691,6 +722,8 @@ export function AdminOrgDeliveryReportPage() {
               onView={handleView}
               onResendPending={(messageId) => setResendConfirmId(messageId)}
               resendingId={resend.isPending ? (resend.variables ?? null) : null}
+              onDelete={(messageId) => setDeleteConfirmId(messageId)}
+              deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
             />
             <PaginationControls page={pendingPage} total={pending.data?.total ?? 0} onPageChange={setPendingPage} />
           </>
@@ -705,7 +738,12 @@ export function AdminOrgDeliveryReportPage() {
           </div>
         ) : (
           <>
-            <MessagesTable rows={failed.data?.rows ?? []} onView={handleView} />
+            <MessagesTable
+              rows={failed.data?.rows ?? []}
+              onView={handleView}
+              onDelete={(messageId) => setDeleteConfirmId(messageId)}
+              deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
+            />
             <PaginationControls page={failedPage} total={failed.data?.total ?? 0} onPageChange={setFailedPage} />
           </>
         ))}
@@ -719,7 +757,12 @@ export function AdminOrgDeliveryReportPage() {
           </div>
         ) : (
           <>
-            <MessagesTable rows={rejected.data?.rows ?? []} onView={handleView} />
+            <MessagesTable
+              rows={rejected.data?.rows ?? []}
+              onView={handleView}
+              onDelete={(messageId) => setDeleteConfirmId(messageId)}
+              deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
+            />
             <PaginationControls page={rejectedPage} total={rejected.data?.total ?? 0} onPageChange={setRejectedPage} />
           </>
         ))}
@@ -758,6 +801,13 @@ export function AdminOrgDeliveryReportPage() {
         onOpenChange={(open) => !open && setResendConfirmId(null)}
         isPending={resend.isPending}
         onConfirm={() => resend.mutate(resendConfirmId!, { onSuccess: () => setResendConfirmId(null) })}
+      />
+
+      <DeleteMessageDialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+        isPending={deleteMsg.isPending}
+        onConfirm={() => deleteMsg.mutate(deleteConfirmId!)}
       />
 
       <Dialog open={!!viewingScheduled} onOpenChange={(open) => !open && setViewingScheduled(null)}>
