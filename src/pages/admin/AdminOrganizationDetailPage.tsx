@@ -40,7 +40,6 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { cn } from '@/lib/utils';
 import { RejectSenderIdDialog } from '@/components/admin/RejectSenderIdDialog';
 import { EditSenderIdDialog, type EditSenderIdTarget } from '@/components/admin/EditSenderIdDialog';
-import { EditHubtelCredentialsDialog, type EditHubtelCredentialsTarget } from '@/components/admin/EditHubtelCredentialsDialog';
 import { AdminAddUserDialog } from '@/components/admin/AdminAddUserDialog';
 import { EditOrgUserDialog } from '@/components/admin/EditOrgUserDialog';
 import { DeleteOrgUserDialog } from '@/components/admin/DeleteOrgUserDialog';
@@ -69,7 +68,6 @@ import {
   checkBmsStatus,
   restoreSenderId,
   permanentlyDeleteSenderId,
-  updateHubtelCredentials,
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant, isBmsRejected } from '@/lib/senderIdStatus';
@@ -127,7 +125,6 @@ export function AdminOrganizationDetailPage() {
   const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<AdminSenderId | null>(null);
   const [editTarget, setEditTarget] = useState<EditSenderIdTarget | null>(null);
-  const [hubtelTarget, setHubtelTarget] = useState<EditHubtelCredentialsTarget | null>(null);
   const [showAddUser, setShowAddUser] = useState(false);
   const [editUserTarget, setEditUserTarget] = useState<AdminOrgUser | null>(null);
   const [deleteUserTarget, setDeleteUserTarget] = useState<AdminOrgUser | null>(null);
@@ -154,17 +151,6 @@ export function AdminOrganizationDetailPage() {
     mutationFn: () => updateAdminOrganizationProfile(id!, profileForm),
     onSuccess: () => {
       toast.success('Organization profile updated.');
-      invalidate();
-    },
-    onError: (err) => toast.error(apiErrorMessage(err)),
-  });
-
-  const saveHubtel = useMutation({
-    mutationFn: ({ clientId, clientSecret }: { clientId: string; clientSecret: string }) =>
-      updateHubtelCredentials(id!, hubtelTarget!.senderIdId, { clientId, clientSecret }),
-    onSuccess: () => {
-      toast.success('Hubtel credentials saved.');
-      setHubtelTarget(null);
       invalidate();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -365,25 +351,11 @@ export function AdminOrganizationDetailPage() {
                   <ShieldCheck className="h-3.5 w-3.5" /> Approve
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
-              >
-                <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setRejectTarget(s)}>
                 <X className="h-3.5 w-3.5" /> Reject
               </DropdownMenuItem>
             </>
-          )}
-          {s.status === 'approved' && (
-            <DropdownMenuItem
-              className="cursor-pointer"
-              onClick={() => setHubtelTarget({ senderIdId: s.id, senderId: s.senderId, hubtelConfigured: s.hubtelConfigured })}
-            >
-              <KeyRound className="h-3.5 w-3.5" /> Hubtel credentials
-            </DropdownMenuItem>
           )}
           {s.status === 'deleted' && (
             <>
@@ -613,12 +585,6 @@ export function AdminOrganizationDetailPage() {
                 <MobileListRow label="Purpose" value={s.purpose || '—'} />
                 <MobileListRow label="Status" value={<Badge variant={senderIdStatusVariant[s.status]}>{senderIdStatusLabel[s.status]}</Badge>} />
                 <MobileListRow label="BMS status" value={s.bmsStatus || '—'} />
-                {(s.status === 'processing' || s.status === 'approved') && (
-                  <MobileListRow
-                    label="Hubtel"
-                    value={<Badge variant={s.hubtelConfigured ? 'default' : 'outline'}>{s.hubtelConfigured ? 'Configured' : 'Not configured'}</Badge>}
-                  />
-                )}
               </MobileListCard>
             ))}
           </MobileList>
@@ -654,14 +620,7 @@ export function AdminOrganizationDetailPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{s.bmsStatus || '—'}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1.5">
-                        {(s.status === 'processing' || s.status === 'approved') && (
-                          <Badge variant={s.hubtelConfigured ? 'default' : 'outline'}>
-                            {s.hubtelConfigured ? 'Hubtel configured' : 'Hubtel not configured'}
-                          </Badge>
-                        )}
-                        {renderSenderIdActions(s)}
-                      </div>
+                      <div className="flex items-center gap-1.5">{renderSenderIdActions(s)}</div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -859,12 +818,6 @@ export function AdminOrganizationDetailPage() {
         onOpenChange={(open) => !open && setPermanentDeleteTarget(null)}
         onConfirm={() => permanentlyDelete.mutate()}
         isPending={permanentlyDelete.isPending}
-      />
-      <EditHubtelCredentialsDialog
-        target={hubtelTarget}
-        onOpenChange={(open) => !open && setHubtelTarget(null)}
-        onConfirm={(clientId, clientSecret) => saveHubtel.mutate({ clientId, clientSecret })}
-        isPending={saveHubtel.isPending}
       />
       <AdminAddUserDialog orgId={id!} open={showAddUser} onOpenChange={setShowAddUser} />
       <EditOrgUserDialog orgId={id!} target={editUserTarget} onOpenChange={(open) => !open && setEditUserTarget(null)} />

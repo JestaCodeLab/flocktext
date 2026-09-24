@@ -50,10 +50,10 @@ function computeMilestones(detail: MessageDetail): Milestone[] {
     milestones.push({
       key: 'escalated',
       icon: Zap,
-      label: 'Escalated to Hubtel',
+      label: 'Retried',
       done: true,
       at: earliest(escalated).at,
-      sub: `${escalated.length} resent via backup`,
+      sub: `${escalated.length} resent after staying pending`,
     });
   }
 
