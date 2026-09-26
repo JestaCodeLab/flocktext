@@ -17,7 +17,7 @@ import { apiErrorMessage } from '@/api/client';
 function statusLabel(stats: AdminOrgMessageStats) {
   if (stats.failed > 0) return `Failed (${stats.failed})`;
   if (stats.rejected > 0) return `Rejected (${stats.rejected})`;
-  if (stats.pending > 0) return 'Pending';
+  if (stats.pending > 0 || stats.submitted > 0) return 'Pending';
   return 'Delivered';
 }
 
@@ -41,14 +41,17 @@ export function AdminOrgMessageReportPage() {
     queryKey: ['admin-org-message-recipients', orgId, messageId],
     queryFn: () => fetchAdminOrgMessageRecipients(orgId, messageId!),
     enabled: !!messageId,
-    refetchInterval: (query) => ((query.state.data?.stats.pending ?? 0) > 0 ? 3000 : false),
+    // 'submitted' (BMS-confirmed, still resolving) also counts as unresolved here,
+    // same as 'pending' - see lib/messageStatus.ts.
+    refetchInterval: (query) =>
+      (query.state.data?.stats.pending ?? 0) + (query.state.data?.stats.submitted ?? 0) > 0 ? 3000 : false,
   });
 
   // Once every recipient resolves, the list pages' cached rows/summary/chart go stale -
   // invalidate them the moment pending crosses from >0 to 0, same as MessageReportPage.
   const prevPendingRef = useRef<number | null>(null);
   useEffect(() => {
-    const pendingNow = detail.data?.stats.pending;
+    const pendingNow = detail.data ? detail.data.stats.pending + detail.data.stats.submitted : undefined;
     if (pendingNow === undefined) return;
     if (prevPendingRef.current && prevPendingRef.current > 0 && pendingNow === 0) {
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
@@ -56,7 +59,7 @@ export function AdminOrgMessageReportPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
     }
     prevPendingRef.current = pendingNow;
-  }, [detail.data?.stats.pending, orgId, queryClient]);
+  }, [detail.data?.stats.pending, detail.data?.stats.submitted, orgId, queryClient]);
 
   const resend = useMutation({
     mutationFn: () => resendPendingMessage(orgId, messageId!),

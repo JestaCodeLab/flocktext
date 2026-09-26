@@ -5,6 +5,7 @@ export interface AdminMessageStats {
   delivered: number;
   failed: number;
   pending: number;
+  submitted: number;
   rejected: number;
 }
 
@@ -41,7 +42,7 @@ export interface AdminMessageRecipientRow {
   id: string;
   name: string;
   phone: string;
-  status: 'pending' | 'delivered' | 'failed' | 'rejected';
+  status: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected';
   reason: string;
   userReason: string;
   deliveredAt: string | null;
