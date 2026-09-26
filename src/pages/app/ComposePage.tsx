@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X } from 'lucide-react';
+import { Users, Send, CalendarClock, Repeat, Plus, Check, Info, TriangleAlert, CircleAlert, Search, X, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import senderIdSlide from '@/assets/auth-slides/slider_3.png';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { FeatureAnnouncementModal } from '@/components/announcements/FeatureAnnouncementModal';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
+import { ImportContactsWizard } from '@/components/contacts/ImportContactsWizard';
 import { DatePicker } from '@/components/ui/date-picker';
 import { TimePicker } from '@/components/ui/time-picker';
 import { fetchGroups, fetchContactsCount, fetchContacts, type Contact } from '@/api/contacts';
@@ -112,6 +113,16 @@ export function ComposePage() {
   const messageRef = useRef<HTMLTextAreaElement>(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showAddSenderId, setShowAddSenderId] = useState(false);
+  // null = import isn't scoped to a group yet (the wizard offers to create/assign one
+  // after import); set to a group id when opened from "that group is empty" so the
+  // import goes straight into it instead of asking again.
+  const [importDialogGroupId, setImportDialogGroupId] = useState<string | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+
+  function openImportDialog(groupId: string | null = null) {
+    setImportDialogGroupId(groupId);
+    setShowImportDialog(true);
+  }
   const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
   const [showSenderIdIntro, setShowSenderIdIntro] = useState(false);
 
@@ -226,12 +237,21 @@ export function ComposePage() {
           status: 'blocked',
           buttonLabel: `No ${entity.plural} to send to`,
           message: `You have no ${entity.plural} yet.`,
-          actionLabel: `Add ${entity.plural}`,
-          onAction: () => navigate('/app/contacts'),
+          actionLabel: `Import ${entity.plural}`,
+          onAction: () => openImportDialog(),
         });
       } else {
         result.push({ key: 'recipients', status: 'ok', message: `Sending to all ${recipientCount} ${entity.plural}` });
       }
+    } else if (groups.isSuccess && groups.data.length === 0) {
+      result.push({
+        key: 'recipients',
+        status: 'blocked',
+        buttonLabel: 'No groups to send to',
+        message: 'You have no groups yet.',
+        actionLabel: 'Import & add to group',
+        onAction: () => openImportDialog(),
+      });
     } else if (!selectedGroupId) {
       result.push({ key: 'recipients', status: 'blocked', buttonLabel: 'Choose a group', message: 'Choose a group to send to.' });
     } else if (groups.isSuccess && recipientCount === 0) {
@@ -240,8 +260,8 @@ export function ComposePage() {
         status: 'blocked',
         buttonLabel: 'Group is empty',
         message: `That group has no ${entity.plural} in it yet.`,
-        actionLabel: `Add ${entity.plural}`,
-        onAction: () => navigate('/app/contacts/groups'),
+        actionLabel: `Import to this group`,
+        onAction: () => openImportDialog(selectedGroupId),
       });
     } else {
       result.push({ key: 'recipients', status: 'ok', message: `Sending to ${recipientCount} ${entity.plural}` });
@@ -316,6 +336,7 @@ export function ComposePage() {
     recipientCount,
     contactsCount.isSuccess,
     groups.isSuccess,
+    groups.data,
     body,
     segments,
     scheduleMode,
@@ -622,41 +643,83 @@ export function ComposePage() {
             </div>
 
             {recipientMode === 'groups' ? (
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3">
-                {groups.data?.map((g) => {
-                  const selected = selectedGroupId === g.id;
-                  return (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => selectGroup(g.id)}
-                      className={cn(
-                        'relative flex items-center gap-2.5 rounded-lg border p-3 text-left',
-                        selected ? 'border-primary bg-accent/40' : 'border-border bg-background'
-                      )}
-                    >
-                      {selected && (
-                        <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                          <Check className="h-2.5 w-2.5" />
-                        </div>
-                      )}
-                      <Users className={cn('h-5 w-5 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} />
-                      <div className="min-w-0">
-                        <div className="truncate text-[14px] font-semibold leading-tight">{g.name}</div>
-                        <div className="text-[12px] text-muted-foreground">{g.count} {entity.plural}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : recipientMode === 'all' ? (
-              <div className="flex items-center gap-2.5 rounded-lg border border-primary bg-accent/40 p-3">
-                <Users className="h-5 w-5 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <div className="truncate text-[13px] font-semibold leading-tight">All {entity.pluralCap}</div>
-                  <div className="text-[11px] text-muted-foreground">{contactsCount.data ?? 0} {entity.plural}</div>
+              groups.isSuccess && groups.data.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8 text-center">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">No groups yet</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">
+                      Import {entity.plural} and add them to a group so you can send to them here.
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={() => openImportDialog()}>
+                    <Upload className="h-3.5 w-3.5" /> Import &amp; add to group
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-3">
+                    {groups.data?.map((g) => {
+                      const selected = selectedGroupId === g.id;
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => selectGroup(g.id)}
+                          className={cn(
+                            'relative flex items-center gap-2.5 rounded-lg border p-3 text-left',
+                            selected ? 'border-primary bg-accent/40' : 'border-border bg-background'
+                          )}
+                        >
+                          {selected && (
+                            <div className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                              <Check className="h-2.5 w-2.5" />
+                            </div>
+                          )}
+                          <Users className={cn('h-5 w-5 shrink-0', selected ? 'text-primary' : 'text-muted-foreground')} />
+                          <div className="min-w-0">
+                            <div className="truncate text-[14px] font-semibold leading-tight">{g.name}</div>
+                            <div className="text-[12px] text-muted-foreground">{g.count} {entity.plural}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedGroupId && recipientCount === 0 && (
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-lg border border-dashed border-border bg-secondary/30 p-3">
+                      <div className="text-xs text-muted-foreground">This group has no {entity.plural} in it yet.</div>
+                      <Button size="sm" variant="outline" onClick={() => openImportDialog(selectedGroupId)}>
+                        <Upload className="h-3.5 w-3.5" /> Import to this group
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            ) : recipientMode === 'all' ? (
+              contactsCount.isSuccess && (contactsCount.data ?? 0) === 0 ? (
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-8 text-center">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">No {entity.plural} yet</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">Import {entity.plural} to start sending messages.</div>
+                  </div>
+                  <Button size="sm" onClick={() => openImportDialog()}>
+                    <Upload className="h-3.5 w-3.5" /> Import {entity.plural}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2.5 rounded-lg border border-primary bg-accent/40 p-3">
+                  <Users className="h-5 w-5 shrink-0 text-primary" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-semibold leading-tight">All {entity.pluralCap}</div>
+                    <div className="text-[11px] text-muted-foreground">{contactsCount.data ?? 0} {entity.plural}</div>
+                  </div>
+                </div>
+              )
             ) : (
               <div className="space-y-2">
                 {(selectedContacts.length > 0 || manualRecipients.length > 0) && (
@@ -988,6 +1051,29 @@ export function ComposePage() {
       </Dialog>
 
       <AddSenderIdDialog open={showAddSenderId} onOpenChange={setShowAddSenderId} />
+
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>
+              {importDialogGroupId
+                ? `Import to "${groups.data?.find((g) => g.id === importDialogGroupId)?.name ?? 'group'}"`
+                : `Import ${entity.plural}`}
+            </DialogTitle>
+          </DialogHeader>
+          <ImportContactsWizard
+            groupId={importDialogGroupId ?? undefined}
+            onImported={(result) => {
+              if (result.imported > 0) {
+                queryClient.invalidateQueries({ queryKey: ['contacts'] });
+                queryClient.invalidateQueries({ queryKey: ['contacts-count'] });
+                queryClient.invalidateQueries({ queryKey: ['groups'] });
+              }
+            }}
+          />
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
 
       <FeatureAnnouncementModal
         open={showSenderIdIntro}
