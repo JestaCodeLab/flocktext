@@ -363,11 +363,13 @@ export function AdminOrganizationDetailPage() {
                 <RotateCcw className="h-3.5 w-3.5" /> Restore
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(s)}>
-                <Trash2 className="h-3.5 w-3.5" /> Delete permanently
-              </DropdownMenuItem>
             </>
           )}
+          {/* Available regardless of status - an admin doesn't need the org to soft-delete
+              it first (see api/controllers/adminSenderIdController.permanentlyDelete). */}
+          <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(s)}>
+            <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     );

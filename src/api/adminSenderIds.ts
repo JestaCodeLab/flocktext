@@ -63,7 +63,8 @@ export async function restoreSenderId(orgId: string, senderIdId: string) {
   return data;
 }
 
-// Only allowed while the request is "deleted" - removes the record outright.
+// Removes the record outright, from any status - the org doesn't need to have
+// soft-deleted it first.
 export async function permanentlyDeleteSenderId(orgId: string, senderIdId: string) {
   const { data } = await adminApi.delete<{ deleted: boolean }>(`/admin/sender-ids/${orgId}/${senderIdId}`);
   return data;

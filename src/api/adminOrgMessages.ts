@@ -8,7 +8,7 @@ export interface AdminOrgMessagesSummary {
   messagesSent: number;
   delivered: number;
   failed: number;
-  pending: number;
+  submitted: number;
   deliveryRate: number;
   creditsUsed: number;
   scheduledCount: number;

@@ -7,11 +7,12 @@ export function DeleteSenderIdPermanentlyDialog({
   onConfirm,
   isPending,
 }: {
-  target: { senderId: string } | null;
+  target: { senderId: string; status?: string } | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isPending: boolean;
 }) {
+  const isActive = !!target && target.status !== 'deleted';
   return (
     <Dialog open={!!target} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -19,6 +20,12 @@ export function DeleteSenderIdPermanentlyDialog({
           <DialogTitle>Permanently delete "{target?.senderId}"?</DialogTitle>
         </DialogHeader>
         <div className="text-sm text-muted-foreground">
+          {isActive && (
+            <p className="mb-2 font-medium text-destructive">
+              This sender ID hasn't been deleted by the organization first — it's still {target?.status} and may be in
+              active use for sending. Deleting it here removes it immediately.
+            </p>
+          )}
           This removes the record outright rather than just hiding it — it won't be recoverable with Restore afterward. Make
           sure it's already been deregistered on BMS Africa's own dashboard first (there's no API for that), since this only
           cleans up FlockText's own record of it.

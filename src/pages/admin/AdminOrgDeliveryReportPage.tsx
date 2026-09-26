@@ -51,18 +51,24 @@ import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
 import type { DateRangeParams } from '@/lib/dateRange';
 import { cn } from '@/lib/utils';
+import { STATUS_META } from '@/lib/messageStatus';
 
 const PAGE_SIZE = 20;
 
 // Matches the row-level badge used throughout the app: "Failed"/"Rejected" mean at
-// least one recipient landed in that outcome, "Pending" means nothing has
-// failed/rejected yet but delivery is still resolving (stats.pending or
-// stats.submitted - see lib/messageStatus.ts for why those are tracked separately),
-// otherwise every recipient resolved cleanly.
+// least one recipient landed in that outcome, "Pending" means at least one recipient
+// BMS hasn't even acknowledged yet, "Submitted" means BMS has confirmed every
+// unresolved recipient but at least one hasn't reached delivered yet (see
+// lib/messageStatus.ts for why pending/submitted are tracked separately) - this also
+// matches the "Delivered" tab's own filter (adminOrgMessagesController.applyStatusFilter),
+// which shows both submitted and delivered messages, not just fully-delivered ones.
 function messageStatusBadge(stats: AdminOrgMessageSummary['stats']) {
   if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
   if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
-  if (stats.pending > 0 || stats.submitted > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.submitted > 0) {
+    return { variant: STATUS_META.submitted.badgeVariant, label: STATUS_META.submitted.label, className: STATUS_META.submitted.tintClassName ?? '' };
+  }
   return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
@@ -371,7 +377,6 @@ export function AdminOrgDeliveryReportPage() {
   const [deliveredPage, setDeliveredPage] = useState(1);
   const [pendingPage, setPendingPage] = useState(1);
   const [failedPage, setFailedPage] = useState(1);
-  const [rejectedPage, setRejectedPage] = useState(1);
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [viewingScheduled, setViewingScheduled] = useState<ScheduledMessage | null>(null);
   const [resendConfirmId, setResendConfirmId] = useState<string | null>(null);
@@ -388,7 +393,6 @@ export function AdminOrgDeliveryReportPage() {
     setDeliveredPage(1);
     setPendingPage(1);
     setFailedPage(1);
-    setRejectedPage(1);
   }, [range]);
 
   const org = useQuery({
@@ -420,10 +424,6 @@ export function AdminOrgDeliveryReportPage() {
   const failed = useQuery({
     queryKey: ['admin-org-messages', orgId, 'failed', range, failedPage],
     queryFn: () => fetchAdminOrgMessages(orgId, 'failed', range, { page: failedPage, pageSize: PAGE_SIZE }),
-  });
-  const rejected = useQuery({
-    queryKey: ['admin-org-messages', orgId, 'rejected', range, rejectedPage],
-    queryFn: () => fetchAdminOrgMessages(orgId, 'rejected', range, { page: rejectedPage, pageSize: PAGE_SIZE }),
   });
 
   const detail = useQuery({
@@ -521,7 +521,6 @@ export function AdminOrgDeliveryReportPage() {
     delivered.isFetching ||
     pending.isFetching ||
     failed.isFetching ||
-    rejected.isFetching ||
     summary.isFetching ||
     chart.isFetching;
   const buckets = chart.data?.buckets ?? [];
@@ -556,7 +555,6 @@ export function AdminOrgDeliveryReportPage() {
               delivered.refetch();
               pending.refetch();
               failed.refetch();
-              rejected.refetch();
             }}
           >
             <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
@@ -585,7 +583,7 @@ export function AdminOrgDeliveryReportPage() {
           <MiniStatCard icon={Send} label="Sent" value={summary.data?.messagesSent ?? 0} tint="muted" />
           <MiniStatCard icon={CheckCircle2} label="Delivered" value={summary.data?.delivered ?? 0} tint="success" />
           <MiniStatCard icon={XCircle} label="Failed" value={summary.data?.failed ?? 0} tint="destructive" />
-          <MiniStatCard icon={Clock} label="Pending" value={summary.data?.pending ?? 0} tint="blue" />
+          <MiniStatCard icon={Clock} label="Submitted" value={summary.data?.submitted ?? 0} tint="blue" />
           <MiniStatCard icon={TrendingUp} label="Delivery Rate" value={`${summary.data?.deliveryRate ?? 0}%`} tint="primary" />
           <MiniStatCard icon={CreditCard} label="Credits Used" value={(summary.data?.creditsUsed ?? 0).toLocaleString()} tint="muted" />
         </div>
@@ -621,13 +619,13 @@ export function AdminOrgDeliveryReportPage() {
         <div className="no-scrollbar flex w-full max-w-full overflow-x-auto rounded-lg border border-border p-0.5 sm:w-fit">
           <button
             type="button"
-            onClick={() => setActiveTab('scheduled')}
+            onClick={() => setActiveTab('pending')}
             className={cn(
               'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
-              activeTab === 'scheduled' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+              activeTab === 'pending' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Scheduled ({scheduled.data?.total ?? 0})
+            Pending ({pending.data?.total ?? 0})
           </button>
           <button
             type="button"
@@ -641,13 +639,13 @@ export function AdminOrgDeliveryReportPage() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('pending')}
+            onClick={() => setActiveTab('scheduled')}
             className={cn(
               'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
-              activeTab === 'pending' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
+              activeTab === 'scheduled' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            Pending ({pending.data?.total ?? 0})
+            Scheduled ({scheduled.data?.total ?? 0})
           </button>
           <button
             type="button"
@@ -658,16 +656,6 @@ export function AdminOrgDeliveryReportPage() {
             )}
           >
             Failed ({failed.data?.total ?? 0})
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('rejected')}
-            className={cn(
-              'shrink-0 rounded-md px-3.5 py-1.5 text-sm font-semibold transition-colors',
-              activeTab === 'rejected' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            Rejected ({rejected.data?.total ?? 0})
           </button>
         </div>
 
@@ -748,25 +736,6 @@ export function AdminOrgDeliveryReportPage() {
               deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
             />
             <PaginationControls page={failedPage} total={failed.data?.total ?? 0} onPageChange={setFailedPage} />
-          </>
-        ))}
-
-      {activeTab === 'rejected' &&
-        (rejected.isLoading ? (
-          <div className="space-y-2.5">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-[52px] rounded-xl" />
-            ))}
-          </div>
-        ) : (
-          <>
-            <MessagesTable
-              rows={rejected.data?.rows ?? []}
-              onView={handleView}
-              onDelete={(messageId) => setDeleteConfirmId(messageId)}
-              deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
-            />
-            <PaginationControls page={rejectedPage} total={rejected.data?.total ?? 0} onPageChange={setRejectedPage} />
           </>
         ))}
 
