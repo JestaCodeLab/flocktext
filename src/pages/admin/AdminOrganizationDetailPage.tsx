@@ -29,6 +29,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -71,7 +72,7 @@ import {
 } from '@/api/adminSenderIds';
 import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant, isBmsRejected } from '@/lib/senderIdStatus';
-import type { AdminSenderId, AdminOrgUser } from '@/types/admin';
+import type { AdminSenderId, AdminOrgUser, AdminOrgDetail } from '@/types/admin';
 
 type OrgTabKey = 'sender-ids' | 'users' | 'api-access' | 'danger-zone';
 
@@ -83,6 +84,13 @@ const ORG_TABS: { key: OrgTabKey; label: string; icon: LucideIcon }[] = [
 ];
 
 const TRIGGER_CLASS = 'data-active:text-primary data-active:font-bold data-active:after:bg-primary';
+
+const ORG_TYPE_LABELS: Record<AdminOrgDetail['organizationType'], string> = {
+  church: 'Church',
+  business: 'Business',
+  institution: 'Institution',
+  agency: 'Agency',
+};
 
 function DetailSkeleton() {
   return (
@@ -119,7 +127,7 @@ export function AdminOrganizationDetailPage() {
     retry: false,
   });
 
-  const [profileForm, setProfileForm] = useState({ churchName: '', address: '', contactEmail: '' });
+  const [profileForm, setProfileForm] = useState({ churchName: '', address: '', description: '', contactEmail: '' });
   const [walletCredits, setWalletCredits] = useState('');
   const [walletReason, setWalletReason] = useState('');
   const [rejectTarget, setRejectTarget] = useState<AdminSenderId | null>(null);
@@ -137,6 +145,7 @@ export function AdminOrganizationDetailPage() {
       setProfileForm({
         churchName: detail.data.churchName,
         address: detail.data.address,
+        description: detail.data.description,
         contactEmail: detail.data.contactEmail,
       });
     }
@@ -427,9 +436,10 @@ export function AdminOrganizationDetailPage() {
 
       <div className="mb-6 flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex items-center gap-2.5 text-xl font-extrabold sm:text-[26px]">
+          <div className="flex flex-wrap items-center gap-2.5 text-xl font-extrabold sm:text-[26px]">
             {org.churchName || 'Untitled organization'}
             <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
+            <Badge variant="outline">{ORG_TYPE_LABELS[org.organizationType] ?? org.organizationType}</Badge>
           </div>
           <div className="mt-0.5 text-sm text-muted-foreground">
             Joined{' '}
@@ -533,6 +543,18 @@ export function AdminOrganizationDetailPage() {
               onChange={(e) => setProfileForm((f) => ({ ...f, address: e.target.value }))}
             />
           </div>
+          <div className="mb-3 space-y-1.5">
+            <Label htmlFor="org-description">Description</Label>
+            <Textarea
+              id="org-description"
+              placeholder="Not provided yet"
+              rows={3}
+              maxLength={250}
+              value={profileForm.description}
+              onChange={(e) => setProfileForm((f) => ({ ...f, description: e.target.value }))}
+            />
+            <div className="text-right text-xs text-muted-foreground">{profileForm.description.length}/250</div>
+          </div>
           <div className="mb-4 space-y-1.5">
             <Label htmlFor="org-email">Contact email</Label>
             <Input
@@ -541,7 +563,17 @@ export function AdminOrganizationDetailPage() {
               onChange={(e) => setProfileForm((f) => ({ ...f, contactEmail: e.target.value }))}
             />
           </div>
-          <Button disabled={saveProfile.isPending} onClick={() => saveProfile.mutate()}>
+          <Button
+            disabled={saveProfile.isPending}
+            onClick={() => {
+              const trimmed = profileForm.description.trim();
+              if (trimmed && trimmed.length < 20) {
+                toast.error('Description must be at least 20 characters, or left blank.');
+                return;
+              }
+              saveProfile.mutate();
+            }}
+          >
             {saveProfile.isPending ? 'Saving…' : 'Save profile'}
           </Button>
         </div>

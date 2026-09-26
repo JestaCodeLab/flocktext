@@ -87,6 +87,8 @@ export interface AdminOrgDetail {
   id: string;
   churchName: string;
   address: string;
+  description: string;
+  organizationType: 'church' | 'business' | 'institution' | 'agency';
   contactEmail: string;
   status: 'active' | 'suspended';
   walletBalanceCredits: number;

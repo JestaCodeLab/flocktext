@@ -34,6 +34,7 @@ export function PreferencesSection() {
       updateOrganizationProfile({
         churchName: organization?.churchName ?? '',
         address: organization?.address ?? '',
+        description: organization?.description ?? '',
         contactEmail: organization?.contactEmail,
         organizationType,
       }),

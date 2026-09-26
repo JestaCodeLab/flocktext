@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import {
@@ -14,6 +14,9 @@ import {
   File as FileIcon,
   IdCard,
   ClipboardPaste,
+  Loader2,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,6 +60,26 @@ const TEMPLATES: Partial<Record<Format, { content: string; type: string; filenam
     filename: 'contacts-template.txt',
   },
 };
+
+// Must match MAX_IMPORT_ROWS in api/controllers/contactController.js, which rejects a
+// single /contacts/import request over this size - rather than trimming or blocking an
+// over-sized file, the wizard splits it into chunks of this size and runs one confirm
+// request per chunk, sequentially (see runImport below).
+const MAX_IMPORT_ROWS = 2000;
+
+function chunkRows(rows: PreviewRow[], size: number): PreviewRow[][] {
+  const chunks: PreviewRow[][] = [];
+  for (let i = 0; i < rows.length; i += size) chunks.push(rows.slice(i, i + size));
+  return chunks;
+}
+
+type BatchStatus = 'pending' | 'uploading' | 'success' | 'error';
+interface ImportBatch {
+  rows: PreviewRow[];
+  status: BatchStatus;
+  result?: ImportResult;
+  errorMessage?: string;
+}
 
 // Matches TEMPLATES' own column order below (Phone, Name, Date of Birth) - shown as a
 // live example of "what your file should look like" under the dropzone, not just
@@ -150,7 +173,8 @@ export function ImportContactsWizard({
   const [fileLabel, setFileLabel] = useState('');
   const [rawRows, setRawRows] = useState<PreviewRow[] | null>(null);
   const [skippedCount, setSkippedCount] = useState(0);
-  const [result, setResult] = useState<ImportResult | null>(null);
+  const [batches, setBatches] = useState<ImportBatch[] | null>(null);
+  const notifiedRef = useRef(false);
   const [groupPromptDismissed, setGroupPromptDismissed] = useState(false);
   const [pastedText, setPastedText] = useState('');
 
@@ -202,20 +226,64 @@ export function ImportContactsWizard({
     onError: (err) => toast.error(apiErrorMessage(err, 'Could not read that text.')),
   });
 
-  const upload = useMutation({
-    mutationFn: (importRows: PreviewRow[]) => importContacts(importRows, groupId),
-    onSuccess: (data) => {
-      setResult(data);
-      setStage('import');
-      onImported?.(data);
-      if (data.imported > 0) {
-        toast.success(`Imported ${data.imported} ${data.imported === 1 ? entity.singular : entity.plural}.`);
-      } else {
-        toast.error(`No ${entity.plural} were imported — check the file and try again.`);
+  const allBatchesDone = batches !== null && batches.every((b) => b.status === 'success' || b.status === 'error');
+
+  // Combines every batch's ImportResult into one, once all of them have settled -
+  // there's no single ImportResult from the server once a file is split into more
+  // than one confirm request, so the wizard reconstructs the same shape here.
+  const aggregateResult = useMemo<ImportResult | null>(() => {
+    if (!batches || !allBatchesDone) return null;
+    return batches.reduce<ImportResult>(
+      (acc, b) =>
+        b.status === 'success' && b.result
+          ? {
+              imported: acc.imported + b.result.imported,
+              skipped: acc.skipped + b.result.skipped,
+              errors: [...acc.errors, ...b.result.errors],
+              contactIds: [...acc.contactIds, ...b.result.contactIds],
+            }
+          : acc,
+      { imported: 0, skipped: 0, errors: [], contactIds: [] }
+    );
+  }, [batches, allBatchesDone]);
+
+  // Fires once, when every batch has settled - a plain effect (rather than doing this
+  // inline at the end of runImport) so it can't double-fire if runImport is ever called
+  // again before a reset(), and notifiedRef.current is reset there for the next import.
+  useEffect(() => {
+    if (!allBatchesDone || !aggregateResult || notifiedRef.current) return;
+    notifiedRef.current = true;
+    onImported?.(aggregateResult);
+    if (aggregateResult.imported > 0) {
+      toast.success(`Imported ${aggregateResult.imported} ${aggregateResult.imported === 1 ? entity.singular : entity.plural}.`);
+    } else {
+      toast.error(`No ${entity.plural} were imported — check the file and try again.`);
+    }
+  }, [allBatchesDone, aggregateResult, onImported, entity]);
+
+  // Runs one /contacts/import request per batch of up to MAX_IMPORT_ROWS, one at a time
+  // (not in parallel) - each batch's status updates live so the UI can show a spinner,
+  // then a green check or a red X with that batch's own failure reason, as it finishes.
+  async function runImport() {
+    const initialBatches: ImportBatch[] = chunkRows(rows, MAX_IMPORT_ROWS).map((batchRows) => ({
+      rows: batchRows,
+      status: 'pending',
+    }));
+    notifiedRef.current = false;
+    setBatches(initialBatches);
+    setStage('import');
+
+    for (let i = 0; i < initialBatches.length; i++) {
+      setBatches((prev) => prev!.map((b, idx) => (idx === i ? { ...b, status: 'uploading' } : b)));
+      try {
+        const data = await importContacts(initialBatches[i].rows, groupId);
+        setBatches((prev) => prev!.map((b, idx) => (idx === i ? { ...b, status: 'success', result: data } : b)));
+      } catch (err) {
+        const errorMessage = apiErrorMessage(err, 'Could not import this batch.');
+        setBatches((prev) => prev!.map((b, idx) => (idx === i ? { ...b, status: 'error', errorMessage } : b)));
       }
-    },
-    onError: (err) => toast.error(apiErrorMessage(err, 'Could not import that file.')),
-  });
+    }
+  }
 
   const template = useMutation({
     mutationFn: (templateFormat: 'xlsx' | 'pdf') => fetchImportTemplateFile(templateFormat),
@@ -238,7 +306,8 @@ export function ImportContactsWizard({
     setFormat(null);
     setRawRows(null);
     setSkippedCount(0);
-    setResult(null);
+    setBatches(null);
+    notifiedRef.current = false;
     setGroupPromptDismissed(false);
     setPastedText('');
   }
@@ -485,7 +554,11 @@ export function ImportContactsWizard({
             <div className="text-base font-semibold">
               {preview.isPending ? 'Reading file…' : `Drag and drop a ${FORMAT_META[format].label} file here`}
             </div>
-            <div className="text-sm text-muted-foreground">{preview.isPending ? 'This can take a moment for larger files.' : `or click to browse — ${FORMAT_META[format].hint}`}</div>
+            <div className="text-sm text-muted-foreground">
+              {preview.isPending
+                ? 'This can take a moment for larger files.'
+                : `or click to browse — ${FORMAT_META[format].hint} · large files are imported automatically in batches of ${MAX_IMPORT_ROWS.toLocaleString()}`}
+            </div>
           </div>
           <div className="mt-3.5">
             <div className="mb-1.5 text-xs font-semibold text-muted-foreground">What your file should look like</div>
@@ -518,47 +591,101 @@ export function ImportContactsWizard({
             </div>
           )}
 
+          {rows.length > MAX_IMPORT_ROWS && (
+            <div className="mb-3 rounded-lg border border-border bg-secondary/40 px-3.5 py-2.5 text-sm text-muted-foreground">
+              FlockText imports up to {MAX_IMPORT_ROWS.toLocaleString()} {entity.plural} at a time — this will run automatically as{' '}
+              {Math.ceil(rows.length / MAX_IMPORT_ROWS)} batches, one after another.
+            </div>
+          )}
+
           <div className="mb-3">
             <ImportPreviewTable rows={rows} duplicateCount={duplicateCount} onRemoveDuplicates={removeDuplicates} entitySingular={entity.singular} />
           </div>
 
           <div className="flex flex-col-reverse gap-2.5 sm:flex-row">
-            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStage('format')} disabled={upload.isPending}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setStage('format')}>
               Choose a different source
             </Button>
-            <Button className="w-full sm:w-auto" disabled={upload.isPending || rows.length === 0} onClick={() => upload.mutate(rows)}>
-              {upload.isPending ? 'Importing…' : `Import ${rows.length} ${rows.length === 1 ? entity.singular : entity.plural}`}
+            <Button className="w-full sm:w-auto" disabled={rows.length === 0} onClick={runImport}>
+              Import {rows.length} {rows.length === 1 ? entity.singular : entity.plural}
             </Button>
           </div>
         </div>
       )}
 
-      {stage === 'import' && result && (
+      {stage === 'import' && batches && (
         <div>
-          <div className="mb-2 text-base">
-            <span className="font-semibold text-success">{result.imported} imported</span>
-            {', '}
-            <span className="text-muted-foreground">{result.skipped} skipped</span>
-            {result.errors.length > 0 ? `, ${result.errors.length} row(s) had errors.` : '.'}
-          </div>
-          {result.errors.length > 0 && (
-            <div className="mb-3 max-h-[140px] overflow-auto rounded-lg border border-border">
-              {result.errors.map((e, i) => (
-                <div key={i} className="border-b border-border px-3.5 py-2 text-sm text-muted-foreground last:border-b-0">
-                  {e.row ? `Row ${e.row}: ` : ''}
-                  {e.reason}
+          {batches.length > 1 && (
+            <div className="mb-4 space-y-2">
+              <div className="text-sm font-semibold">
+                Importing {batches.reduce((sum, b) => sum + b.rows.length, 0)} {entity.plural} in {batches.length} batches…
+              </div>
+              {batches.map((b, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-secondary/40 px-3.5 py-2.5 text-sm"
+                >
+                  <span className="min-w-0 truncate">
+                    Batch {i + 1} of {batches.length} — {b.rows.length} {b.rows.length === 1 ? entity.singular : entity.plural}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    {b.status === 'pending' && <span className="text-muted-foreground">Waiting…</span>}
+                    {b.status === 'uploading' && (
+                      <span className="flex items-center gap-1.5 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Uploading…
+                      </span>
+                    )}
+                    {b.status === 'success' && (
+                      <span className="flex items-center gap-1.5 text-success">
+                        <CheckCircle2 className="h-4 w-4" /> {b.result?.imported ?? 0} imported
+                      </span>
+                    )}
+                    {b.status === 'error' && (
+                      <span className="flex items-center gap-1.5 text-destructive" title={b.errorMessage}>
+                        <XCircle className="h-4 w-4" /> {b.errorMessage}
+                      </span>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
           )}
 
-          {result.imported > 0 && !groupId && !groupPromptDismissed && (
-            <ImportGroupPrompt contactIds={result.contactIds} onDone={() => setGroupPromptDismissed(true)} />
+          {!allBatchesDone && batches.length === 1 && (
+            <div className="mb-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Importing {batches[0].rows.length} {batches[0].rows.length === 1 ? entity.singular : entity.plural}…
+            </div>
           )}
 
-          <Button variant="outline" className="mt-4 w-full sm:w-auto" onClick={reset}>
-            Import another file
-          </Button>
+          {allBatchesDone && aggregateResult && (
+            <>
+              <div className="mb-2 text-base">
+                <span className="font-semibold text-success">{aggregateResult.imported} imported</span>
+                {', '}
+                <span className="text-muted-foreground">{aggregateResult.skipped} skipped</span>
+                {aggregateResult.errors.length > 0 ? `, ${aggregateResult.errors.length} row(s) had errors.` : '.'}
+              </div>
+              {aggregateResult.errors.length > 0 && (
+                <div className="mb-3 max-h-[140px] overflow-auto rounded-lg border border-border">
+                  {aggregateResult.errors.map((e, i) => (
+                    <div key={i} className="border-b border-border px-3.5 py-2 text-sm text-muted-foreground last:border-b-0">
+                      {e.row ? `Row ${e.row}: ` : ''}
+                      {e.reason}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {aggregateResult.imported > 0 && !groupId && !groupPromptDismissed && (
+                <ImportGroupPrompt contactIds={aggregateResult.contactIds} onDone={() => setGroupPromptDismissed(true)} />
+              )}
+
+              <Button variant="outline" className="mt-4 w-full sm:w-auto" onClick={reset}>
+                Import another file
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>

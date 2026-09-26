@@ -44,6 +44,7 @@ export interface SessionOrganization {
   id: string;
   churchName: string;
   address: string;
+  description: string;
   organizationType: 'church' | 'business' | 'institution' | 'agency';
   contactEmail: string;
   notifPrefs: NotifPrefs;
