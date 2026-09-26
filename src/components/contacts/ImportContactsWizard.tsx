@@ -307,40 +307,49 @@ export function ImportContactsWizard({
   }
 
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-card p-5">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 sm:p-5">
       {stage === 'choice' && (
         <div>
-          <div className="mb-5">
+          <div className="mb-3.5 sm:mb-5">
             <div className="mb-1 text-lg font-bold text-foreground/80">Add {entity.plural}</div>
             <div className="text-sm text-muted-foreground">Bring in a file, or let people add themselves.</div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {/* Row layout on mobile (icon beside the text) instead of the sm+ stacked-card
+              layout - keeps all three options, the dialog's close icon, and its footer
+              button all in view together on short phone screens without scrolling. */}
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
             <button
               type="button"
               onClick={() => setStage('format')}
-              className="flex flex-col items-start gap-2.5 rounded-xl border border-border p-5 text-left transition-colors hover:border-primary/50 hover:bg-accent/30"
+              className="flex flex-row items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/30 sm:flex-col sm:items-start sm:gap-2.5 sm:p-5"
             >
-              <UploadIcon className="h-6 w-6 text-muted-foreground" />
-              <div className="text-base font-semibold">Import {entity.plural}</div>
-              <div className="text-sm text-muted-foreground">Upload a file from your device.</div>
+              <UploadIcon className="h-5 w-5 shrink-0 text-muted-foreground sm:h-6 sm:w-6" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold sm:text-base">Import {entity.plural}</div>
+                <div className="text-xs text-muted-foreground sm:text-sm">Upload a file from your device.</div>
+              </div>
             </button>
             <button
               type="button"
               onClick={() => setStage('paste')}
-              className="flex flex-col items-start gap-2.5 rounded-xl border border-border p-5 text-left transition-colors hover:border-primary/50 hover:bg-accent/30"
+              className="flex flex-row items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/30 sm:flex-col sm:items-start sm:gap-2.5 sm:p-5"
             >
-              <ClipboardPaste className="h-6 w-6 text-muted-foreground" />
-              <div className="text-base font-semibold">Paste a list</div>
-              <div className="text-sm text-muted-foreground">Copy and paste numbers directly.</div>
+              <ClipboardPaste className="h-5 w-5 shrink-0 text-muted-foreground sm:h-6 sm:w-6" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold sm:text-base">Paste a list</div>
+                <div className="text-xs text-muted-foreground sm:text-sm">Copy and paste numbers directly.</div>
+              </div>
             </button>
             <button
               type="button"
               onClick={() => setStage('share')}
-              className="flex flex-col items-start gap-2.5 rounded-xl border border-border p-5 text-left transition-colors hover:border-primary/50 hover:bg-accent/30"
+              className="flex flex-row items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:border-primary/50 hover:bg-accent/30 sm:flex-col sm:items-start sm:gap-2.5 sm:p-5"
             >
-              <Share2 className="h-6 w-6 text-muted-foreground" />
-              <div className="text-base font-semibold">Share a sign-up link</div>
-              <div className="text-sm text-muted-foreground">Let people add themselves.</div>
+              <Share2 className="h-5 w-5 shrink-0 text-muted-foreground sm:h-6 sm:w-6" />
+              <div className="min-w-0">
+                <div className="text-sm font-semibold sm:text-base">Share a sign-up link</div>
+                <div className="text-xs text-muted-foreground sm:text-sm">Let people add themselves.</div>
+              </div>
             </button>
           </div>
         </div>
