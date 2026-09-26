@@ -94,6 +94,14 @@ export function AddSenderIdDialog({
               <span className="font-semibold">GRACECHAPEL</span>). Review takes under 24 hours.
             </div>
           </div>
+          <div className="flex items-start gap-2.5 rounded-xl border border-warning/30 bg-warning/10 p-3.5">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            <div className="text-[13px] text-foreground/80">
+              Note: Sender IDs related to loans, finance, banking, insurance, telecoms, government agencies, or
+              well-known businesses/brands require valid business registration documents for verification before
+              approval.
+            </div>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
