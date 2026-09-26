@@ -21,20 +21,23 @@ export function MessageReportPage() {
     queryFn: () => fetchMessageRecipients(id!),
     enabled: !!id,
     // Keep polling while delivery is still resolving so the breakdown updates live.
-    refetchInterval: (query) => ((query.state.data?.stats.pending ?? 0) > 0 ? 3000 : false),
+    // 'submitted' (BMS-confirmed, still resolving) also counts as unresolved here,
+    // same as 'pending' - see lib/messageStatus.ts.
+    refetchInterval: (query) =>
+      (query.state.data?.stats.pending ?? 0) + (query.state.data?.stats.submitted ?? 0) > 0 ? 3000 : false,
   });
 
   // The flat Delivered/Failed lists only fetch on mount + manual refresh, so once this
   // message finishes resolving here, nudge them to pick it up on the next visit.
   const prevPendingRef = useRef<number | null>(null);
   useEffect(() => {
-    const pending = detail.data?.stats.pending;
+    const pending = detail.data ? detail.data.stats.pending + detail.data.stats.submitted : undefined;
     if (pending === undefined) return;
     if (prevPendingRef.current !== null && prevPendingRef.current > 0 && pending === 0) {
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     }
     prevPendingRef.current = pending;
-  }, [detail.data?.stats.pending, queryClient]);
+  }, [detail.data?.stats.pending, detail.data?.stats.submitted, queryClient]);
 
   const resend = useMutation({
     mutationFn: () => resendFailedMessage(id!),

@@ -102,6 +102,9 @@ export interface MessageStats {
   delivered: number;
   failed: number;
   pending: number;
+  // Confirmed received by the SMS provider, still resolving toward delivered/failed -
+  // distinct from `pending` (no confirmation from the provider yet at all).
+  submitted: number;
   rejected: number;
 }
 
@@ -127,7 +130,7 @@ export interface MessageRecipientRow {
   id: string;
   name: string;
   phone: string;
-  status: 'pending' | 'delivered' | 'failed' | 'rejected';
+  status: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected';
   // Technical/admin-facing cause - shown only in the Admin Console.
   reason: string;
   // Friendly, org-facing version of the same outcome - shown in the org's own reports.
@@ -145,7 +148,7 @@ export interface MessageRecipientRow {
   // Set (to the resend attempt's live status) once this failed/rejected recipient has been
   // resent via "Resend to N failed" - lets the UI show what actually happened next instead
   // of leaving a bare, seemingly-unresolved "failed" badge. null/undefined = never resent.
-  resentStatus?: 'pending' | 'delivered' | 'failed' | 'rejected' | null;
+  resentStatus?: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | null;
 }
 
 export interface MessageDetail {

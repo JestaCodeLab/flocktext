@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DeleteAdminMessageDialog } from '@/components/admin/DeleteAdminMessageDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { StatusBadge, providerBadge, downloadCsv } from '@/components/messages/MessageDetailBody';
+import { StatusInfoButton } from '@/components/messages/StatusInfoButton';
 import {
   deleteAdminMessage,
   fetchAdminMessages,
@@ -26,12 +27,12 @@ const PAGE_SIZE = 20;
 
 // Matches messageController.listMessages' semantics on the org side: "delivered"
 // means nothing has failed or been rejected yet (stats.failed === 0 &&
-// stats.rejected === 0 - includes still-pending rows), "failed"/"rejected" each mean
-// at least one recipient landed in that outcome.
+// stats.rejected === 0 - includes still-pending/submitted rows), "failed"/"rejected"
+// each mean at least one recipient landed in that outcome.
 function messageStatusBadge(stats: AdminMessageStats) {
   if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
   if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.pending > 0 || stats.submitted > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
   return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
@@ -245,7 +246,10 @@ export function AdminDeliveryReportPage() {
     enabled: !!viewingId,
     // Keep polling while delivery is still resolving so the breakdown updates live -
     // same as MessageReportPage/AdminOrgMessageReportPage's single-message detail views.
-    refetchInterval: (query) => ((query.state.data?.stats.pending ?? 0) > 0 ? 3000 : false),
+    // 'submitted' (BMS-confirmed, still resolving) also counts as unresolved here, same
+    // as 'pending' - see lib/messageStatus.ts.
+    refetchInterval: (query) =>
+      (query.state.data?.stats.pending ?? 0) + (query.state.data?.stats.submitted ?? 0) > 0 ? 3000 : false,
   });
 
   // The row list and this modal are fetched independently, so if delivery status
@@ -319,6 +323,7 @@ export function AdminDeliveryReportPage() {
         </div>
 
         <div className="flex w-full items-center gap-2.5 sm:w-auto">
+          <StatusInfoButton />
           <div className="relative max-w-sm flex-1">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input

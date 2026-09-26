@@ -42,6 +42,7 @@ export interface AdminOrgMessageStats {
   delivered: number;
   failed: number;
   pending: number;
+  submitted: number;
   rejected: number;
 }
 
@@ -127,6 +128,7 @@ export interface AdminOrgMessageExportRow {
   delivered: number;
   failed: number;
   pending: number;
+  submitted: number;
   rejected: number;
   creditCost: number;
 }

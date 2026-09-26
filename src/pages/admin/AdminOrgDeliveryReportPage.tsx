@@ -30,6 +30,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { MessageDetailBody, MiniStatCard, downloadCsv, sourceBadge } from '@/components/messages/MessageDetailBody';
+import { StatusInfoButton } from '@/components/messages/StatusInfoButton';
 import { ResendPendingDialog } from '@/components/admin/ResendPendingDialog';
 import { DeleteMessageDialog } from '@/components/admin/DeleteMessageDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
@@ -55,12 +56,13 @@ const PAGE_SIZE = 20;
 
 // Matches the row-level badge used throughout the app: "Failed"/"Rejected" mean at
 // least one recipient landed in that outcome, "Pending" means nothing has
-// failed/rejected yet but delivery is still resolving, otherwise every recipient
-// resolved cleanly.
+// failed/rejected yet but delivery is still resolving (stats.pending or
+// stats.submitted - see lib/messageStatus.ts for why those are tracked separately),
+// otherwise every recipient resolved cleanly.
 function messageStatusBadge(stats: AdminOrgMessageSummary['stats']) {
   if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
   if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.pending > 0 || stats.submitted > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
   return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 
@@ -542,6 +544,7 @@ export function AdminOrgDeliveryReportPage() {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
+          <StatusInfoButton />
           <Button
             size="sm"
             variant="outline"

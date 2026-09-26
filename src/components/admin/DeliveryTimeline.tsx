@@ -57,7 +57,7 @@ function computeMilestones(detail: MessageDetail): Milestone[] {
     });
   }
 
-  const isResolved = detail.stats.total > 0 && detail.stats.pending === 0;
+  const isResolved = detail.stats.total > 0 && detail.stats.pending === 0 && detail.stats.submitted === 0;
   if (isResolved) {
     const resolvedTimes = detail.recipients
       .map((r) => r.updatedAt || r.deliveredAt)
@@ -78,7 +78,7 @@ function computeMilestones(detail: MessageDetail): Milestone[] {
       label: 'Delivered',
       done: false,
       at: null,
-      sub: `${detail.stats.pending} pending`,
+      sub: detail.stats.submitted > 0 ? `${detail.stats.pending} pending, ${detail.stats.submitted} submitted` : `${detail.stats.pending} pending`,
     });
   }
 

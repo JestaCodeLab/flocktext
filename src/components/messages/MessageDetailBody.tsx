@@ -5,30 +5,28 @@ import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { MessageDetail } from '@/api/messages';
+import type { MessageDetail, MessageStats } from '@/api/messages';
 import { cn } from '@/lib/utils';
+import { STATUS_META, STATUS_ORDER, type MessageRecipientStatus } from '@/lib/messageStatus';
 
 const RECIPIENTS_PAGE_SIZE = 10;
 
-export function statusBadgeVariant(status: 'pending' | 'delivered' | 'failed' | 'rejected') {
-  if (status === 'delivered') return 'success' as const;
-  if (status === 'failed') return 'destructive' as const;
-  if (status === 'rejected') return 'outline' as const;
-  return 'secondary' as const;
+export function statusBadgeVariant(status: MessageRecipientStatus) {
+  return STATUS_META[status].badgeVariant;
 }
 
-// 'rejected' has no dedicated Badge variant token, so it's rendered with the same
-// outline+warning-tint pattern already used elsewhere in the app (e.g.
-// ImportPreviewTable.tsx's "possible duplicate" badge) rather than adding a new variant.
-export function StatusBadge({ status }: { status: 'pending' | 'delivered' | 'failed' | 'rejected' }) {
-  if (status === 'rejected') {
-    return (
-      <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
-        rejected
-      </Badge>
-    );
-  }
-  return <Badge variant={statusBadgeVariant(status)}>{status}</Badge>;
+// 'submitted' and 'rejected' have no dedicated Badge variant token, so they're rendered
+// with an outline+tint pattern (same one ImportPreviewTable.tsx's "possible duplicate"
+// badge already uses) instead of adding a new variant - see lib/messageStatus.ts for the
+// single source of truth on label/color that this, the aggregate per-message status
+// badges, DeliveryBarChart, and StatusInfoButton all share.
+export function StatusBadge({ status }: { status: MessageRecipientStatus }) {
+  const meta = STATUS_META[status];
+  return (
+    <Badge variant={meta.badgeVariant} className={meta.tintClassName}>
+      {meta.label}
+    </Badge>
+  );
 }
 
 export function sourceBadge(source: MessageDetail['source']) {
@@ -106,8 +104,11 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
-function DeliveryBarChart({ delivered, failed, rejected }: { delivered: number; failed: number; rejected: number }) {
-  const data = [{ label: 'Delivery', delivered, failed, rejected }];
+// Bar colors/order come straight from lib/messageStatus.ts's STATUS_META/STATUS_ORDER,
+// the same source the recipient table's StatusBadge and StatusInfoButton's legend use,
+// so a color always means the same status everywhere in the delivery report.
+function DeliveryBarChart({ stats }: { stats: Pick<MessageStats, 'delivered' | 'submitted' | 'pending' | 'rejected' | 'failed'> }) {
+  const data = [{ label: 'Delivery', ...stats }];
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <ResponsiveContainer width="100%" height={200}>
@@ -117,9 +118,16 @@ function DeliveryBarChart({ delivered, failed, rejected }: { delivered: number; 
           <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
           <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
           <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
-          <Bar dataKey="delivered" name="Delivered" fill="var(--color-success)" radius={[4, 4, 0, 0]} maxBarSize={56} />
-          <Bar dataKey="rejected" name="Rejected" fill="var(--color-warning)" radius={[4, 4, 0, 0]} maxBarSize={56} />
-          <Bar dataKey="failed" name="Failed" fill="var(--color-destructive)" radius={[4, 4, 0, 0]} maxBarSize={56} />
+          {STATUS_ORDER.map((status) => (
+            <Bar
+              key={status}
+              dataKey={status}
+              name={STATUS_META[status].label}
+              fill={`var(--color-${STATUS_META[status].chartColorVar})`}
+              radius={[4, 4, 0, 0]}
+              maxBarSize={56}
+            />
+          ))}
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -183,9 +191,9 @@ function RecipientsPaginationControls({ page, total, onPageChange }: { page: num
 // sit there looking like an unresolved, ignored failure - this renders what actually
 // happened on the follow-up send, resolved live server-side rather than a stale snapshot.
 function ResentStatusNote({ status }: { status: NonNullable<MessageDetail['recipients'][number]['resentStatus']> }) {
-  const label =
-    status === 'delivered' ? 'Delivered' : status === 'pending' ? 'Pending' : status === 'rejected' ? 'Rejected' : 'Failed again';
-  const className = status === 'delivered' ? 'text-success' : status === 'pending' ? 'text-muted-foreground' : 'text-destructive';
+  const label = status === 'failed' ? 'Failed again' : STATUS_META[status].label;
+  const className =
+    status === 'delivered' ? 'text-success' : status === 'submitted' ? 'text-chart-3' : status === 'pending' ? 'text-muted-foreground' : 'text-destructive';
   return (
     <div className="mt-1 flex items-center gap-1 text-[11px] text-muted-foreground">
       <ArrowRight className="h-3 w-3 shrink-0" />
@@ -300,7 +308,7 @@ export function MessageDetailBody({
               <MiniStatCard icon={Tag} label="Sender" value={detail.senderId} tint="muted" />
               <MiniStatCard icon={Share2} label="Source" value={detail.source} tint="muted" />
             </div>
-            <DeliveryBarChart delivered={detail.stats.delivered} failed={detail.stats.failed} rejected={detail.stats.rejected} />
+            <DeliveryBarChart stats={detail.stats} />
           </div>
           <MessageCard detail={detail} />
         </div>
