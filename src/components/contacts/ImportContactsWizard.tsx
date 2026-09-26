@@ -13,8 +13,10 @@ import {
   FileSpreadsheet,
   File as FileIcon,
   IdCard,
+  ClipboardPaste,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { ImportPreviewTable } from '@/components/contacts/ImportPreviewTable';
 import { ImportGroupPrompt } from '@/components/contacts/ImportGroupPrompt';
 import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
@@ -32,7 +34,7 @@ import { useEntityLabels } from '@/lib/terminology';
 import { parseVCard } from '@/lib/vcard';
 import { annotateDuplicates, type PreviewRow } from '@/lib/contactImport';
 
-type Stage = 'choice' | 'share' | 'format' | 'upload' | 'preview' | 'import';
+type Stage = 'choice' | 'share' | 'paste' | 'format' | 'upload' | 'preview' | 'import';
 type Format = ImportFileFormat | 'vcard';
 
 const FORMAT_META: Record<Format, { label: string; icon: typeof FileText; accept: string; hint: string }> = {
@@ -150,6 +152,7 @@ export function ImportContactsWizard({
   const [skippedCount, setSkippedCount] = useState(0);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [groupPromptDismissed, setGroupPromptDismissed] = useState(false);
+  const [pastedText, setPastedText] = useState('');
 
   const existingPhones = useQuery({
     queryKey: ['contacts', 'phones'],
@@ -176,6 +179,27 @@ export function ImportContactsWizard({
       setStage('preview');
     },
     onError: (err) => toast.error(apiErrorMessage(err, 'Could not read that file.')),
+  });
+
+  // Pasted text is parsed through the exact same server-side "txt" line parser as an
+  // uploaded .txt file (see FORMAT_META.txt) - hardcoded here rather than going through
+  // the shared `preview` mutation above, which reads `format` from state: calling
+  // setFormat('txt') and preview.mutate() in the same handler would still close over
+  // this render's (stale) `format` value, not the one just set.
+  const pastePreview = useMutation({
+    mutationFn: (text: string) => previewImportFile(new File([text], 'pasted-contacts.txt', { type: 'text/plain' }), 'txt'),
+    onSuccess: (data) => {
+      if (!data.rows.length) {
+        toast.error('No contacts were found in that text.');
+        return;
+      }
+      setFormat('txt');
+      setFileLabel('Pasted list');
+      setRawRows(data.rows);
+      setSkippedCount(data.errors.length);
+      setStage('preview');
+    },
+    onError: (err) => toast.error(apiErrorMessage(err, 'Could not read that text.')),
   });
 
   const upload = useMutation({
@@ -216,6 +240,7 @@ export function ImportContactsWizard({
     setSkippedCount(0);
     setResult(null);
     setGroupPromptDismissed(false);
+    setPastedText('');
   }
 
   function chooseFormat(next: Format) {
@@ -289,7 +314,7 @@ export function ImportContactsWizard({
             <div className="mb-1 text-lg font-bold text-foreground/80">Add {entity.plural}</div>
             <div className="text-sm text-muted-foreground">Bring in a file, or let people add themselves.</div>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <button
               type="button"
               onClick={() => setStage('format')}
@@ -301,6 +326,15 @@ export function ImportContactsWizard({
             </button>
             <button
               type="button"
+              onClick={() => setStage('paste')}
+              className="flex flex-col items-start gap-2.5 rounded-xl border border-border p-5 text-left transition-colors hover:border-primary/50 hover:bg-accent/30"
+            >
+              <ClipboardPaste className="h-6 w-6 text-muted-foreground" />
+              <div className="text-base font-semibold">Paste a list</div>
+              <div className="text-sm text-muted-foreground">Copy and paste numbers directly.</div>
+            </button>
+            <button
+              type="button"
               onClick={() => setStage('share')}
               className="flex flex-col items-start gap-2.5 rounded-xl border border-border p-5 text-left transition-colors hover:border-primary/50 hover:bg-accent/30"
             >
@@ -309,6 +343,44 @@ export function ImportContactsWizard({
               <div className="text-sm text-muted-foreground">Let people add themselves.</div>
             </button>
           </div>
+        </div>
+      )}
+
+      {stage === 'paste' && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setStage('choice')}
+            className="mb-3 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back
+          </button>
+          <div className="mb-4">
+            <div className="mb-1 text-lg font-bold text-foreground/80">Paste a list of {entity.plural}</div>
+            <div className="text-sm text-muted-foreground">One per line - phone number and name, separated by a comma.</div>
+          </div>
+          <Textarea
+            autoFocus
+            rows={8}
+            placeholder={'+15551234567, Jane Doe\n+15559876543, John Smith'}
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+            className="font-mono text-sm"
+          />
+          <div className="mt-3.5">
+            <div className="mb-1.5 text-xs font-semibold text-muted-foreground">What this should look like</div>
+            <FormatFilePreview format="txt" />
+            <div className="mt-2 text-xs text-muted-foreground">
+              Only the phone number is required — name and date of birth are optional.
+            </div>
+          </div>
+          <Button
+            className="mt-4 w-full sm:w-auto"
+            disabled={!pastedText.trim() || pastePreview.isPending}
+            onClick={() => pastePreview.mutate(pastedText)}
+          >
+            {pastePreview.isPending ? 'Reading…' : 'Preview contacts'}
+          </Button>
         </div>
       )}
 

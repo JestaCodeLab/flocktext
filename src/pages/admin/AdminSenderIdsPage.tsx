@@ -204,12 +204,14 @@ export function AdminSenderIdsPage() {
                 <RotateCcw className="h-3.5 w-3.5" /> Restore
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(row)}>
-                <Trash2 className="h-3.5 w-3.5" /> Delete permanently
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
             </>
           )}
+          {/* Available regardless of status - an admin doesn't need the org to soft-delete
+              it first (see api/controllers/adminSenderIdController.permanentlyDelete). */}
+          <DropdownMenuItem variant="destructive" className="cursor-pointer" onClick={() => setPermanentDeleteTarget(row)}>
+            <Trash2 className="h-3.5 w-3.5" /> Delete permanently
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="cursor-pointer" onClick={() => navigate(`/admin/organizations/${row.orgId}`)}>
             <ExternalLink className="h-3.5 w-3.5" /> View organization
           </DropdownMenuItem>
