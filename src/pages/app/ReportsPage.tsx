@@ -41,18 +41,25 @@ import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
+import { STATUS_META } from '@/lib/messageStatus';
 
 // Delivered/Failed/Rejected here refer to the whole send, not one recipient - "Failed"
 // means at least one recipient failed and "Rejected" means at least one was rejected
 // (each matches the tab that row can appear in, and the set eligible for
-// resend-failed); "Pending" means still resolving - stats.pending (no confirmation
-// from the provider yet) or stats.submitted (confirmed, still resolving - see
-// lib/messageStatus.ts) both count. `className` carries the outline+warning
-// treatment 'rejected' needs, since it has no dedicated Badge variant.
+// resend-failed). The "Delivered" tab's own backend filter is just "nothing failed
+// or rejected yet" (see messageController.listMessages), so it also holds messages
+// still resolving - those show "Submitted" here instead of "Delivered" (reusing
+// lib/messageStatus.ts's STATUS_META so the color matches the per-recipient badge).
+// A message that's still purely `pending` (BMS hasn't confirmed receipt at all yet)
+// is folded into "Submitted" too rather than given its own third label - that window
+// is normally seconds wide (see services/deliveryStatusSync.js), so distinguishing it
+// here isn't worth a label most people will never actually see.
 function messageStatusBadge(stats: MessageStats) {
   if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
   if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
-  if (stats.pending > 0 || stats.submitted > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.pending > 0 || stats.submitted > 0) {
+    return { variant: STATUS_META.submitted.badgeVariant, label: STATUS_META.submitted.label, className: STATUS_META.submitted.tintClassName ?? '' };
+  }
   return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 

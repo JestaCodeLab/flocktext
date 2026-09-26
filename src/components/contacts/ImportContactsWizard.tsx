@@ -56,6 +56,63 @@ const TEMPLATES: Partial<Record<Format, { content: string; type: string; filenam
   },
 };
 
+// Matches TEMPLATES' own column order below (Phone, Name, Date of Birth) - shown as a
+// live example of "what your file should look like" under the dropzone, not just
+// described in the hint text above it.
+const SAMPLE_CONTACTS = [
+  { phone: '+15551234567', name: 'Jane Doe', dob: '1990-05-14' },
+  { phone: '+15559876543', name: 'John Smith', dob: '1985-03-22' },
+];
+
+// csv/xlsx share the same tabular shape; txt/pdf share the same one-line-per-contact
+// shape (pdf has no static TEMPLATES entry since it's server-generated, but is parsed
+// the same "best-effort line" way per FORMAT_META's hint); vcard gets its own block.
+function FormatFilePreview({ format }: { format: Format }) {
+  if (format === 'csv' || format === 'xlsx') {
+    return (
+      <div className="overflow-hidden rounded-lg border border-border">
+        <table className="w-full text-left text-xs">
+          <thead>
+            <tr className="bg-secondary/60 text-muted-foreground">
+              <th className="px-3 py-2 font-semibold">Phone</th>
+              <th className="px-3 py-2 font-semibold">Name</th>
+              <th className="px-3 py-2 font-semibold">Date of Birth</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SAMPLE_CONTACTS.map((c) => (
+              <tr key={c.phone} className="border-t border-border">
+                <td className="px-3 py-2 text-muted-foreground">{c.phone}</td>
+                <td className="px-3 py-2 text-foreground">{c.name}</td>
+                <td className="px-3 py-2 text-muted-foreground">{c.dob}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  if (format === 'vcard') {
+    return (
+      <pre className="overflow-x-auto rounded-lg border border-border bg-secondary/30 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
+        {SAMPLE_CONTACTS.map((c) => `BEGIN:VCARD\nVERSION:3.0\nFN:${c.name}\nTEL:${c.phone}\nEND:VCARD`).join('\n')}
+      </pre>
+    );
+  }
+
+  // txt / pdf
+  return (
+    <div className="space-y-1 rounded-lg border border-border bg-secondary/30 p-3 font-mono text-xs text-muted-foreground">
+      {SAMPLE_CONTACTS.map((c) => (
+        <div key={c.phone}>
+          {c.phone}, {c.name}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -348,6 +405,13 @@ export function ImportContactsWizard({
               {preview.isPending ? 'Reading file…' : `Drag and drop a ${FORMAT_META[format].label} file here`}
             </div>
             <div className="text-sm text-muted-foreground">{preview.isPending ? 'This can take a moment for larger files.' : `or click to browse — ${FORMAT_META[format].hint}`}</div>
+          </div>
+          <div className="mt-3.5">
+            <div className="mb-1.5 text-xs font-semibold text-muted-foreground">What your file should look like</div>
+            <FormatFilePreview format={format} />
+            <div className="mt-2 text-xs text-muted-foreground">
+              Only the phone number is required — name and date of birth are optional.
+            </div>
           </div>
         </div>
       )}
