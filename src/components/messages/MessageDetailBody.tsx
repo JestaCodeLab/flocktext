@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, Ban, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -341,13 +341,14 @@ export function MessageDetailBody({
       <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         <MiniStatCard icon={Send} label="Total" value={detail.stats.total} tint="muted" />
         <MiniStatCard icon={CheckCircle2} label="Delivered" value={detail.stats.delivered} tint="success" />
-        <MiniStatCard icon={Ban} label="Rejected" value={detail.stats.rejected} tint="warning" />
+        <MiniStatCard icon={Clock} label="Submitted" value={detail.stats.submitted} tint="blue" />
         <MiniStatCard icon={XCircle} label="Failed" value={detail.stats.failed} tint="destructive" />
       </div>
 
       <div className="mb-0 flex items-end justify-between gap-3">
         <div className="text-[15px] font-semibold text-foreground/80">Showing ({detail.stats.total}) recipients</div>
         <div className="flex items-center gap-2.5">
+          <StatusInfoButton />
           <Button size="sm" variant="outline" onClick={onExportCsv}>
             <Download className="h-[15px] w-[15px]" /> Export CSV
           </Button>
