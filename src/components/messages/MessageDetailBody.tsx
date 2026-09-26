@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { MessageDetail, MessageStats } from '@/api/messages';
 import { cn } from '@/lib/utils';
 import { STATUS_META, STATUS_ORDER, type MessageRecipientStatus } from '@/lib/messageStatus';
+import { StatusInfoButton } from '@/components/messages/StatusInfoButton';
 
 const RECIPIENTS_PAGE_SIZE = 10;
 
@@ -315,9 +316,12 @@ export function MessageDetailBody({
 
         <div className="mb-0 flex flex-wrap items-end justify-between gap-3">
           <div className="text-[15px] font-semibold text-foreground/80">Showing ({detail.stats.total}) recipients</div>
-          <Button size="sm" variant="outline" onClick={onExportCsv}>
-            <Download className="h-[15px] w-[15px]" /> Export CSV
-          </Button>
+          <div className="flex items-center gap-2.5">
+            <StatusInfoButton />
+            <Button size="sm" variant="outline" onClick={onExportCsv}>
+              <Download className="h-[15px] w-[15px]" /> Export CSV
+            </Button>
+          </div>
         </div>
 
         <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
