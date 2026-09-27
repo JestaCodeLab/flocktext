@@ -38,6 +38,7 @@ import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
 import { AdminSenderIdsPage } from '@/pages/admin/AdminSenderIdsPage';
 import { AdminAddonsPage } from '@/pages/admin/AdminAddonsPage';
 import { AdminAnnouncementsPage } from '@/pages/admin/AdminAnnouncementsPage';
+import { AdminActivityLogsPage } from '@/pages/admin/AdminActivityLogsPage';
 import { AdminTicketsPage } from '@/pages/admin/AdminTicketsPage';
 import { AdminAccountPage } from '@/pages/admin/AdminAccountPage';
 import { OnboardingLayout } from '@/pages/onboarding/OnboardingLayout';
@@ -113,6 +114,7 @@ function App() {
           <Route path="tickets" element={<AdminTicketsPage />} />
           <Route path="addons" element={<AdminAddonsPage />} />
           <Route path="announcements" element={<AdminAnnouncementsPage />} />
+          <Route path="activity-logs" element={<AdminActivityLogsPage />} />
           <Route path="account" element={<AdminAccountPage />} />
         </Route>
       </Route>
