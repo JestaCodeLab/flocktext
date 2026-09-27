@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert, UserPlus, Trash2 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -62,12 +62,21 @@ export function MiniStatCard({
   icon: Icon,
   label,
   value,
+  description,
   tint,
 }: {
   icon: LucideIcon;
   label: string;
   value: React.ReactNode;
-  tint: 'primary' | 'blue' | 'success' | 'destructive' | 'warning' | 'muted';
+  // Small muted line under the value (e.g. "Total recipients", "From your balance") -
+  // optional so existing callers (AdminTransactionsPage, etc.) are unaffected.
+  description?: string;
+  // 'blue' (chart-3) stays available since it's the same hue as the 'submitted'
+  // status elsewhere (STATUS_META) - a deliberate, meaningful reuse, not decorative.
+  // 'purple'/'gold' round out the platform's own chart palette (chart-4/chart-1) for
+  // purely decorative stat cards that need a distinct color without reaching for an
+  // arbitrary blue that means nothing elsewhere in the app.
+  tint: 'primary' | 'blue' | 'success' | 'destructive' | 'warning' | 'muted' | 'purple' | 'gold';
 }) {
   const tintClass = {
     primary: 'bg-primary/10 text-primary',
@@ -76,6 +85,8 @@ export function MiniStatCard({
     destructive: 'bg-destructive/10 text-destructive',
     warning: 'bg-warning/10 text-warning',
     muted: 'bg-muted text-muted-foreground',
+    purple: 'bg-chart-4/15 text-chart-4',
+    gold: 'bg-chart-1/15 text-chart-1',
   }[tint];
 
   return (
@@ -86,6 +97,7 @@ export function MiniStatCard({
       <div className="min-w-0">
         <div className="truncate text-[13px] text-muted-foreground">{label}</div>
         <div className="text-md font-medium leading-tight text-foreground">{value}</div>
+        {description && <div className="mt-0.5 truncate text-[11px] text-muted-foreground">{description}</div>}
       </div>
     </div>
   );
@@ -204,8 +216,76 @@ function ResentStatusNote({ status }: { status: NonNullable<MessageDetail['recip
   );
 }
 
-function RecipientsTable({ recipients, page, showProvider }: { recipients: MessageDetail['recipients']; page: number; showProvider?: boolean }) {
+// Per-row Send/Remove icon buttons - only meaningful on the Skipped tab (see
+// `showActions` in the callers below), where each contact was never attempted at all,
+// so acting on just one of them (rather than the tab-wide "Resend to N skipped") makes
+// sense on its own.
+function RecipientRowActions({
+  recipientId,
+  recipientName,
+  onResendOne,
+  resendingOneId,
+  onRequestDeleteRecipient,
+  deletingRecipientId,
+}: {
+  recipientId: string;
+  recipientName: string;
+  onResendOne?: (recipientId: string) => void;
+  resendingOneId?: string | null;
+  onRequestDeleteRecipient?: (recipientId: string, recipientName: string) => void;
+  deletingRecipientId?: string | null;
+}) {
+  const busy = resendingOneId === recipientId || deletingRecipientId === recipientId;
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      {onResendOne && (
+        <Button
+          size="icon-sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => onResendOne(recipientId)}
+          title={`Send to ${recipientName}`}
+        >
+          <Send className="h-3.5 w-3.5" />
+        </Button>
+      )}
+      {onRequestDeleteRecipient && (
+        <Button
+          size="icon-sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => onRequestDeleteRecipient(recipientId, recipientName)}
+          title={`Remove ${recipientName}`}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function RecipientsTable({
+  recipients,
+  page,
+  showProvider,
+  showActions,
+  onResendOne,
+  resendingOneId,
+  onRequestDeleteRecipient,
+  deletingRecipientId,
+}: {
+  recipients: MessageDetail['recipients'];
+  page: number;
+  showProvider?: boolean;
+  // Gates the actions column - true only for the Skipped tab (see MessageDetailBody).
+  showActions?: boolean;
+  onResendOne?: (recipientId: string) => void;
+  resendingOneId?: string | null;
+  onRequestDeleteRecipient?: (recipientId: string, recipientName: string) => void;
+  deletingRecipientId?: string | null;
+}) {
   const pageRecipients = recipients.slice((page - 1) * RECIPIENTS_PAGE_SIZE, page * RECIPIENTS_PAGE_SIZE);
+  const showActionsColumn = showActions && (onResendOne || onRequestDeleteRecipient);
   return (
     <>
       <div className="hidden sm:block">
@@ -217,6 +297,7 @@ function RecipientsTable({ recipients, page, showProvider }: { recipients: Messa
               <TableHead className="text-[13px]">Status</TableHead>
               <TableHead className="text-[13px]">Reason</TableHead>
               {showProvider && <TableHead className="text-[13px]">Provider</TableHead>}
+              {showActionsColumn && <TableHead className="text-right text-[13px]">Actions</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,6 +313,18 @@ function RecipientsTable({ recipients, page, showProvider }: { recipients: Messa
                 {showProvider && (
                   <TableCell>
                     <Badge variant={providerBadge(r.provider).variant}>{providerBadge(r.provider).label}</Badge>
+                  </TableCell>
+                )}
+                {showActionsColumn && (
+                  <TableCell>
+                    <RecipientRowActions
+                      recipientId={r.id}
+                      recipientName={r.name || r.phone}
+                      onResendOne={onResendOne}
+                      resendingOneId={resendingOneId}
+                      onRequestDeleteRecipient={onRequestDeleteRecipient}
+                      deletingRecipientId={deletingRecipientId}
+                    />
                   </TableCell>
                 )}
               </TableRow>
@@ -257,6 +350,18 @@ function RecipientsTable({ recipients, page, showProvider }: { recipients: Messa
                   <Badge variant={providerBadge(r.provider).variant} className="text-[10px]">
                     {providerBadge(r.provider).label}
                   </Badge>
+                </div>
+              )}
+              {showActionsColumn && (
+                <div className="mt-2">
+                  <RecipientRowActions
+                    recipientId={r.id}
+                    recipientName={r.name || r.phone}
+                    onResendOne={onResendOne}
+                    resendingOneId={resendingOneId}
+                    onRequestDeleteRecipient={onRequestDeleteRecipient}
+                    deletingRecipientId={deletingRecipientId}
+                  />
                 </div>
               )}
             </div>
@@ -316,6 +421,10 @@ export function MessageDetailBody({
   resending,
   onResendSkipped,
   resendingSkipped,
+  onResendOne,
+  resendingOneId,
+  onRequestDeleteRecipient,
+  deletingRecipientId,
   showProvider,
 }: {
   detail: MessageDetail;
@@ -328,6 +437,12 @@ export function MessageDetailBody({
   // distinct action with its own declared credit cost (see SkippedResendNotice).
   onResendSkipped?: () => void;
   resendingSkipped?: boolean;
+  // Per-contact actions, shown only on the Skipped tab (see RecipientsTable's
+  // `showActions`) - resend to just this one contact, or remove them from the list.
+  onResendOne?: (recipientId: string) => void;
+  resendingOneId?: string | null;
+  onRequestDeleteRecipient?: (recipientId: string, recipientName: string) => void;
+  deletingRecipientId?: string | null;
   // Admin-only: shows which SMS provider (BMS vs Hubtel backup) each recipient actually
   // went out through. Omitted on org self-service surfaces, which share this component.
   showProvider?: boolean;
@@ -365,10 +480,22 @@ export function MessageDetailBody({
         <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
           <div className="space-y-2.5">
             <div className="grid grid-cols-2 gap-2.5">
-              <MiniStatCard icon={Send} label="Total" value={detail.stats.total} tint="muted" />
-              <MiniStatCard icon={CreditCard} label="Credit Used" value={detail.creditCost} tint="primary" />
-              <MiniStatCard icon={Tag} label="Sender" value={detail.senderId} tint="muted" />
-              <MiniStatCard icon={Share2} label="Source" value={detail.source} tint="muted" />
+              <MiniStatCard
+                icon={Send}
+                label="Total"
+                value={detail.stats.total}
+                description="Total recipients"
+                tint="success"
+              />
+              <MiniStatCard
+                icon={CreditCard}
+                label="Credit Used"
+                value={detail.creditCost}
+                description="From your balance"
+                tint="primary"
+              />
+              <MiniStatCard icon={Tag} label="Sender" value={detail.senderId} description="Sender ID" tint="gold" />
+              <MiniStatCard icon={Share2} label="Source" value={detail.source} description="Channel used" tint="purple" />
             </div>
             <DeliveryBarChart stats={detail.stats} />
           </div>
@@ -376,7 +503,9 @@ export function MessageDetailBody({
         </div>
 
         <div className="mb-0 flex flex-wrap items-end justify-between gap-3">
-          <div className="text-[15px] font-semibold text-foreground/80">Showing ({detail.stats.total}) recipients</div>
+          <div className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80">
+            <UserPlus className="h-4 w-4 text-muted-foreground" /> Recipients ({detail.stats.total})
+          </div>
           <div className="flex items-center gap-2.5">
             <StatusInfoButton />
             <Button size="sm" variant="outline" onClick={onExportCsv}>
@@ -411,7 +540,16 @@ export function MessageDetailBody({
                   />
                 )}
                 <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                  <RecipientsTable recipients={tabRecipients} page={tabPage} showProvider={showProvider} />
+                  <RecipientsTable
+                    recipients={tabRecipients}
+                    page={tabPage}
+                    showProvider={showProvider}
+                    showActions={tabStatus === 'skipped'}
+                    onResendOne={onResendOne}
+                    resendingOneId={resendingOneId}
+                    onRequestDeleteRecipient={onRequestDeleteRecipient}
+                    deletingRecipientId={deletingRecipientId}
+                  />
                   <RecipientsPaginationControls
                     page={tabPage}
                     total={tabRecipients.length}

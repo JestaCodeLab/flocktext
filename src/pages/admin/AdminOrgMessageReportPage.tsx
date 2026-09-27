@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
@@ -6,12 +6,15 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
+import { DeleteRecipientDialog } from '@/components/messages/DeleteRecipientDialog';
 import { DeliveryTimeline } from '@/components/admin/DeliveryTimeline';
 import {
   fetchAdminOrgMessageRecipients,
   resendFailedMessage,
   resendPendingMessage,
   resendSkippedMessage,
+  resendOneRecipient,
+  deleteMessageRecipient,
   type AdminOrgMessageStats,
 } from '@/api/adminOrgMessages';
 import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
@@ -108,6 +111,30 @@ export function AdminOrgMessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const resendOne = useMutation({
+    mutationFn: (recipientId: string) => resendOneRecipient(orgId, messageId!, recipientId),
+    onSuccess: () => {
+      toast.success('Message sent to this contact.');
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const deleteRecipient = useMutation({
+    mutationFn: (recipientId: string) => deleteMessageRecipient(orgId, messageId!, recipientId),
+    onSuccess: () => {
+      toast.success('Contact removed.');
+      queryClient.invalidateQueries({ queryKey: ['admin-org-message-recipients', orgId, messageId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
+      setDeleteTarget(null);
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   function exportCsv() {
     if (!detail.data) return;
     const rows = [
@@ -172,10 +199,22 @@ export function AdminOrgMessageReportPage() {
             onExportCsv={exportCsv}
             onResendSkipped={() => resendSkipped.mutate()}
             resendingSkipped={resendSkipped.isPending}
+            onResendOne={(recipientId) => resendOne.mutate(recipientId)}
+            resendingOneId={resendOne.isPending ? resendOne.variables : null}
+            onRequestDeleteRecipient={(recipientId, recipientName) => setDeleteTarget({ id: recipientId, name: recipientName })}
+            deletingRecipientId={deleteRecipient.isPending ? deleteRecipient.variables : null}
             showProvider
           />
         </>
       )}
+
+      <DeleteRecipientDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        recipientName={deleteTarget?.name}
+        isPending={deleteRecipient.isPending}
+        onConfirm={() => deleteTarget && deleteRecipient.mutate(deleteTarget.id)}
+      />
     </div>
   );
 }

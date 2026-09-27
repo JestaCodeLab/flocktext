@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
@@ -6,7 +6,14 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
-import { fetchMessageRecipients, resendFailedMessage, resendSkippedMessage } from '@/api/messages';
+import { DeleteRecipientDialog } from '@/components/messages/DeleteRecipientDialog';
+import {
+  fetchMessageRecipients,
+  resendFailedMessage,
+  resendSkippedMessage,
+  resendOneRecipient,
+  deleteMessageRecipient,
+} from '@/api/messages';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 
@@ -59,6 +66,28 @@ export function MessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  const resendOne = useMutation({
+    mutationFn: (recipientId: string) => resendOneRecipient(id!, recipientId),
+    onSuccess: (data) => {
+      toast.success('Message sent to this contact.');
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const deleteRecipient = useMutation({
+    mutationFn: (recipientId: string) => deleteMessageRecipient(id!, recipientId),
+    onSuccess: () => {
+      toast.success('Contact removed.');
+      queryClient.invalidateQueries({ queryKey: ['message-recipients', id] });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+      setDeleteTarget(null);
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   const failedCount = (detail.data?.stats.failed ?? 0) + (detail.data?.stats.rejected ?? 0);
 
   function exportCsv() {
@@ -107,8 +136,20 @@ export function MessageReportPage() {
           onExportCsv={exportCsv}
           onResendSkipped={() => resendSkipped.mutate()}
           resendingSkipped={resendSkipped.isPending}
+          onResendOne={(recipientId) => resendOne.mutate(recipientId)}
+          resendingOneId={resendOne.isPending ? resendOne.variables : null}
+          onRequestDeleteRecipient={(recipientId, recipientName) => setDeleteTarget({ id: recipientId, name: recipientName })}
+          deletingRecipientId={deleteRecipient.isPending ? deleteRecipient.variables : null}
         />
       )}
+
+      <DeleteRecipientDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        recipientName={deleteTarget?.name}
+        isPending={deleteRecipient.isPending}
+        onConfirm={() => deleteTarget && deleteRecipient.mutate(deleteTarget.id)}
+      />
     </div>
   );
 }
