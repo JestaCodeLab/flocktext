@@ -13,6 +13,9 @@ import {
   Flame,
   AlertTriangle,
   Moon,
+  ChevronDown,
+  ChevronUp,
+  X,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -79,6 +82,10 @@ export function AdminOrganizationsPage() {
   const [subStage, setSubStage] = useState<OrgSubStage | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [pendingAction, setPendingAction] = useState<{ orgId: string; type: 'resend' | 'verify' } | null>(null);
+  // Engaged/At Risk/Dormant break "Activated" down further than most admins need on
+  // every visit - collapsed by default, expandable from the button next to the search
+  // filter below.
+  const [showSubStages, setShowSubStages] = useState(false);
 
   useEffect(() => setPage(1), [search, range, stage, subStage]);
 
@@ -176,45 +183,61 @@ export function AdminOrganizationsPage() {
         />
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-3.5">
-        <StageCard
-          active={stage === 'activated' && subStage === 'engaged'}
-          onClick={() => selectStage('activated', 'engaged')}
-          icon={Flame}
-          label="Engaged"
-          value={summary.data?.activated.engaged ?? 0}
-          sub="Sent within 14 days"
-          accent={'teal' as StatCardAccent}
-        />
-        <StageCard
-          active={stage === 'activated' && subStage === 'at_risk'}
-          onClick={() => selectStage('activated', 'at_risk')}
-          icon={AlertTriangle}
-          label="At Risk"
-          value={summary.data?.activated.atRisk ?? 0}
-          sub="15–30 days since last send"
-          tone="warning"
-        />
-        <StageCard
-          active={stage === 'activated' && subStage === 'dormant'}
-          onClick={() => selectStage('activated', 'dormant')}
-          icon={Moon}
-          label="Dormant"
-          value={summary.data?.activated.dormant ?? 0}
-          sub="30+ days since last send"
-          accent={'gold' as StatCardAccent}
-        />
-      </div>
+      {showSubStages && (
+        <div className="mb-4 grid grid-cols-3 gap-3.5">
+          <StageCard
+            active={stage === 'activated' && subStage === 'engaged'}
+            onClick={() => selectStage('activated', 'engaged')}
+            icon={Flame}
+            label="Engaged"
+            value={summary.data?.activated.engaged ?? 0}
+            sub="Sent within 14 days"
+            accent={'teal' as StatCardAccent}
+          />
+          <StageCard
+            active={stage === 'activated' && subStage === 'at_risk'}
+            onClick={() => selectStage('activated', 'at_risk')}
+            icon={AlertTriangle}
+            label="At Risk"
+            value={summary.data?.activated.atRisk ?? 0}
+            sub="15–30 days since last send"
+            tone="warning"
+          />
+          <StageCard
+            active={stage === 'activated' && subStage === 'dormant'}
+            onClick={() => selectStage('activated', 'dormant')}
+            icon={Moon}
+            label="Dormant"
+            value={summary.data?.activated.dormant ?? 0}
+            sub="30+ days since last send"
+            accent={'gold' as StatCardAccent}
+          />
+        </div>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div className="relative min-w-[220px] max-w-sm flex-1">
-          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search by church name…"
-            className="pl-10"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex min-w-[220px] flex-1 flex-wrap items-center gap-2">
+          <div className="relative min-w-[220px] max-w-sm flex-1">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by church name…"
+              className="pl-10"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setShowSubStages((v) => !v)}>
+            {showSubStages ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {showSubStages ? 'Hide extra stats' : 'Show all stats'}
+          </Button>
+          {!showSubStages && stage === 'activated' && subStage && (
+            <Badge variant="secondary" className="gap-1.5 py-1.5 pl-2.5 pr-1.5">
+              {subStage === 'engaged' ? 'Engaged' : subStage === 'at_risk' ? 'At Risk' : 'Dormant'}
+              <button type="button" onClick={() => selectStage('activated')} className="rounded-full hover:bg-background/60">
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
         </div>
         <Button variant="outline" disabled={orgs.isFetching} onClick={() => orgs.refetch()}>
           <RefreshCw className={`h-4 w-4 ${orgs.isFetching ? 'animate-spin' : ''}`} /> Refresh
