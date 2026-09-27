@@ -23,6 +23,7 @@ import {
   MessageSquare,
   Users,
   Tag,
+  TriangleAlert,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,23 @@ function messageStatusBadge(stats: AdminOrgMessageSummary['stats']) {
     return { variant: STATUS_META.skipped.badgeVariant, label: `Skipped (${stats.skipped})`, className: STATUS_META.skipped.tintClassName ?? '' };
   }
   return { variant: 'success' as const, label: 'Delivered', className: '' };
+}
+
+// Flags a message where at least one recipient was rejected because the whole BMS
+// call never went through (a platform-side outage/low-balance issue - see
+// services/messageSender.js's dispatch()), not an ordinary bad-number rejection.
+// Surfaces the exact thing the "SMS provider unavailable" ops alert already told an
+// admin to go check on, right on the row they need to resend once BMS is topped up.
+function BmsOutageBadge({ count }: { count: number }) {
+  if (!count) return null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
+      title={`${count} recipient${count === 1 ? '' : 's'} never reached BMS Africa - resend once the BMS balance is topped up.`}
+    >
+      <TriangleAlert className="h-3 w-3 shrink-0" /> BMS outage
+    </span>
+  );
 }
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -238,6 +256,7 @@ function MessagesTable({
                   <div className="flex flex-col items-end gap-0.5">
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                     <span className="text-[10px] text-muted-foreground">{m.stats.delivered}/{m.stats.total} delivered</span>
+                    <BmsOutageBadge count={m.providerUnavailableCount} />
                   </div>
                 }
               />
@@ -285,6 +304,9 @@ function MessagesTable({
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                     <div className="mt-1 text-xs text-muted-foreground">
                       {m.stats.delivered}/{m.stats.total} delivered
+                    </div>
+                    <div className="mt-0.5">
+                      <BmsOutageBadge count={m.providerUnavailableCount} />
                     </div>
                   </TableCell>
                   <TableCell>{renderActions(m)}</TableCell>

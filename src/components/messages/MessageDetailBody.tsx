@@ -445,6 +445,26 @@ function SkippedResendNotice({
   );
 }
 
+// Admin-only (see `showProvider` gating below) - shown atop the Rejected tab when some
+// of those rejections happened because the whole BMS call never went through (a
+// platform-side outage/low-balance issue, not a bad number - see
+// services/messageSender.js's dispatch() and services/platformAlert.js's
+// smsProviderUnavailable()). No resend button of its own - the page header's existing
+// "Resend to N failed" button already covers these recipients (rejected is part of
+// that query), this just explains why they need it and that nothing was lost.
+function ProviderUnavailableNotice({ count }: { count: number }) {
+  return (
+    <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3.5 text-sm text-warning">
+      <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+      <div>
+        <b>{count}</b> recipient{count === 1 ? '' : 's'} never reached BMS Africa - a provider outage or low BMS balance, not a
+        bad number. Credits for {count === 1 ? 'it were' : 'them were'} already refunded automatically; resend once BMS is
+        topped up using "Resend to failed" above.
+      </div>
+    </div>
+  );
+}
+
 export function MessageDetailBody({
   detail,
   variant = 'modal',
@@ -569,6 +589,9 @@ export function MessageDetailBody({
                     onResend={onResendSkipped}
                     resending={resendingSkipped}
                   />
+                )}
+                {tabStatus === 'rejected' && showProvider && !!detail.providerUnavailableCount && (
+                  <ProviderUnavailableNotice count={detail.providerUnavailableCount} />
                 )}
                 <div className="overflow-hidden rounded-2xl border border-border bg-card">
                   <RecipientsTable
