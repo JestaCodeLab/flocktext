@@ -795,12 +795,22 @@ export function AdminOrgDeliveryReportPage() {
           {detail.data && (
             <>
               {/* MessageDetailBody's own resend button is failed-recipient-only (hidden
-                  whenever failedCount is 0), so a still-pending message's resend action
-                  lives here instead, outside that shared component. */}
+                  whenever failedCount is 0), and its Skipped tab (with its own "Resend to
+                  N skipped" button) is page-variant only - this compact modal stays on the
+                  default 'modal' variant, so a still-pending or skipped message's resend
+                  action lives here instead, outside that shared component. */}
               {detailStatus?.label === 'Pending' && (
                 <div className="mb-4 flex justify-end">
                   <Button size="sm" disabled={resend.isPending} onClick={() => resend.mutate(viewingId!)}>
                     <RotateCcw className="h-3.5 w-3.5" /> {resend.isPending ? 'Resending…' : 'Resend to pending recipients'}
+                  </Button>
+                </div>
+              )}
+              {detail.data.stats.skipped > 0 && (
+                <div className="mb-4 flex justify-end">
+                  <Button size="sm" disabled={resendSkipped.isPending} onClick={() => resendSkipped.mutate(viewingId!)}>
+                    <RotateCcw className="h-3.5 w-3.5" />{' '}
+                    {resendSkipped.isPending ? 'Resending…' : `Resend to ${detail.data.stats.skipped} skipped`}
                   </Button>
                 </div>
               )}
