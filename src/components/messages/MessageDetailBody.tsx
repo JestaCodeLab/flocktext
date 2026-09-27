@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { STATUS_META, STATUS_ORDER, type MessageRecipientStatus } from '@/lib/messageStatus';
 import { StatusInfoButton } from '@/components/messages/StatusInfoButton';
 
-const RECIPIENTS_PAGE_SIZE = 10;
+const RECIPIENTS_PAGE_SIZE = 50;
 
 export function statusBadgeVariant(status: MessageRecipientStatus) {
   return STATUS_META[status].badgeVariant;
@@ -336,14 +336,28 @@ export function MessageDetailBody({
   const skippedRecipients = detail.recipients.filter((r) => r.status === 'skipped');
   const creditsNeededForSkipped = detail.segments * skippedRecipients.length;
 
-  const [page, setPage] = useState(1);
-  const [skippedPage, setSkippedPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<'all' | 'skipped'>('all');
+  // One tab per status actually present in this message (no "All") - ordered via
+  // STATUS_ORDER, which already puts 'delivered' first, so it's also the default tab
+  // whenever there's at least one delivered recipient. A status with zero recipients
+  // gets no tab at all (e.g. a message with no rejections never shows a "Rejected" tab).
+  const statusTabs = STATUS_ORDER.filter((status) => detail.stats[status] > 0);
+  const defaultStatusTab = statusTabs.includes('delivered') ? 'delivered' : statusTabs[0];
+
+  const [pageByStatus, setPageByStatus] = useState<Partial<Record<MessageRecipientStatus, number>>>({});
+  const [activeStatusTab, setActiveStatusTab] = useState<MessageRecipientStatus | undefined>(defaultStatusTab);
+  // Only used by the 'modal' variant below, which stays a single flat (untabbed) list.
+  const [modalPage, setModalPage] = useState(1);
   useEffect(() => {
-    setPage(1);
-    setSkippedPage(1);
-    setActiveTab('all');
+    setPageByStatus({});
+    setModalPage(1);
+    const tabs = STATUS_ORDER.filter((status) => detail.stats[status] > 0);
+    setActiveStatusTab(tabs.includes('delivered') ? 'delivered' : tabs[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail.id]);
+  // Self-heals if the active tab's count drops to 0 while it's being viewed (e.g. the
+  // last "Pending" recipient resolves to "Delivered" mid-poll) instead of rendering a
+  // tab that no longer exists.
+  const effectiveStatusTab = activeStatusTab && statusTabs.includes(activeStatusTab) ? activeStatusTab : defaultStatusTab;
 
   if (variant === 'page') {
     return (
@@ -371,41 +385,43 @@ export function MessageDetailBody({
           </div>
         </div>
 
-        {skippedRecipients.length > 0 ? (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'skipped')} className="mt-2">
-            <TabsList variant="line" className="mb-2 group-data-[orientation=horizontal]/tabs:h-auto justify-start gap-6 p-0">
-              <TabsTrigger value="all" className="h-auto px-0 py-2">
-                All ({detail.recipients.length})
+        <Tabs
+          value={effectiveStatusTab}
+          onValueChange={(v) => setActiveStatusTab(v as MessageRecipientStatus)}
+          className="mt-2"
+        >
+          <TabsList variant="line" className="mb-2 group-data-[orientation=horizontal]/tabs:h-auto flex-wrap justify-start gap-6 p-0">
+            {statusTabs.map((tabStatus) => (
+              <TabsTrigger key={tabStatus} value={tabStatus} className="h-auto px-0 py-2">
+                {STATUS_META[tabStatus].label} ({detail.stats[tabStatus]})
               </TabsTrigger>
-              <TabsTrigger value="skipped" className="h-auto px-0 py-2">
-                Skipped ({skippedRecipients.length})
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="all">
-              <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                <RecipientsTable recipients={detail.recipients} page={page} showProvider={showProvider} />
-                <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
-              </div>
-            </TabsContent>
-            <TabsContent value="skipped">
-              <SkippedResendNotice
-                count={skippedRecipients.length}
-                creditsNeeded={creditsNeededForSkipped}
-                onResend={onResendSkipped}
-                resending={resendingSkipped}
-              />
-              <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                <RecipientsTable recipients={skippedRecipients} page={skippedPage} showProvider={showProvider} />
-                <RecipientsPaginationControls page={skippedPage} total={skippedRecipients.length} onPageChange={setSkippedPage} />
-              </div>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
-            <RecipientsTable recipients={detail.recipients} page={page} showProvider={showProvider} />
-            <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
-          </div>
-        )}
+            ))}
+          </TabsList>
+          {statusTabs.map((tabStatus) => {
+            const tabRecipients = detail.recipients.filter((r) => r.status === tabStatus);
+            const tabPage = pageByStatus[tabStatus] ?? 1;
+            return (
+              <TabsContent key={tabStatus} value={tabStatus}>
+                {tabStatus === 'skipped' && (
+                  <SkippedResendNotice
+                    count={skippedRecipients.length}
+                    creditsNeeded={creditsNeededForSkipped}
+                    onResend={onResendSkipped}
+                    resending={resendingSkipped}
+                  />
+                )}
+                <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                  <RecipientsTable recipients={tabRecipients} page={tabPage} showProvider={showProvider} />
+                  <RecipientsPaginationControls
+                    page={tabPage}
+                    total={tabRecipients.length}
+                    onPageChange={(p) => setPageByStatus((prev) => ({ ...prev, [tabStatus]: p }))}
+                  />
+                </div>
+              </TabsContent>
+            );
+          })}
+        </Tabs>
       </>
     );
   }
@@ -439,8 +455,8 @@ export function MessageDetailBody({
       </div>
 
       <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
-        <RecipientsTable recipients={detail.recipients} page={page} />
-        <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
+        <RecipientsTable recipients={detail.recipients} page={modalPage} />
+        <RecipientsPaginationControls page={modalPage} total={detail.recipients.length} onPageChange={setModalPage} />
       </div>
     </>
   );
