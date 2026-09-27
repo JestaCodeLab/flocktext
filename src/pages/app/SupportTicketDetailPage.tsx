@@ -57,7 +57,7 @@ export function SupportTicketDetailPage() {
                   <div className="text-xs font-medium text-muted-foreground">
                     {ticketCategoryLabel[ticket.data.category]} · #{ticket.data.id.slice(-6).toUpperCase()}
                   </div>
-                  <div className="mt-0.5 text-[20px] font-bold sm:text-[22px]">{ticket.data.subject}</div>
+                  <div className="mt-0.5 text-[18px] font-bold sm:text-[20px]">{ticket.data.subject}</div>
                   <div className="mt-1 text-xs text-muted-foreground">
                     Submitted by <span className="font-medium text-foreground">{ticket.data.submittedBy?.name ?? 'a team member'}</span> on{' '}
                     {formatDate(ticket.data.createdAt)}

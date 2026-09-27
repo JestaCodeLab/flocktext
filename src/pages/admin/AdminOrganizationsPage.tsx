@@ -127,7 +127,7 @@ export function AdminOrganizationsPage() {
     <div>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="text-[26px] font-extrabold">Organizations</div>
+          <div className="text-[24px] font-extrabold">Organizations</div>
           <div className="mt-0.5 text-sm text-muted-foreground">{summary.data?.total ?? 0} registered</div>
         </div>
         <DateRangeFilter range={range} onChange={setRange} includeAllTime />

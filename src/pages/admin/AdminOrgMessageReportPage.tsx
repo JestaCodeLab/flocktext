@@ -169,7 +169,7 @@ export function AdminOrgMessageReportPage() {
             <Send className="h-5 w-5" />
           </div>
           <div>
-            <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
+            <div className="mb-1 text-[24px] font-bold">Delivery Details</div>
             <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
           </div>
         </div>

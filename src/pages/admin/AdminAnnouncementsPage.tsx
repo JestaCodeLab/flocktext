@@ -170,7 +170,7 @@ export function AdminAnnouncementsPage() {
           <Megaphone className="h-5 w-5" />
         </div>
         <div>
-          <div className="text-[26px] font-extrabold leading-tight">Announcements</div>
+          <div className="text-[24px] font-extrabold leading-tight">Announcements</div>
           <div className="text-sm text-muted-foreground">Broadcast updates to every organization, and manage reusable message templates.</div>
         </div>
       </div>

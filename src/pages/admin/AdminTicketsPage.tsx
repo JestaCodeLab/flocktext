@@ -51,7 +51,7 @@ export function AdminTicketsPage() {
   return (
     <div>
       <div className="mb-5">
-        <div className="text-[26px] font-extrabold">Support Tickets</div>
+        <div className="text-[24px] font-extrabold">Support Tickets</div>
         <div className="mt-0.5 text-sm text-muted-foreground">Issues and feature requests submitted across all organizations.</div>
       </div>
 

@@ -97,7 +97,7 @@ export function AdminTransactionsPage() {
   return (
     <div>
       <div className="mb-5">
-        <div className="text-[26px] font-extrabold">All Transactions</div>
+        <div className="text-[24px] font-extrabold">All Transactions</div>
         <div className="mt-0.5 text-sm text-muted-foreground">
           Every SMS package and addon purchase across all organizations.
         </div>

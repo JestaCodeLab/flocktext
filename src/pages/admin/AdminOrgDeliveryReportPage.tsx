@@ -591,7 +591,7 @@ export function AdminOrgDeliveryReportPage() {
 
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[26px] font-extrabold">Delivery Report</div>
+          <div className="text-[24px] font-extrabold">Delivery Report</div>
           <div className="mt-0.5 text-sm text-muted-foreground">
             {org.data?.churchName ?? 'Organization'} — messages sent to its own contacts.
           </div>

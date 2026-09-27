@@ -506,7 +506,7 @@ export function ComposePage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Send SMS</div>
+        <div className="mb-1 text-[20px] font-bold sm:text-[24px]">Send SMS</div>
         <div className="text-sm text-muted-foreground">Compose and deliver messages to your {entity.plural}.</div>
       </div>
 

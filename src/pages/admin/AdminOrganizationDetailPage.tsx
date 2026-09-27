@@ -466,7 +466,7 @@ export function AdminOrganizationDetailPage() {
 
       <div className="mb-6 flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="flex flex-wrap items-center gap-2.5 text-xl font-extrabold sm:text-[26px]">
+          <div className="flex flex-wrap items-center gap-2.5 text-lg font-extrabold sm:text-[24px]">
             {org.churchName || 'Untitled organization'}
             <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
             <Badge variant="outline">{ORG_TYPE_LABELS[org.organizationType] ?? org.organizationType}</Badge>
