@@ -1,6 +1,8 @@
 import { adminApi } from '@/api/adminClient';
 import type { AdminOrgDetail, AdminOrgFunnelSummary, AdminOrgListItem, AdminOrgUser, OrgStage, OrgSubStage } from '@/types/admin';
 import type { DateRangeParams } from '@/lib/dateRange';
+import type { PageParams } from '@/api/messages';
+import type { WalletTransactionType } from '@/api/wallet';
 
 export interface AdminOrgListResponse {
   organizations: AdminOrgListItem[];
@@ -69,6 +71,35 @@ export async function adjustOrganizationWallet(id: string, payload: { credits: n
   const { data } = await adminApi.post<{ walletBalanceCredits: number }>(
     `/admin/organizations/${id}/wallet/adjust`,
     payload
+  );
+  return data;
+}
+
+export interface AdminOrgWalletTransaction {
+  id: string;
+  type: WalletTransactionType;
+  label: string;
+  credits: number;
+  amountGHS: number;
+  paystackReference: string | null;
+  date: string;
+}
+
+export interface AdminOrgWalletTransactionListResponse {
+  rows: AdminOrgWalletTransaction[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// The org's complete wallet ledger (topups, per-send debits, refunds, free trial,
+// manual adjustments) - see adminOrganizationController.walletTransactions for why
+// this reads WalletTransaction directly rather than the platform-wide "All
+// Transactions" page's purchases-only Transaction collection.
+export async function fetchAdminOrgWalletTransactions(id: string, params?: PageParams) {
+  const { data } = await adminApi.get<AdminOrgWalletTransactionListResponse>(
+    `/admin/organizations/${id}/wallet-transactions`,
+    { params }
   );
   return data;
 }

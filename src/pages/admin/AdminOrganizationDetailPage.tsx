@@ -25,6 +25,9 @@ import {
   Users as UsersIcon,
   Globe,
   Smartphone,
+  Receipt,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -59,7 +62,9 @@ import {
   deleteOrganization,
   deleteOrganizationUser,
   sendVerificationReminder,
+  fetchAdminOrgWalletTransactions,
 } from '@/api/adminOrganizations';
+import type { WalletTransactionType } from '@/api/wallet';
 import {
   registerSenderId,
   markSenderIdRegistered,
@@ -74,12 +79,13 @@ import { apiErrorMessage } from '@/api/client';
 import { senderIdStatusLabel, senderIdStatusVariant, isBmsRejected } from '@/lib/senderIdStatus';
 import type { AdminSenderId, AdminOrgUser, AdminOrgDetail } from '@/types/admin';
 
-type OrgTabKey = 'sender-ids' | 'users' | 'api-access' | 'danger-zone';
+type OrgTabKey = 'sender-ids' | 'users' | 'api-access' | 'transactions' | 'danger-zone';
 
 const ORG_TABS: { key: OrgTabKey; label: string; icon: LucideIcon }[] = [
   { key: 'users', label: 'Users', icon: UsersIcon },
   { key: 'sender-ids', label: 'Sender IDs', icon: BadgeCheck },
   { key: 'api-access', label: 'API Access', icon: KeyRound },
+  { key: 'transactions', label: 'Transactions', icon: Receipt },
   { key: 'danger-zone', label: 'Danger Zone', icon: AlertTriangle },
 ];
 
@@ -90,6 +96,22 @@ const ORG_TYPE_LABELS: Record<AdminOrgDetail['organizationType'], string> = {
   business: 'Business',
   institution: 'Institution',
   agency: 'Agency',
+};
+
+const WALLET_TX_LABEL: Record<WalletTransactionType, string> = {
+  topup: 'Top-up',
+  debit: 'Send',
+  free_trial: 'Free trial',
+  admin_adjustment: 'Admin adjustment',
+  refund: 'Refund',
+};
+
+const WALLET_TX_BADGE_VARIANT: Record<WalletTransactionType, 'default' | 'secondary' | 'outline'> = {
+  topup: 'default',
+  debit: 'secondary',
+  free_trial: 'outline',
+  admin_adjustment: 'outline',
+  refund: 'outline',
 };
 
 function DetailSkeleton() {
@@ -139,6 +161,13 @@ export function AdminOrganizationDetailPage() {
   const [verificationReminderTarget, setVerificationReminderTarget] = useState<AdminOrgUser | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [showSendSms, setShowSendSms] = useState(false);
+  const [walletTxPage, setWalletTxPage] = useState(1);
+
+  const walletTransactions = useQuery({
+    queryKey: ['admin-org-wallet-transactions', id, walletTxPage],
+    queryFn: () => fetchAdminOrgWalletTransactions(id!, { page: walletTxPage, pageSize: 20 }),
+    enabled: !!id,
+  });
 
   useEffect(() => {
     if (detail.data) {
@@ -181,6 +210,7 @@ export function AdminOrganizationDetailPage() {
       setWalletCredits('');
       setWalletReason('');
       invalidate();
+      queryClient.invalidateQueries({ queryKey: ['admin-org-wallet-transactions', id] });
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
@@ -819,6 +849,104 @@ export function AdminOrganizationDetailPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="transactions">
+          <MobileList>
+            {walletTransactions.data?.rows.map((t) => (
+              <MobileListCard key={t.id}>
+                <div className="mb-2 flex items-start justify-between gap-2">
+                  <Badge variant={WALLET_TX_BADGE_VARIANT[t.type]}>{WALLET_TX_LABEL[t.type]}</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </div>
+                <MobileListRow label="Label" value={t.label} />
+                <MobileListRow
+                  label="Credits"
+                  value={<span className={t.credits > 0 ? 'text-success' : 'text-foreground'}>{t.credits > 0 ? '+' : ''}{t.credits.toLocaleString()}</span>}
+                />
+                {t.amountGHS > 0 && <MobileListRow label="Amount" value={`GHS ${t.amountGHS.toLocaleString()}`} />}
+                {t.paystackReference && <MobileListRow label="Reference" value={t.paystackReference} />}
+              </MobileListCard>
+            ))}
+          </MobileList>
+          {walletTransactions.data && walletTransactions.data.rows.length === 0 && (
+            <MobileListEmpty>No wallet transactions yet.</MobileListEmpty>
+          )}
+
+          <div className="hidden overflow-hidden rounded-xl border border-border bg-card md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-secondary hover:bg-secondary">
+                  <TableHead>Date</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Label</TableHead>
+                  <TableHead className="text-right">Credits</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Reference</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {walletTransactions.data?.rows.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell>
+                      <div className="font-medium text-foreground">
+                        {new Date(t.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(t.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={WALLET_TX_BADGE_VARIANT[t.type]}>{WALLET_TX_LABEL[t.type]}</Badge>
+                    </TableCell>
+                    <TableCell className="max-w-[320px] truncate text-muted-foreground">{t.label}</TableCell>
+                    <TableCell className={cn('text-right font-bold tabular-nums', t.credits > 0 ? 'text-success' : 'text-foreground')}>
+                      {t.credits > 0 ? '+' : ''}
+                      {t.credits.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {t.amountGHS > 0 ? `GHS ${t.amountGHS.toLocaleString()}` : '—'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{t.paystackReference || '—'}</TableCell>
+                  </TableRow>
+                ))}
+                {walletTransactions.data && walletTransactions.data.rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-6 text-center text-muted-foreground">
+                      No wallet transactions yet.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            {walletTransactions.data && walletTransactions.data.total > walletTransactions.data.pageSize && (
+              <div className="flex items-center justify-between border-t border-border px-3.5 py-2.5">
+                <div className="text-xs text-muted-foreground">
+                  Showing {(walletTxPage - 1) * walletTransactions.data.pageSize + 1}–
+                  {Math.min(walletTxPage * walletTransactions.data.pageSize, walletTransactions.data.total)} of{' '}
+                  {walletTransactions.data.total}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button size="icon-sm" variant="outline" disabled={walletTxPage <= 1} onClick={() => setWalletTxPage((p) => p - 1)}>
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="px-1 text-xs font-semibold text-muted-foreground">
+                    Page {walletTxPage} of {Math.max(1, Math.ceil(walletTransactions.data.total / walletTransactions.data.pageSize))}
+                  </div>
+                  <Button
+                    size="icon-sm"
+                    variant="outline"
+                    disabled={walletTxPage >= Math.ceil(walletTransactions.data.total / walletTransactions.data.pageSize)}
+                    onClick={() => setWalletTxPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
 
