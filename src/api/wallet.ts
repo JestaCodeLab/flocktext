@@ -8,7 +8,7 @@ export interface CreditPackage {
   perSms: string;
 }
 
-export type WalletTransactionType = 'topup' | 'debit' | 'free_trial' | 'admin_adjustment';
+export type WalletTransactionType = 'topup' | 'debit' | 'free_trial' | 'admin_adjustment' | 'refund';
 
 export interface WalletTransaction {
   id: string;
