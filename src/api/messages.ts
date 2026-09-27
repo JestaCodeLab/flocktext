@@ -202,3 +202,13 @@ export async function resendSkippedMessage(id: string) {
   return data;
 }
 
+export async function resendOneRecipient(id: string, recipientId: string) {
+  const { data } = await api.post<SendMessageResult>(`/messages/${id}/recipients/${recipientId}/resend`, { organizationId: activeOrganizationId() });
+  return data;
+}
+
+export async function deleteMessageRecipient(id: string, recipientId: string) {
+  const { data } = await api.delete<{ deleted: boolean; stats: MessageStats }>(`/messages/${id}/recipients/${recipientId}`);
+  return data;
+}
+

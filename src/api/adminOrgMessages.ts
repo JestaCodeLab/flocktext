@@ -123,6 +123,25 @@ export async function resendSkippedMessage(orgId: string, messageId: string) {
   return data;
 }
 
+export async function resendOneRecipient(orgId: string, messageId: string, recipientId: string) {
+  const { data } = await adminApi.post<ResendPendingResult>(
+    `/admin/organizations/${orgId}/messages/${messageId}/recipients/${recipientId}/resend`
+  );
+  return data;
+}
+
+export interface DeleteRecipientResult {
+  deleted: true;
+  stats: AdminOrgMessageStats;
+}
+
+export async function deleteMessageRecipient(orgId: string, messageId: string, recipientId: string) {
+  const { data } = await adminApi.delete<DeleteRecipientResult>(
+    `/admin/organizations/${orgId}/messages/${messageId}/recipients/${recipientId}`
+  );
+  return data;
+}
+
 export interface DeleteMessageResult {
   deleted: true;
   walletBalanceCredits: number;
