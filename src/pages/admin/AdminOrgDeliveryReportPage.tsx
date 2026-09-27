@@ -20,6 +20,9 @@ import {
   CalendarClock,
   Repeat,
   Trash2,
+  MessageSquare,
+  Users,
+  Tag,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -859,43 +862,75 @@ export function AdminOrgDeliveryReportPage() {
       />
 
       <Dialog open={!!viewingScheduled} onOpenChange={(open) => !open && setViewingScheduled(null)}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Scheduled send</DialogTitle>
-          </DialogHeader>
-          {viewingScheduled && (
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="gap-1">
-                  {viewingScheduled.sendMode === 'recurring' ? <Repeat className="h-3 w-3" /> : <CalendarClock className="h-3 w-3" />}
-                  {viewingScheduled.sendMode === 'recurring' ? 'Recurring' : 'Scheduled'}
-                </Badge>
-                <span className="text-muted-foreground">
-                  {viewingScheduled.sendMode === 'recurring'
-                    ? scheduledRecurringSummary(viewingScheduled)
-                    : new Date(viewingScheduled.scheduleDate).toLocaleString(undefined, {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                </span>
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Send className="h-5 w-5" />
               </div>
               <div>
-                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Recipients</div>
-                <div className="text-foreground">{scheduledRecipientSummary(viewingScheduled)}</div>
-              </div>
-              <div>
-                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Sender ID</div>
-                <div className="text-foreground">{viewingScheduled.senderId}</div>
-              </div>
-              <div>
-                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">Message</div>
-                <div className="whitespace-pre-wrap rounded-lg border border-border bg-secondary/50 p-3 text-foreground">
-                  {viewingScheduled.body}
+                <DialogTitle className="text-xl">
+                  {viewingScheduled?.sendMode === 'recurring' ? 'Recurring send' : 'Scheduled send'}
+                </DialogTitle>
+                <div className="mt-0.5 text-sm text-muted-foreground">
+                  {viewingScheduled?.sendMode === 'recurring'
+                    ? 'This message repeats automatically on its own schedule.'
+                    : 'This message is scheduled to be sent at a later time.'}
                 </div>
               </div>
+            </div>
+          </DialogHeader>
+          {viewingScheduled && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-secondary p-3.5">
+                <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+                  <MessageSquare className="h-4 w-4" /> Message
+                </div>
+                <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{viewingScheduled.body}</div>
+              </div>
+
+              <div className="grid grid-cols-1 divide-y divide-border rounded-xl border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <div className="flex flex-1 items-start gap-2.5 p-3.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">
+                      {viewingScheduled.sendMode === 'recurring' ? 'Next run' : 'Send time'}
+                    </div>
+                    <div className="text-[15px] font-semibold text-foreground">
+                      {viewingScheduled.sendMode === 'recurring'
+                        ? scheduledRecurringSummary(viewingScheduled)
+                        : new Date(viewingScheduled.scheduleDate).toLocaleString(undefined, {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-1 items-start gap-2.5 p-3.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">Recipients</div>
+                    <div className="text-[15px] font-semibold text-foreground">{scheduledRecipientSummary(viewingScheduled)}</div>
+                  </div>
+                </div>
+                <div className="flex flex-1 items-start gap-2.5 p-3.5">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Tag className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs text-muted-foreground">Sender ID</div>
+                    <div className="text-[15px] font-semibold text-foreground">{viewingScheduled.senderId}</div>
+                  </div>
+                </div>
+              </div>
+
               <div className="text-xs text-muted-foreground">
                 Not yet sent — no delivery data exists until this fires on its scheduled date.
               </div>

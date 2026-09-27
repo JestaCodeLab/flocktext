@@ -14,6 +14,12 @@ import {
   ChevronLeft,
   ChevronRight,
   TriangleAlert,
+  Send,
+  MessageSquare,
+  Clock,
+  Users,
+  CreditCard,
+  type LucideIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -226,6 +232,35 @@ function ScheduledTable({
   );
 }
 
+// One column of the info row below the Message card - icon circle, label, bold value,
+// and an optional muted sub-line (e.g. "(3 contacts)", "You have 0").
+function ScheduledInfoStat({
+  icon: Icon,
+  label,
+  value,
+  valueClassName,
+  sub,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: React.ReactNode;
+  valueClassName?: string;
+  sub?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-1 items-start gap-2.5 p-3.5">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className={cn('text-[15px] font-semibold text-foreground', valueClassName)}>{value}</div>
+        {sub && <div className="text-xs text-muted-foreground">{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
 function ScheduledDetailDialog({
   message,
   onOpenChange,
@@ -237,63 +272,94 @@ function ScheduledDetailDialog({
   onCancel: (id: string) => void;
   isCancelling: boolean;
 }) {
+  const isRecurring = message?.sendMode === 'recurring';
   return (
     <Dialog open={!!message} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>{message?.sendMode === 'recurring' ? 'Recurring send' : 'Scheduled send'}</DialogTitle>
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Send className="h-5 w-5" />
+            </div>
+            <div>
+              <DialogTitle className="text-xl">{isRecurring ? 'Recurring send' : 'Scheduled send'}</DialogTitle>
+              <div className="mt-0.5 text-sm text-muted-foreground">
+                {isRecurring ? 'This message repeats automatically on its own schedule.' : 'This message is scheduled to be sent at a later time.'}
+              </div>
+            </div>
+          </div>
         </DialogHeader>
+
         {message && (
           <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-background p-3.5 text-sm leading-relaxed">{message.body}</div>
-            <div className="space-y-2 text-sm">
-              <div>
-                To: <b className="text-foreground">{recipientSummary(message)}</b>
+            <div className="rounded-xl bg-secondary p-3.5">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+                <MessageSquare className="h-4 w-4" /> Message
               </div>
-              {message.sendMode === 'recurring' ? (
-                <div>
-                  Repeats: <b className="text-foreground">{recurringSummary(message)}</b>
-                </div>
-              ) : (
-                <div>
-                  Sends:{' '}
-                  <b className="text-foreground">
-                    {new Date(message.scheduleDate).toLocaleString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                      hour12: true,
-                    })}
-                  </b>
-                </div>
-              )}
+              <div className="whitespace-pre-wrap text-[15px] leading-relaxed text-foreground">{message.body}</div>
+            </div>
+
+            <div className="grid grid-cols-1 divide-y divide-border rounded-xl border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              <ScheduledInfoStat
+                icon={Clock}
+                label={isRecurring ? 'Next run' : 'Send time'}
+                value={
+                  isRecurring
+                    ? recurringSummary(message)
+                    : new Date(message.scheduleDate).toLocaleString(undefined, {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true,
+                      })
+                }
+              />
+              <ScheduledInfoStat
+                icon={Users}
+                label="Recipients"
+                value={
+                  message.recipientType === 'all'
+                    ? 'All contacts'
+                    : message.recipientType === 'single'
+                      ? message.recipientName || message.phone || '—'
+                      : recipientSummary(message)
+                }
+                sub={
+                  message.recipientType !== 'single' && message.contactCount
+                    ? `(${message.contactCount} contact${message.contactCount === 1 ? '' : 's'})`
+                    : undefined
+                }
+              />
               {message.creditCost !== undefined && (
-                <div>
-                  Credits {message.sendMode === 'recurring' ? 'per run' : 'needed'}:{' '}
-                  <b className={cn('text-foreground', message.insufficientCredits && 'text-warning')}>{message.creditCost}</b>
-                  {' · You have '}
-                  <b className="text-foreground">{message.walletBalanceCredits}</b>
-                  {message.insufficientCredits && (
-                    <div className="mt-1 flex items-center gap-1.5 text-warning">
-                      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
-                      Not enough credits to reach everyone — it'll send to as many as it can afford, then stop.
-                    </div>
-                  )}
-                </div>
+                <ScheduledInfoStat
+                  icon={CreditCard}
+                  label={`Credits ${isRecurring ? 'per run' : 'needed'}`}
+                  value={message.creditCost}
+                  valueClassName={message.insufficientCredits ? 'text-warning' : undefined}
+                  sub={`You have ${message.walletBalanceCredits}`}
+                />
               )}
             </div>
+
+            {message.insufficientCredits && (
+              <div className="flex items-start gap-2.5 rounded-lg border border-warning/30 bg-warning/10 p-3.5 text-sm">
+                <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <div>
+                  <div className="font-semibold text-warning">Not enough credits to reach everyone</div>
+                  <div className="text-warning/90">It&apos;ll send to as many as it can afford, then stop.</div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         <DialogFooter>
-          <Button
-            variant="outline"
-            className="text-destructive"
-            disabled={isCancelling}
-            onClick={() => message && onCancel(message.id)}
-          >
+          <Button variant="outline" disabled={isCancelling} onClick={() => message && onCancel(message.id)}>
             <X className="h-[15px] w-[15px]" /> {isCancelling ? 'Cancelling…' : 'Cancel send'}
+          </Button>
+          <Button onClick={() => onOpenChange(false)}>
+            <Send className="h-[15px] w-[15px]" /> Keep scheduled
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert, UserPlus, Trash2 } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert, UserPlus, Trash2, BarChart3, ChevronDown, MessageSquare } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -125,6 +125,16 @@ function DeliveryBarChart({ stats }: { stats: Pick<MessageStats, 'delivered' | '
   const data = [{ label: 'Delivery', ...stats }];
   return (
     <div className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80">
+          <BarChart3 className="h-4 w-4 text-muted-foreground" /> Delivery Breakdown
+        </div>
+        {/* Decorative only - every send only ever has one breakdown to show (by status),
+            so there's nothing else to switch this to yet. */}
+        <div className="flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+          By status <ChevronDown className="h-3 w-3" />
+        </div>
+      </div>
       <ResponsiveContainer width="100%" height={200}>
         <BarChart data={data} barGap={8}>
           <CartesianGrid vertical={false} stroke="var(--color-border)" />
@@ -170,6 +180,28 @@ function MessageCard({ detail, showCredits }: { detail: MessageDetail; showCredi
         </span>
       </div>
       <div className="max-h-[180px] overflow-y-auto break-words p-3.5 text-base leading-relaxed text-foreground">{detail.body}</div>
+    </div>
+  );
+}
+
+// Page-variant-only sibling of MessageCard above (which stays exactly as-is for the
+// 'modal' variant) - matches DeliveryBarChart's bordered-card treatment so the two sit
+// side by side as a matched pair, with the message text in its own light inset box
+// rather than MessageCard's solid primary header bar.
+function MessageDetailPanel({ detail }: { detail: MessageDetail }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground/80">
+          <MessageSquare className="h-4 w-4 text-muted-foreground" /> Message
+        </div>
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">
+          {new Date(detail.date).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+        </span>
+      </div>
+      <div className="max-h-[180px] overflow-y-auto whitespace-pre-wrap break-words rounded-lg bg-secondary p-3.5 text-[15px] leading-relaxed text-foreground">
+        {detail.body}
+      </div>
     </div>
   );
 }
@@ -477,29 +509,28 @@ export function MessageDetailBody({
   if (variant === 'page') {
     return (
       <>
+        <div className="mb-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <MiniStatCard
+            icon={Send}
+            label="Total"
+            value={detail.stats.total}
+            description="Total recipients"
+            tint="success"
+          />
+          <MiniStatCard
+            icon={CreditCard}
+            label="Credit Used"
+            value={detail.creditCost}
+            description="From your balance"
+            tint="primary"
+          />
+          <MiniStatCard icon={Share2} label="Source" value={detail.source} description="Channel used" tint="purple" />
+          <MiniStatCard icon={Tag} label="Sender" value={detail.senderId} description="Sender ID" tint="gold" />
+        </div>
+
         <div className="mb-5 grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="space-y-2.5">
-            <div className="grid grid-cols-2 gap-2.5">
-              <MiniStatCard
-                icon={Send}
-                label="Total"
-                value={detail.stats.total}
-                description="Total recipients"
-                tint="success"
-              />
-              <MiniStatCard
-                icon={CreditCard}
-                label="Credit Used"
-                value={detail.creditCost}
-                description="From your balance"
-                tint="primary"
-              />
-              <MiniStatCard icon={Tag} label="Sender" value={detail.senderId} description="Sender ID" tint="gold" />
-              <MiniStatCard icon={Share2} label="Source" value={detail.source} description="Channel used" tint="purple" />
-            </div>
-            <DeliveryBarChart stats={detail.stats} />
-          </div>
-          <MessageCard detail={detail} />
+          <DeliveryBarChart stats={detail.stats} />
+          <MessageDetailPanel detail={detail} />
         </div>
 
         <div className="mb-0 flex flex-wrap items-end justify-between gap-3">
