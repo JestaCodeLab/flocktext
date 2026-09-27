@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, RotateCcw } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -164,9 +164,14 @@ export function AdminOrgMessageReportPage() {
       </Link>
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
-          <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
+        <div className="flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <Send className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
+            <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {isPending && (
