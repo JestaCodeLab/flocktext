@@ -27,6 +27,13 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
   );
 }
 
+// Long ranges (a full month of daily buckets, etc.) roll up to more labels than fit
+// readably along the axis - skip enough ticks that what's left doesn't overlap.
+// Mirrors AdminOrgDeliveryReportPage.tsx's identical helper for the same chart shape.
+function xAxisInterval(bucketCount: number) {
+  return bucketCount <= 10 ? 0 : Math.ceil(bucketCount / 8) - 1;
+}
+
 function ChartEmptyState() {
   return (
     <div className="flex h-[260px] flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border text-center">
@@ -81,7 +88,7 @@ export function AdminDashboardPage() {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="mb-6 space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-2.5">
             <div>
@@ -133,7 +140,13 @@ export function AdminDashboardPage() {
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={buckets} barGap={4}>
                 <CartesianGrid vertical={false} stroke="var(--color-border)" />
-                <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} />
+                <XAxis
+                  dataKey="label"
+                  interval={xAxisInterval(buckets.length)}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                />
                 <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
                 <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
