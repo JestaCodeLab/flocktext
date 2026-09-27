@@ -59,8 +59,17 @@ export interface ScheduleMessagePayload extends SendMessagePayload {
   recurringDayOfMonth?: number;
 }
 
+export interface ScheduleMessageResult {
+  id: string;
+  scheduleDate: string;
+  recipientCount: number;
+  creditCost: number;
+  walletBalanceCredits: number;
+  insufficientCredits: boolean;
+}
+
 export async function scheduleMessage(payload: ScheduleMessagePayload) {
-  const { data } = await api.post<{ id: string; scheduleDate: string }>('/messages/schedule', {
+  const { data } = await api.post<ScheduleMessageResult>('/messages/schedule', {
     ...payload,
     organizationId: activeOrganizationId(),
   });
@@ -85,6 +94,15 @@ export interface ScheduledMessage {
   recurringTime?: string;
   recurringDayOfWeek?: number;
   recurringDayOfMonth?: number;
+  // Live credit check against the org's current balance (see messageController.serializeScheduled) -
+  // recipientCount/creditCost are resolved the same way services/scheduler.js will at fire time,
+  // so this stays accurate as contacts/groups/balance change after the message was scheduled.
+  // Like senderId above, only populated by the org's own self-service endpoint, not the
+  // admin console's (adminOrgMessagesController.serializeScheduled).
+  recipientCount?: number;
+  creditCost?: number;
+  walletBalanceCredits?: number;
+  insufficientCredits?: boolean;
 }
 
 export async function fetchScheduledMessages(range?: DateRangeParams, page?: PageParams) {

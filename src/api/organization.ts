@@ -4,6 +4,7 @@ import type { NotifPrefs, SessionOrganization } from '@/types';
 export async function updateOrganizationProfile(payload: {
   churchName: string;
   address: string;
+  description: string;
   contactEmail?: string;
   organizationType: 'church' | 'business' | 'institution' | 'agency';
 }) {

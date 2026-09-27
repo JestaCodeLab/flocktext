@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Building2, UserRound } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { updateOrganizationProfile } from '@/api/organization';
@@ -22,6 +23,7 @@ export function AccountSection() {
 
   const [churchName, setChurchName] = useState(organization?.churchName ?? '');
   const [address, setAddress] = useState(organization?.address ?? '');
+  const [description, setDescription] = useState(organization?.description ?? '');
   const [contactEmail, setContactEmail] = useState(organization?.contactEmail ?? '');
 
   const saveOrg = useMutation({
@@ -29,6 +31,7 @@ export function AccountSection() {
       updateOrganizationProfile({
         churchName,
         address,
+        description,
         contactEmail,
         organizationType: organization?.organizationType ?? 'institution',
       }),
@@ -38,6 +41,18 @@ export function AccountSection() {
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
+
+  function handleSaveOrg() {
+    // Description is optional here (unlike onboarding) so orgs that onboarded before
+    // this field existed aren't blocked from saving unrelated changes - but if they DO
+    // type something, it must meet the same 20-250 bound the backend enforces.
+    const trimmedDescription = description.trim();
+    if (trimmedDescription && trimmedDescription.length < 20) {
+      toast.error('Describe your business in at least 20 characters, or leave it blank.');
+      return;
+    }
+    saveOrg.mutate();
+  }
 
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
@@ -72,10 +87,22 @@ export function AccountSection() {
             </div>
           </div>
           <div className="space-y-1.5">
+            <Label htmlFor="settings-description">Describe your business</Label>
+            <Textarea
+              id="settings-description"
+              placeholder="What does your organization do, and who do you send messages to?"
+              rows={3}
+              maxLength={250}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <div className="text-right text-xs text-muted-foreground">{description.length}/250</div>
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="settings-contact-email">Contact email</Label>
             <Input id="settings-contact-email" type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
           </div>
-          <Button disabled={saveOrg.isPending} onClick={() => saveOrg.mutate()}>
+          <Button disabled={saveOrg.isPending} onClick={handleSaveOrg}>
             {saveOrg.isPending ? 'Saving…' : 'Save changes'}
           </Button>
         </div>

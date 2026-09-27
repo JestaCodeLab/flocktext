@@ -37,7 +37,7 @@ export async function fetchAdminOrganizationDetail(id: string) {
 
 export async function updateAdminOrganizationProfile(
   id: string,
-  payload: { churchName: string; address?: string; contactEmail?: string }
+  payload: { churchName: string; address?: string; description?: string; contactEmail?: string }
 ) {
   const { data } = await adminApi.patch(`/admin/organizations/${id}`, payload);
   return data;

@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { Church, Briefcase, Landmark, Network } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { updateOrganizationProfile } from '@/api/organization';
@@ -28,9 +29,10 @@ export function OrganizationStep() {
   const [organizationType, setOrganizationType] = useState<OrganizationType | null>(organization?.organizationType ?? null);
   const [churchName, setChurchName] = useState(organization?.churchName ?? '');
   const [address, setAddress] = useState(organization?.address ?? '');
+  const [description, setDescription] = useState(organization?.description ?? '');
 
   const save = useMutation({
-    mutationFn: () => updateOrganizationProfile({ churchName, address, organizationType: organizationType! }),
+    mutationFn: () => updateOrganizationProfile({ churchName, address, description, organizationType: organizationType! }),
     onSuccess: (data) => {
       updateOrganization(data);
       navigate('/onboarding/sender-id');
@@ -46,6 +48,10 @@ export function OrganizationStep() {
     }
     if (!churchName.trim() || !address.trim()) {
       toast.error('Enter your organization name and address to continue.');
+      return;
+    }
+    if (description.trim().length < 20) {
+      toast.error('Describe your business in at least 20 characters to continue.');
       return;
     }
     save.mutate();
@@ -93,7 +99,7 @@ export function OrganizationStep() {
         />
       </div>
 
-      <div className="mb-7 space-y-1.5">
+      <div className="mb-4 space-y-1.5">
         <Label htmlFor="org-address">Address</Label>
         <Input
           id="org-address"
@@ -102,6 +108,20 @@ export function OrganizationStep() {
           value={address}
           onChange={(e) => setAddress(e.target.value)}
         />
+      </div>
+
+      <div className="mb-7 space-y-1.5">
+        <Label htmlFor="org-description">Describe your business</Label>
+        <Textarea
+          id="org-description"
+          className="rounded-2xl px-5 py-3"
+          placeholder="What does your organization do, and who do you send messages to?"
+          rows={3}
+          maxLength={250}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+        <div className="text-right text-xs text-muted-foreground">{description.length}/250</div>
       </div>
 
       <Button type="submit" className="h-12 w-full rounded-full" size="lg" disabled={save.isPending}>
