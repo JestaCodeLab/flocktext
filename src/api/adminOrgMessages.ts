@@ -109,6 +109,13 @@ export async function resendPendingMessage(orgId: string, messageId: string) {
   return data;
 }
 
+export async function resendFailedMessage(orgId: string, messageId: string) {
+  const { data } = await adminApi.post<ResendPendingResult>(
+    `/admin/organizations/${orgId}/messages/${messageId}/resend-failed`
+  );
+  return data;
+}
+
 export async function resendSkippedMessage(orgId: string, messageId: string) {
   const { data } = await adminApi.post<ResendPendingResult>(
     `/admin/organizations/${orgId}/messages/${messageId}/resend-skipped`

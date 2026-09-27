@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Coins, Receipt, Search, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Coins, Plus, Receipt, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MiniStatCard } from '@/components/messages/MessageDetailBody';
 import { DeleteTransactionDialog } from '@/components/admin/DeleteTransactionDialog';
+import { RecordTransactionDialog } from '@/components/admin/RecordTransactionDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import { apiErrorMessage } from '@/api/client';
 import {
@@ -26,12 +27,14 @@ const TYPE_LABEL: Record<AdminTransactionType, string> = {
   sms_package: 'SMS package',
   birthday_automation: 'Birthday automation',
   extra_team_seat: 'Extra team seat',
+  manual: 'Manual entry',
 };
 
 const TYPE_BADGE_VARIANT: Record<AdminTransactionType, 'default' | 'secondary' | 'outline'> = {
   sms_package: 'default',
   birthday_automation: 'secondary',
   extra_team_seat: 'outline',
+  manual: 'outline',
 };
 
 function PaginationControls({ page, total, onPageChange }: { page: number; total: number; onPageChange: (page: number) => void }) {
@@ -66,6 +69,7 @@ export function AdminTransactionsPage() {
   const [type, setType] = useState<AdminTransactionType | 'all'>('all');
   const [page, setPage] = useState(1);
   const [deleteTarget, setDeleteTarget] = useState<AdminTransaction | null>(null);
+  const [recordOpen, setRecordOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -137,8 +141,12 @@ export function AdminTransactionsPage() {
             <SelectItem value="sms_package">SMS package</SelectItem>
             <SelectItem value="birthday_automation">Birthday automation</SelectItem>
             <SelectItem value="extra_team_seat">Extra team seat</SelectItem>
+            <SelectItem value="manual">Manual entry</SelectItem>
           </SelectContent>
         </Select>
+        <Button className="ml-auto" onClick={() => setRecordOpen(true)}>
+          <Plus className="h-[15px] w-[15px]" /> Record transaction
+        </Button>
       </div>
 
       {transactions.isLoading && (
@@ -274,6 +282,8 @@ export function AdminTransactionsPage() {
         onConfirm={() => remove.mutate()}
         isPending={remove.isPending}
       />
+
+      <RecordTransactionDialog open={recordOpen} onOpenChange={setRecordOpen} />
     </div>
   );
 }

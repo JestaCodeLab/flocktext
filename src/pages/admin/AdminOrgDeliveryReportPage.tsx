@@ -32,6 +32,7 @@ import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
 import { MessageDetailBody, MiniStatCard, downloadCsv, sourceBadge } from '@/components/messages/MessageDetailBody';
 import { StatusInfoButton } from '@/components/messages/StatusInfoButton';
 import { ResendPendingDialog } from '@/components/admin/ResendPendingDialog';
+import { ResendFailedDialog } from '@/components/admin/ResendFailedDialog';
 import { DeleteMessageDialog } from '@/components/admin/DeleteMessageDialog';
 import { MobileList, MobileListCard, MobileListEmpty, MobileListRow } from '@/components/admin/MobileRecordList';
 import {
@@ -41,7 +42,9 @@ import {
   fetchAdminOrgScheduledMessages,
   fetchAdminOrgMessageRecipients,
   fetchAdminOrgMessagesExport,
+  resendFailedMessage,
   resendPendingMessage,
+  resendSkippedMessage,
   deleteAdminOrgMessage,
   type AdminOrgMessageStatus,
   type AdminOrgMessageSummary,
@@ -152,6 +155,8 @@ function MessagesTable({
   onView,
   onResendPending,
   resendingId,
+  onResendFailed,
+  resendingFailedId,
   onDelete,
   deletingId,
 }: {
@@ -159,6 +164,11 @@ function MessagesTable({
   onView: (row: AdminOrgMessageSummary) => void;
   onResendPending?: (id: string) => void;
   resendingId?: string | null;
+  // Separate from onResendPending above - only ever passed on the Failed tab (a
+  // message shown there has failed/rejected recipients, not pending ones), mirroring
+  // the org self-service Reports page's own Failed/Rejected tab "Resend" action.
+  onResendFailed?: (id: string) => void;
+  resendingFailedId?: string | null;
   onDelete: (id: string) => void;
   deletingId?: string | null;
 }) {
@@ -178,6 +188,11 @@ function MessagesTable({
           </DropdownMenuItem>
           {onResendPending && (
             <DropdownMenuItem className="cursor-pointer" disabled={resendingId === m.id} onClick={() => onResendPending(m.id)}>
+              <RotateCcw className="h-3 w-3" /> Resend
+            </DropdownMenuItem>
+          )}
+          {onResendFailed && (
+            <DropdownMenuItem className="cursor-pointer" disabled={resendingFailedId === m.id} onClick={() => onResendFailed(m.id)}>
               <RotateCcw className="h-3 w-3" /> Resend
             </DropdownMenuItem>
           )}
@@ -383,6 +398,7 @@ export function AdminOrgDeliveryReportPage() {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [viewingScheduled, setViewingScheduled] = useState<ScheduledMessage | null>(null);
   const [resendConfirmId, setResendConfirmId] = useState<string | null>(null);
+  const [resendFailedConfirmId, setResendFailedConfirmId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -454,6 +470,27 @@ export function AdminOrgDeliveryReportPage() {
 
   const resend = useMutation({
     mutationFn: (messageId: string) => resendPendingMessage(orgId, messageId),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      invalidateAll();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const resendFailed = useMutation({
+    mutationFn: (messageId: string) => resendFailedMessage(orgId, messageId),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      invalidateAll();
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  // No confirm dialog - matches the org self-service detail page's own "Resend to N
+  // skipped" button (embedded in MessageDetailBody's Skipped tab), unlike the list
+  // row's resend actions above which do confirm first.
+  const resendSkipped = useMutation({
+    mutationFn: (messageId: string) => resendSkippedMessage(orgId, messageId),
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
       invalidateAll();
@@ -735,6 +772,8 @@ export function AdminOrgDeliveryReportPage() {
             <MessagesTable
               rows={failed.data?.rows ?? []}
               onView={handleView}
+              onResendFailed={(messageId) => setResendFailedConfirmId(messageId)}
+              resendingFailedId={resendFailed.isPending ? (resendFailed.variables ?? null) : null}
               onDelete={(messageId) => setDeleteConfirmId(messageId)}
               deletingId={deleteMsg.isPending ? (deleteMsg.variables ?? null) : null}
             />
@@ -756,8 +795,10 @@ export function AdminOrgDeliveryReportPage() {
           {detail.data && (
             <>
               {/* MessageDetailBody's own resend button is failed-recipient-only (hidden
-                  whenever failedCount is 0), so a still-pending message's resend action
-                  lives here instead, outside that shared component. */}
+                  whenever failedCount is 0), and its Skipped tab (with its own "Resend to
+                  N skipped" button) is page-variant only - this compact modal stays on the
+                  default 'modal' variant, so a still-pending or skipped message's resend
+                  action lives here instead, outside that shared component. */}
               {detailStatus?.label === 'Pending' && (
                 <div className="mb-4 flex justify-end">
                   <Button size="sm" disabled={resend.isPending} onClick={() => resend.mutate(viewingId!)}>
@@ -765,7 +806,21 @@ export function AdminOrgDeliveryReportPage() {
                   </Button>
                 </div>
               )}
-              <MessageDetailBody detail={detail.data} onExportCsv={exportRecipientsCsv} showProvider />
+              {detail.data.stats.skipped > 0 && (
+                <div className="mb-4 flex justify-end">
+                  <Button size="sm" disabled={resendSkipped.isPending} onClick={() => resendSkipped.mutate(viewingId!)}>
+                    <RotateCcw className="h-3.5 w-3.5" />{' '}
+                    {resendSkipped.isPending ? 'Resending…' : `Resend to ${detail.data.stats.skipped} skipped`}
+                  </Button>
+                </div>
+              )}
+              <MessageDetailBody
+                detail={detail.data}
+                onExportCsv={exportRecipientsCsv}
+                onResend={() => resendFailed.mutate(viewingId!)}
+                resending={resendFailed.isPending && resendFailed.variables === viewingId}
+                showProvider
+              />
             </>
           )}
         </DialogContent>
@@ -776,6 +831,13 @@ export function AdminOrgDeliveryReportPage() {
         onOpenChange={(open) => !open && setResendConfirmId(null)}
         isPending={resend.isPending}
         onConfirm={() => resend.mutate(resendConfirmId!, { onSuccess: () => setResendConfirmId(null) })}
+      />
+
+      <ResendFailedDialog
+        open={!!resendFailedConfirmId}
+        onOpenChange={(open) => !open && setResendFailedConfirmId(null)}
+        isPending={resendFailed.isPending}
+        onConfirm={() => resendFailed.mutate(resendFailedConfirmId!, { onSuccess: () => setResendFailedConfirmId(null) })}
       />
 
       <DeleteMessageDialog
