@@ -44,6 +44,8 @@ export interface AdminOrgMessageStats {
   pending: number;
   submitted: number;
   rejected: number;
+  // Never attempted - the org's wallet ran out before this recipient's turn.
+  skipped: number;
 }
 
 export interface AdminOrgMessageSummary {
@@ -103,6 +105,13 @@ export interface ResendPendingResult {
 export async function resendPendingMessage(orgId: string, messageId: string) {
   const { data } = await adminApi.post<ResendPendingResult>(
     `/admin/organizations/${orgId}/messages/${messageId}/resend-pending`
+  );
+  return data;
+}
+
+export async function resendSkippedMessage(orgId: string, messageId: string) {
+  const { data } = await adminApi.post<ResendPendingResult>(
+    `/admin/organizations/${orgId}/messages/${messageId}/resend-skipped`
   );
   return data;
 }

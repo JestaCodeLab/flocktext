@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
-import { fetchMessageRecipients, resendFailedMessage } from '@/api/messages';
+import { fetchMessageRecipients, resendFailedMessage, resendSkippedMessage } from '@/api/messages';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 
@@ -41,6 +41,16 @@ export function MessageReportPage() {
 
   const resend = useMutation({
     mutationFn: () => resendFailedMessage(id!),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const resendSkipped = useMutation({
+    mutationFn: () => resendSkippedMessage(id!),
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
@@ -90,7 +100,15 @@ export function MessageReportPage() {
         </div>
       )}
 
-      {detail.data && <MessageDetailBody detail={detail.data} variant="page" onExportCsv={exportCsv} />}
+      {detail.data && (
+        <MessageDetailBody
+          detail={detail.data}
+          variant="page"
+          onExportCsv={exportCsv}
+          onResendSkipped={() => resendSkipped.mutate()}
+          resendingSkipped={resendSkipped.isPending}
+        />
+      )}
     </div>
   );
 }

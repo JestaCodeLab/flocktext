@@ -124,6 +124,10 @@ export interface MessageStats {
   // distinct from `pending` (no confirmation from the provider yet at all).
   submitted: number;
   rejected: number;
+  // Never attempted - the org's wallet ran out before this recipient's turn. Distinct
+  // from `failed` (which did reach the network and wasn't delivered) - see
+  // MessageRecipientRow.status and REASONS.INSUFFICIENT_CREDITS server-side.
+  skipped: number;
 }
 
 export interface MessageSummary {
@@ -148,7 +152,7 @@ export interface MessageRecipientRow {
   id: string;
   name: string;
   phone: string;
-  status: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected';
+  status: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | 'skipped';
   // Technical/admin-facing cause - shown only in the Admin Console.
   reason: string;
   // Friendly, org-facing version of the same outcome - shown in the org's own reports.
@@ -166,7 +170,7 @@ export interface MessageRecipientRow {
   // Set (to the resend attempt's live status) once this failed/rejected recipient has been
   // resent via "Resend to N failed" - lets the UI show what actually happened next instead
   // of leaving a bare, seemingly-unresolved "failed" badge. null/undefined = never resent.
-  resentStatus?: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | null;
+  resentStatus?: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | 'skipped' | null;
 }
 
 export interface MessageDetail {
@@ -175,6 +179,9 @@ export interface MessageDetail {
   date: string;
   senderId: string;
   creditCost: number;
+  // Lets the UI compute "resending to N skipped needs X credits" (X = segments *
+  // stats.skipped) without a separate round trip.
+  segments: number;
   source: 'web' | 'api' | 'automation';
   stats: MessageStats;
   recipients: MessageRecipientRow[];
@@ -187,6 +194,11 @@ export async function fetchMessageRecipients(id: string) {
 
 export async function resendFailedMessage(id: string) {
   const { data } = await api.post<SendMessageResult>(`/messages/${id}/resend-failed`, { organizationId: activeOrganizationId() });
+  return data;
+}
+
+export async function resendSkippedMessage(id: string) {
+  const { data } = await api.post<SendMessageResult>(`/messages/${id}/resend-skipped`, { organizationId: activeOrganizationId() });
   return data;
 }
 

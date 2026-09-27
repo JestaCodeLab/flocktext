@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
 import { DeliveryTimeline } from '@/components/admin/DeliveryTimeline';
-import { fetchAdminOrgMessageRecipients, resendPendingMessage, type AdminOrgMessageStats } from '@/api/adminOrgMessages';
+import { fetchAdminOrgMessageRecipients, resendPendingMessage, resendSkippedMessage, type AdminOrgMessageStats } from '@/api/adminOrgMessages';
 import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
 
@@ -18,6 +18,7 @@ function statusLabel(stats: AdminOrgMessageStats) {
   if (stats.failed > 0) return `Failed (${stats.failed})`;
   if (stats.rejected > 0) return `Rejected (${stats.rejected})`;
   if (stats.pending > 0 || stats.submitted > 0) return 'Pending';
+  if (stats.skipped > 0) return `Skipped (${stats.skipped})`;
   return 'Delivered';
 }
 
@@ -63,6 +64,18 @@ export function AdminOrgMessageReportPage() {
 
   const resend = useMutation({
     mutationFn: () => resendPendingMessage(orgId, messageId!),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-message-recipients', orgId, messageId] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const resendSkipped = useMutation({
+    mutationFn: () => resendSkippedMessage(orgId, messageId!),
     onSuccess: (data) => {
       toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
@@ -123,7 +136,14 @@ export function AdminOrgMessageReportPage() {
       {detail.data && (
         <>
           <DeliveryTimeline detail={detail.data} />
-          <MessageDetailBody detail={detail.data} variant="page" onExportCsv={exportCsv} showProvider />
+          <MessageDetailBody
+            detail={detail.data}
+            variant="page"
+            onExportCsv={exportCsv}
+            onResendSkipped={() => resendSkipped.mutate()}
+            resendingSkipped={resendSkipped.isPending}
+            showProvider
+          />
         </>
       )}
     </div>

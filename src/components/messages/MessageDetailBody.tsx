@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import type { MessageDetail, MessageStats } from '@/api/messages';
 import { cn } from '@/lib/utils';
 import { STATUS_META, STATUS_ORDER, type MessageRecipientStatus } from '@/lib/messageStatus';
@@ -274,12 +275,47 @@ function RecipientsTable({ recipients, page, showProvider }: { recipients: Messa
 // compact - message card, four key stats, and the recipient table, with the resend
 // action inline. `variant` picks between the two; the recipients table and its
 // pagination are the one thing both share.
+// Shown atop the Skipped tab - "resend to N skipped" needs its own cost declared up
+// front (unlike "resend failed", which the org already expects to just work) since a
+// skip specifically means the wallet ran out last time, so a repeat shortfall is the
+// most likely failure mode here.
+function SkippedResendNotice({
+  count,
+  creditsNeeded,
+  onResend,
+  resending,
+}: {
+  count: number;
+  creditsNeeded: number;
+  onResend?: () => void;
+  resending?: boolean;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-chart-4/30 bg-chart-4/10 p-3.5 text-sm">
+      <div className="flex items-start gap-2 text-chart-4">
+        <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <b>{count}</b> contact{count === 1 ? ' was' : 's were'} never sent to because the wallet ran out. Resending needs{' '}
+          <b>{creditsNeeded}</b> credit{creditsNeeded === 1 ? '' : 's'}.
+        </div>
+      </div>
+      {onResend && (
+        <Button size="sm" disabled={resending} onClick={onResend}>
+          <RotateCcw className="h-[15px] w-[15px]" /> {resending ? 'Resending…' : `Resend to ${count} skipped`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function MessageDetailBody({
   detail,
   variant = 'modal',
   onExportCsv,
   onResend,
   resending,
+  onResendSkipped,
+  resendingSkipped,
   showProvider,
 }: {
   detail: MessageDetail;
@@ -287,15 +323,26 @@ export function MessageDetailBody({
   onExportCsv: () => void;
   onResend?: () => void;
   resending?: boolean;
+  // Separate from onResend/resending above - skipped contacts were never attempted at
+  // all (see MessageRecipientRow.status's 'skipped' case), so resending them is its own
+  // distinct action with its own declared credit cost (see SkippedResendNotice).
+  onResendSkipped?: () => void;
+  resendingSkipped?: boolean;
   // Admin-only: shows which SMS provider (BMS vs Hubtel backup) each recipient actually
   // went out through. Omitted on org self-service surfaces, which share this component.
   showProvider?: boolean;
 }) {
   const failedCount = detail.recipients.filter((r) => r.status === 'failed' || r.status === 'rejected').length;
+  const skippedRecipients = detail.recipients.filter((r) => r.status === 'skipped');
+  const creditsNeededForSkipped = detail.segments * skippedRecipients.length;
 
   const [page, setPage] = useState(1);
+  const [skippedPage, setSkippedPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<'all' | 'skipped'>('all');
   useEffect(() => {
     setPage(1);
+    setSkippedPage(1);
+    setActiveTab('all');
   }, [detail.id]);
 
   if (variant === 'page') {
@@ -324,10 +371,41 @@ export function MessageDetailBody({
           </div>
         </div>
 
-        <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
-          <RecipientsTable recipients={detail.recipients} page={page} showProvider={showProvider} />
-          <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
-        </div>
+        {skippedRecipients.length > 0 ? (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'skipped')} className="mt-2">
+            <TabsList variant="line" className="mb-2 group-data-[orientation=horizontal]/tabs:h-auto justify-start gap-6 p-0">
+              <TabsTrigger value="all" className="h-auto px-0 py-2">
+                All ({detail.recipients.length})
+              </TabsTrigger>
+              <TabsTrigger value="skipped" className="h-auto px-0 py-2">
+                Skipped ({skippedRecipients.length})
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="all">
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <RecipientsTable recipients={detail.recipients} page={page} showProvider={showProvider} />
+                <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
+              </div>
+            </TabsContent>
+            <TabsContent value="skipped">
+              <SkippedResendNotice
+                count={skippedRecipients.length}
+                creditsNeeded={creditsNeededForSkipped}
+                onResend={onResendSkipped}
+                resending={resendingSkipped}
+              />
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <RecipientsTable recipients={skippedRecipients} page={skippedPage} showProvider={showProvider} />
+                <RecipientsPaginationControls page={skippedPage} total={skippedRecipients.length} onPageChange={setSkippedPage} />
+              </div>
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <div className="mt-2 overflow-hidden rounded-2xl border border-border bg-card">
+            <RecipientsTable recipients={detail.recipients} page={page} showProvider={showProvider} />
+            <RecipientsPaginationControls page={page} total={detail.recipients.length} onPageChange={setPage} />
+          </div>
+        )}
       </>
     );
   }

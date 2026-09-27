@@ -3,9 +3,9 @@
 // per-message status badges on the various delivery report list pages, the
 // DeliveryBarChart, and StatusInfoButton's legend popover, so all four always agree
 // with each other instead of drifting into slightly different wordings/colors.
-export type MessageRecipientStatus = 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected';
+export type MessageRecipientStatus = 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | 'skipped';
 
-export const STATUS_ORDER: MessageRecipientStatus[] = ['delivered', 'submitted', 'pending', 'rejected', 'failed'];
+export const STATUS_ORDER: MessageRecipientStatus[] = ['delivered', 'submitted', 'pending', 'rejected', 'failed', 'skipped'];
 
 interface StatusMeta {
   label: string;
@@ -59,5 +59,13 @@ export const STATUS_META: Record<MessageRecipientStatus, StatusMeta> = {
     dotClassName: 'bg-destructive',
     chartColorVar: 'destructive',
     badgeVariant: 'destructive',
+  },
+  skipped: {
+    label: 'Skipped',
+    description: 'Never attempted - the organization ran out of SMS credits before reaching this recipient.',
+    dotClassName: 'bg-chart-4',
+    chartColorVar: 'chart-4',
+    badgeVariant: 'outline',
+    tintClassName: 'border-chart-4/30 bg-chart-4/10 text-chart-4',
   },
 };
