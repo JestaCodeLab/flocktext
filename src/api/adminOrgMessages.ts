@@ -58,6 +58,11 @@ export interface AdminOrgMessageSummary {
   creditCost: number;
   source: 'web' | 'api' | 'automation';
   stats: AdminOrgMessageStats;
+  // How many of stats.rejected failed specifically because the whole BMS call never
+  // went through (a platform-side outage/low-balance issue, not a bad number) - see
+  // services/messageSender.js's dispatch(). Lets the list flag "resend once BMS is
+  // topped up" separately from ordinary per-number rejections.
+  providerUnavailableCount: number;
 }
 
 export interface AdminOrgMessageListResponse {

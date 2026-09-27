@@ -2,7 +2,7 @@ import { adminApi } from '@/api/adminClient';
 import type { AdminOrgDetail, AdminOrgFunnelSummary, AdminOrgListItem, AdminOrgUser, OrgStage, OrgSubStage } from '@/types/admin';
 import type { DateRangeParams } from '@/lib/dateRange';
 import type { PageParams } from '@/api/messages';
-import type { WalletTransactionType } from '@/api/wallet';
+import type { AdminTransactionType } from '@/api/adminTransactions';
 
 export interface AdminOrgListResponse {
   organizations: AdminOrgListItem[];
@@ -75,9 +75,9 @@ export async function adjustOrganizationWallet(id: string, payload: { credits: n
   return data;
 }
 
-export interface AdminOrgWalletTransaction {
+export interface AdminOrgTransaction {
   id: string;
-  type: WalletTransactionType;
+  type: AdminTransactionType;
   label: string;
   credits: number;
   amountGHS: number;
@@ -85,20 +85,20 @@ export interface AdminOrgWalletTransaction {
   date: string;
 }
 
-export interface AdminOrgWalletTransactionListResponse {
-  rows: AdminOrgWalletTransaction[];
+export interface AdminOrgTransactionListResponse {
+  rows: AdminOrgTransaction[];
   total: number;
   page: number;
   pageSize: number;
+  summary: { totalGHS: number; count: number };
 }
 
-// The org's complete wallet ledger (topups, per-send debits, refunds, free trial,
-// manual adjustments) - see adminOrganizationController.walletTransactions for why
-// this reads WalletTransaction directly rather than the platform-wide "All
-// Transactions" page's purchases-only Transaction collection.
-export async function fetchAdminOrgWalletTransactions(id: string, params?: PageParams) {
-  const { data } = await adminApi.get<AdminOrgWalletTransactionListResponse>(
-    `/admin/organizations/${id}/wallet-transactions`,
+// This org's slice of the same unified purchase ledger the platform-wide "All
+// Transactions" page uses (see adminOrganizationController.transactions) - SMS
+// package top-ups and addon purchases, not the full wallet ledger.
+export async function fetchAdminOrgTransactions(id: string, params?: PageParams) {
+  const { data } = await adminApi.get<AdminOrgTransactionListResponse>(
+    `/admin/organizations/${id}/transactions`,
     { params }
   );
   return data;

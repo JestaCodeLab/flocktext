@@ -184,6 +184,10 @@ export interface MessageDetail {
   segments: number;
   source: 'web' | 'api' | 'automation';
   stats: MessageStats;
+  // Admin-only (undefined on the org self-service endpoint) - how many of stats.rejected
+  // failed because the whole BMS call never went through, a platform-side issue rather
+  // than a bad number. See adminOrgMessagesController.js's `recipients`.
+  providerUnavailableCount?: number;
   recipients: MessageRecipientRow[];
 }
 
