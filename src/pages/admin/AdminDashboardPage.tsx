@@ -116,7 +116,14 @@ export function AdminDashboardPage() {
                   tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
                   tickFormatter={(value: string) => (value.length > 12 ? `${value.slice(0, 12)}…` : value)}
                 />
-                <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  width={56}
+                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                  allowDecimals={false}
+                  tickFormatter={(value: number) => value.toLocaleString()}
+                />
                 <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
                 <Bar dataKey="messagesSent" name="Messages sent" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={36} />
               </BarChart>
@@ -147,7 +154,14 @@ export function AdminDashboardPage() {
                   axisLine={false}
                   tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
                 />
-                <YAxis tickLine={false} axisLine={false} width={28} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }} allowDecimals={false} />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  width={56}
+                  tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                  allowDecimals={false}
+                  tickFormatter={(value: number) => value.toLocaleString()}
+                />
                 <Tooltip cursor={{ fill: 'var(--color-muted)' }} content={<ChartTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
                 <Bar dataKey="messagesSent" name="SMS sent" fill="var(--color-chart-1)" radius={[4, 4, 0, 0]} maxBarSize={22} />
