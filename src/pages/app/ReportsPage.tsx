@@ -61,6 +61,9 @@ function messageStatusBadge(stats: MessageStats) {
   if (stats.pending > 0 || stats.submitted > 0) {
     return { variant: STATUS_META.submitted.badgeVariant, label: STATUS_META.submitted.label, className: STATUS_META.submitted.tintClassName ?? '' };
   }
+  if (stats.skipped > 0) {
+    return { variant: STATUS_META.skipped.badgeVariant, label: `Skipped (${stats.skipped})`, className: STATUS_META.skipped.tintClassName ?? '' };
+  }
   return { variant: 'success' as const, label: 'Delivered', className: '' };
 }
 

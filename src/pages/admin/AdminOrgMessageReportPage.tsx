@@ -7,12 +7,17 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
 import { DeliveryTimeline } from '@/components/admin/DeliveryTimeline';
-import { fetchAdminOrgMessageRecipients, resendPendingMessage, resendSkippedMessage, type AdminOrgMessageStats } from '@/api/adminOrgMessages';
+import {
+  fetchAdminOrgMessageRecipients,
+  resendFailedMessage,
+  resendPendingMessage,
+  resendSkippedMessage,
+  type AdminOrgMessageStats,
+} from '@/api/adminOrgMessages';
 import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
 
-// Mirrors messageStatusBadge's label logic in AdminOrgDeliveryReportPage.tsx - only the
-// "Pending" check is needed here (there's no admin equivalent of "resend failed"), so
+// Mirrors messageStatusBadge's label logic in AdminOrgDeliveryReportPage.tsx -
 // duplicating the small label instead of exporting the full badge-variant helper.
 function statusLabel(stats: AdminOrgMessageStats) {
   if (stats.failed > 0) return `Failed (${stats.failed})`;
@@ -86,6 +91,20 @@ export function AdminOrgMessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
+  // Mirrors app/MessageReportPage.tsx's own "Resend to N failed" header button -
+  // the org self-service equivalent this page is otherwise parity-matched with.
+  const resendFailed = useMutation({
+    mutationFn: () => resendFailedMessage(orgId, messageId!),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-message-recipients', orgId, messageId] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
   function exportCsv() {
     if (!detail.data) return;
     const rows = [
@@ -103,6 +122,7 @@ export function AdminOrgMessageReportPage() {
   }
 
   const isPending = detail.data ? statusLabel(detail.data.stats) === 'Pending' : false;
+  const failedCount = (detail.data?.stats.failed ?? 0) + (detail.data?.stats.rejected ?? 0);
 
   return (
     <div>
@@ -118,11 +138,18 @@ export function AdminOrgMessageReportPage() {
           <div className="mb-1 text-[26px] font-bold">Delivery Details</div>
           <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
         </div>
-        {isPending && (
-          <Button disabled={resend.isPending} onClick={() => resend.mutate()}>
-            <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : 'Resend to pending recipients'}
-          </Button>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {isPending && (
+            <Button disabled={resend.isPending} onClick={() => resend.mutate()}>
+              <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : 'Resend to pending recipients'}
+            </Button>
+          )}
+          {failedCount > 0 && (
+            <Button disabled={resendFailed.isPending} onClick={() => resendFailed.mutate()}>
+              <RotateCcw className="h-[15px] w-[15px]" /> {resendFailed.isPending ? 'Resending…' : `Resend to ${failedCount} failed`}
+            </Button>
+          )}
+        </div>
       </div>
 
       {detail.isLoading && (
