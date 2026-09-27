@@ -44,7 +44,7 @@ export function SupportTicketsPage() {
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[22px] font-bold sm:text-[26px]">Support</div>
+          <div className="text-[20px] font-bold sm:text-[24px]">Support</div>
           <div className="mt-0.5 text-sm text-muted-foreground">Report an issue or request a feature — we'll keep you posted here.</div>
         </div>
         <Button className="self-start sm:self-auto" onClick={() => setShowForm(true)}>

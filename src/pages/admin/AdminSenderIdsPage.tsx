@@ -299,7 +299,7 @@ export function AdminSenderIdsPage() {
 
   return (
     <div>
-      <div className="mb-6 text-[26px] font-extrabold">Sender ID Review</div>
+      <div className="mb-6 text-[24px] font-extrabold">Sender ID Review</div>
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ReviewTabKey)}>
         <div className="mb-6 overflow-x-auto border-b">

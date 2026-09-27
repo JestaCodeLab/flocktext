@@ -115,7 +115,7 @@ export function MessageReportPage() {
             <Send className="h-5 w-5" />
           </div>
           <div>
-            <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Delivery Details</div>
+            <div className="mb-1 text-[20px] font-bold sm:text-[24px]">Delivery Details</div>
             <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
           </div>
         </div>

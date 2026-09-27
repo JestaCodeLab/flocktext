@@ -48,7 +48,7 @@ export function ContactsPage() {
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-[22px] font-bold sm:text-[26px]">{entity.pluralCap}</div>
+          <div className="text-[20px] font-bold sm:text-[24px]">{entity.pluralCap}</div>
           <div className="mt-0.5 text-sm text-muted-foreground">
             Showing {contacts.data?.total ?? 0} {entity.plural}
           </div>

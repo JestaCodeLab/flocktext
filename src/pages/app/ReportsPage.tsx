@@ -703,7 +703,7 @@ export function ReportsPage() {
   return (
     <div>
       <div className="mb-6">
-        <div className="mb-1 text-[22px] font-bold sm:text-[26px]">Delivery Reports</div>
+        <div className="mb-1 text-[20px] font-bold sm:text-[24px]">Delivery Reports</div>
         <div className="text-sm text-muted-foreground">Delivery and failure breakdowns for every send.</div>
       </div>
 

@@ -245,7 +245,7 @@ export function DeveloperDocsPage() {
       </Button>
 
       <div className="mb-10">
-        <h1 className="text-[28px] font-bold">FlockText Developer API</h1>
+        <h1 className="text-[26px] font-bold">FlockText Developer API</h1>
         <p className="mt-1 text-sm text-muted-foreground">Reference for the external, API-key-authenticated integration surface at /api/v1.</p>
       </div>
 
