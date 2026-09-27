@@ -13,6 +13,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  TriangleAlert,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -98,6 +99,22 @@ function ScheduledDateTime({ date }: { date: string }) {
   );
 }
 
+// creditCost/insufficientCredits are only populated on the org's own self-service
+// scheduled list (see ScheduledMessage's comment) - undefined on the admin console's,
+// which doesn't render this.
+function CreditsCell({ m }: { m: ScheduledMessage }) {
+  if (m.creditCost === undefined) return null;
+  if (!m.insufficientCredits) {
+    return <span className="text-muted-foreground">{m.creditCost}</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1 font-medium text-warning">
+      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+      {m.creditCost} · short {m.creditCost - (m.walletBalanceCredits ?? 0)}
+    </span>
+  );
+}
+
 function ScheduledTable({
   messages,
   onView,
@@ -119,6 +136,7 @@ function ScheduledTable({
               <TableHead className="text-[13px]">Type</TableHead>
               <TableHead className="text-[13px]">Sent to</TableHead>
               <TableHead className="text-[13px]">Message</TableHead>
+              <TableHead className="text-[13px]">Credits</TableHead>
               <TableHead className="w-0 text-[13px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -136,6 +154,9 @@ function ScheduledTable({
                 </TableCell>
                 <TableCell className="max-w-[200px] truncate text-muted-foreground">{recipientSummary(m)}</TableCell>
                 <TableCell className="max-w-[280px] truncate text-muted-foreground">{m.body}</TableCell>
+                <TableCell>
+                  <CreditsCell m={m} />
+                </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
                     <Button size="icon-sm" variant="ghost" onClick={() => onView(m)}>
@@ -176,6 +197,11 @@ function ScheduledTable({
               </div>
               <div className="mt-1 truncate text-xs text-muted-foreground">To: {recipientSummary(m)}</div>
               <div className="mt-0.5 truncate text-xs text-muted-foreground">{m.body}</div>
+              {m.creditCost !== undefined && (
+                <div className="mt-0.5 text-xs">
+                  <CreditsCell m={m} />
+                </div>
+              )}
             </button>
             <Button
               size="icon-sm"
@@ -223,7 +249,31 @@ function ScheduledDetailDialog({
                 </div>
               ) : (
                 <div>
-                  Sends: <b className="text-foreground">{new Date(message.scheduleDate).toLocaleString(undefined, { hour12: true })}</b>
+                  Sends:{' '}
+                  <b className="text-foreground">
+                    {new Date(message.scheduleDate).toLocaleString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    })}
+                  </b>
+                </div>
+              )}
+              {message.creditCost !== undefined && (
+                <div>
+                  Credits {message.sendMode === 'recurring' ? 'per run' : 'needed'}:{' '}
+                  <b className={cn('text-foreground', message.insufficientCredits && 'text-warning')}>{message.creditCost}</b>
+                  {' · You have '}
+                  <b className="text-foreground">{message.walletBalanceCredits}</b>
+                  {message.insufficientCredits && (
+                    <div className="mt-1 flex items-center gap-1.5 text-warning">
+                      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                      Not enough credits to reach everyone — it'll send to as many as it can afford, then stop.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

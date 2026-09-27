@@ -59,6 +59,13 @@ function countSegments(body: string) {
   return Math.max(1, Math.ceil(body.length / 160));
 }
 
+// A bare toLocaleString() (no options) renders locale-default numeric date +
+// seconds (e.g. "28/09/2026, 09:00:00") - not readable at a glance. This matches
+// the short, worded format already used elsewhere for dates (e.g. MessageCard).
+function formatScheduleDateTime(date: Date) {
+  return date.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+}
+
 function ordinal(n: number) {
   const s = ['th', 'st', 'nd', 'rd'];
   const v = n % 100;
@@ -125,6 +132,10 @@ export function ComposePage() {
   }
   const [selectedSenderId, setSelectedSenderId] = useState<string | null>(null);
   const [showSenderIdIntro, setShowSenderIdIntro] = useState(false);
+  // Set from the server's authoritative check after a schedule/recurring send is
+  // created (see ScheduleMessageResult) - distinct from the pre-submit `checks` credit
+  // row below, which is only a client-side estimate off cached group/contact counts.
+  const [creditWarning, setCreditWarning] = useState<{ creditCost: number; walletBalanceCredits: number } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setContactSearch(contactSearchInput.trim()), 300);
@@ -282,7 +293,7 @@ export function ComposePage() {
       } else if (when <= new Date()) {
         result.push({ key: 'schedule', status: 'blocked', buttonLabel: 'Pick a future time', message: 'That time has already passed — choose a future one.' });
       } else {
-        result.push({ key: 'schedule', status: 'ok', message: `Sends ${when.toLocaleString()}` });
+        result.push({ key: 'schedule', status: 'ok', message: `Sends ${formatScheduleDateTime(when)}` });
       }
     } else if (scheduleMode === 'recurring') {
       result.push({ key: 'schedule', status: 'ok', message: recurringSummary });
@@ -311,8 +322,8 @@ export function ComposePage() {
         status: 'warning',
         message:
           scheduleMode === 'recurring'
-            ? `Each run costs ~${estimatedCost} credits and you have ${walletBalance} — top up or runs will fail.`
-            : `This needs ${estimatedCost} credits and you have ${walletBalance} — top up before it sends.`,
+            ? `Each run costs ~${estimatedCost} credits and you have ${walletBalance} — top up, or a short run will only reach some ${entity.plural} before stopping.`
+            : `This needs ${estimatedCost} credits and you have ${walletBalance} — top up, or it'll stop partway and only reach some ${entity.plural}.`,
         actionLabel: 'Top up',
         onAction: () => navigate('/app/wallet'),
       });
@@ -365,6 +376,7 @@ export function ComposePage() {
     setScheduleDate('');
     setScheduleMode('now');
     setSelectedSenderId(null);
+    setCreditWarning(null);
   }
 
   const send = useMutation({
@@ -386,10 +398,13 @@ export function ComposePage() {
 
   const schedule = useMutation({
     mutationFn: scheduleMessage,
-    onSuccess: () => {
+    onSuccess: (data) => {
       setShowConfirm(false);
       toast.success(scheduleMode === 'once' ? 'Message scheduled.' : 'Recurring send created.');
       resetForm();
+      if (data.insufficientCredits) {
+        setCreditWarning({ creditCost: data.creditCost, walletBalanceCredits: data.walletBalanceCredits });
+      }
       queryClient.invalidateQueries({ queryKey: ['scheduled-messages'] });
     },
     onError: (err) => {
@@ -527,6 +542,20 @@ export function ComposePage() {
           <Repeat className="h-3.5 w-3.5" /> Recurring
         </button>
       </div>
+
+      {creditWarning && (
+        <div className="mb-6 flex items-start gap-2.5 rounded-lg border border-warning/40 bg-warning/10 p-3.5 text-sm text-warning">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            This scheduled send needs <b>{creditWarning.creditCost}</b> credits but your wallet has{' '}
+            <b>{creditWarning.walletBalanceCredits}</b>. It'll send to as many {entity.plural} as it can afford, then
+            stop — top up before it fires to reach everyone.{' '}
+            <button type="button" onClick={() => navigate('/app/wallet')} className="font-semibold underline underline-offset-2">
+              Top up
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col items-start gap-6 lg:flex-row">
         <div className="min-w-0 w-full flex-1">
@@ -939,7 +968,21 @@ export function ComposePage() {
               ))}
             </div>
             <div className="mt-2.5 text-sm text-muted-foreground">
-              {body.length}/160 characters — {segments} SMS segment(s)
+              {body.length}/160 characters — {segments} SMS segment{segments === 1 ? '' : 's'}
+            </div>
+            <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-border/50 bg-background px-3 py-2 text-xs text-muted-foreground">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              1 credit per SMS segment, per recipient — this message costs{' '}
+              <b className="text-foreground">
+                {segments} credit{segments === 1 ? '' : 's'} per {entity.singular}
+              </b>
+              {recipientCount > 0 && (
+                <>
+                  {' '}
+                  ({estimatedCost} credit{estimatedCost === 1 ? '' : 's'} total for {recipientCount})
+                </>
+              )}
+              .
             </div>
           </div>
         </div>
@@ -1030,7 +1073,10 @@ export function ComposePage() {
             </div>
             {scheduleMode === 'once' && (
               <div>
-                When: <b className="text-foreground">{scheduleDate && scheduleTime ? new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString() : '—'}</b>
+                When:{' '}
+                <b className="text-foreground">
+                  {scheduleDate && scheduleTime ? formatScheduleDateTime(new Date(`${scheduleDate}T${scheduleTime}`)) : '—'}
+                </b>
               </div>
             )}
             {scheduleMode === 'recurring' && (
