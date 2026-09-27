@@ -55,12 +55,16 @@ import { STATUS_META } from '@/lib/messageStatus';
 // is folded into "Submitted" too rather than given its own third label - that window
 // is normally seconds wide (see services/deliveryStatusSync.js), so distinguishing it
 // here isn't worth a label most people will never actually see.
+// Any confirmed success wins first - see messageController.listMessages's matching
+// comment for the full reasoning (a mostly-working send with some failures mixed in
+// still reads as "delivered", not "failed").
 function messageStatusBadge(stats: MessageStats) {
-  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
-  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
+  if (stats.delivered > 0) return { variant: 'success' as const, label: 'Delivered', className: '' };
   if (stats.pending > 0 || stats.submitted > 0) {
     return { variant: STATUS_META.submitted.badgeVariant, label: STATUS_META.submitted.label, className: STATUS_META.submitted.tintClassName ?? '' };
   }
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
+  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
   if (stats.skipped > 0) {
     return { variant: STATUS_META.skipped.badgeVariant, label: `Skipped (${stats.skipped})`, className: STATUS_META.skipped.tintClassName ?? '' };
   }
@@ -444,6 +448,9 @@ function MessagesTable({
                   </TableCell>
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {m.stats.delivered}/{m.stats.total} delivered
+                    </div>
                   </TableCell>
                   <TableCell>
                     <ActionsMenu m={m} />
@@ -468,9 +475,14 @@ function MessagesTable({
                       {new Date(m.date).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: true })}
                     </span>
                   </div>
-                  <Badge variant={status.variant} className={cn('shrink-0 text-[10px]', status.className)}>
-                    {status.label}
-                  </Badge>
+                  <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    <Badge variant={status.variant} className={cn('text-[10px]', status.className)}>
+                      {status.label}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">
+                      {m.stats.delivered}/{m.stats.total} delivered
+                    </span>
+                  </div>
                 </div>
                 <div className="mt-1 truncate text-xs text-muted-foreground">{m.preview}</div>
                 <div className="mt-0.5 text-[11px] text-muted-foreground">
