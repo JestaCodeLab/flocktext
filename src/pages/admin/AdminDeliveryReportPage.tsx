@@ -115,7 +115,15 @@ function MessagesTable({
               <MobileListRow label="Recipients" value={m.recipientCount} />
               <MobileListRow label="Sender ID" value={m.senderId} />
               <MobileListRow label="Sent by" value={m.sentBy} />
-              <MobileListRow label="Status" value={<Badge variant={status.variant} className={status.className}>{status.label}</Badge>} />
+              <MobileListRow
+                label="Status"
+                value={
+                  <div className="flex flex-col items-end gap-0.5">
+                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                    <span className="text-[10px] text-muted-foreground">{m.stats.delivered}/{m.stats.total} delivered</span>
+                  </div>
+                }
+              />
             </MobileListCard>
           );
         })}
@@ -164,6 +172,9 @@ function MessagesTable({
                   <TableCell className="text-muted-foreground">{m.sentBy}</TableCell>
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {m.stats.delivered}/{m.stats.total} delivered
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">

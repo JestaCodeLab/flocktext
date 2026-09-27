@@ -58,20 +58,20 @@ import { STATUS_META } from '@/lib/messageStatus';
 
 const PAGE_SIZE = 20;
 
-// Matches the row-level badge used throughout the app: "Failed"/"Rejected" mean at
-// least one recipient landed in that outcome, "Pending" means at least one recipient
-// BMS hasn't even acknowledged yet, "Submitted" means BMS has confirmed every
-// unresolved recipient but at least one hasn't reached delivered yet (see
-// lib/messageStatus.ts for why pending/submitted are tracked separately) - this also
-// matches the "Delivered" tab's own filter (adminOrgMessagesController.applyStatusFilter),
-// which shows both submitted and delivered messages, not just fully-delivered ones.
+// Any confirmed success wins first - stats.delivered > 0 or stats.submitted > 0 means
+// "Delivered"/"Submitted", full stop, regardless of how many other recipients failed,
+// were rejected, or were skipped (see adminOrgMessagesController.applyStatusFilter's
+// matching comment for the full reasoning). Failing that, "Pending" means nothing has
+// succeeded yet but nothing's definitively failed either. Only once neither applies
+// does a bad outcome (Failed/Rejected/Skipped) win.
 function messageStatusBadge(stats: AdminOrgMessageSummary['stats']) {
-  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
-  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
-  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.delivered > 0) return { variant: 'success' as const, label: 'Delivered', className: '' };
   if (stats.submitted > 0) {
     return { variant: STATUS_META.submitted.badgeVariant, label: STATUS_META.submitted.label, className: STATUS_META.submitted.tintClassName ?? '' };
   }
+  if (stats.pending > 0) return { variant: 'secondary' as const, label: 'Pending', className: '' };
+  if (stats.failed > 0) return { variant: 'destructive' as const, label: `Failed (${stats.failed})`, className: '' };
+  if (stats.rejected > 0) return { variant: 'outline' as const, label: `Rejected (${stats.rejected})`, className: 'border-warning/30 bg-warning/10 text-warning' };
   if (stats.skipped > 0) {
     return { variant: STATUS_META.skipped.badgeVariant, label: `Skipped (${stats.skipped})`, className: STATUS_META.skipped.tintClassName ?? '' };
   }
@@ -229,7 +229,15 @@ function MessagesTable({
                 label="Source"
                 value={<Badge variant={sourceBadge(m.source).variant}>{sourceBadge(m.source).label}</Badge>}
               />
-              <MobileListRow label="Status" value={<Badge variant={status.variant} className={status.className}>{status.label}</Badge>} />
+              <MobileListRow
+                label="Status"
+                value={
+                  <div className="flex flex-col items-end gap-0.5">
+                    <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                    <span className="text-[10px] text-muted-foreground">{m.stats.delivered}/{m.stats.total} delivered</span>
+                  </div>
+                }
+              />
             </MobileListCard>
           );
         })}
@@ -272,6 +280,9 @@ function MessagesTable({
                   </TableCell>
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      {m.stats.delivered}/{m.stats.total} delivered
+                    </div>
                   </TableCell>
                   <TableCell>{renderActions(m)}</TableCell>
                 </TableRow>

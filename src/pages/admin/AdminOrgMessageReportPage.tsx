@@ -17,12 +17,15 @@ import {
 import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
 
-// Mirrors messageStatusBadge's label logic in AdminOrgDeliveryReportPage.tsx -
-// duplicating the small label instead of exporting the full badge-variant helper.
+// Mirrors messageStatusBadge's label logic in AdminOrgDeliveryReportPage.tsx - any
+// confirmed success wins first, regardless of other recipients failing/rejected/
+// skipped (see adminOrgMessagesController.applyStatusFilter's comment) - duplicating
+// the small label instead of exporting the full badge-variant helper.
 function statusLabel(stats: AdminOrgMessageStats) {
+  if (stats.delivered > 0 || stats.submitted > 0) return 'Delivered';
+  if (stats.pending > 0) return 'Pending';
   if (stats.failed > 0) return `Failed (${stats.failed})`;
   if (stats.rejected > 0) return `Rejected (${stats.rejected})`;
-  if (stats.pending > 0 || stats.submitted > 0) return 'Pending';
   if (stats.skipped > 0) return `Skipped (${stats.skipped})`;
   return 'Delivered';
 }
