@@ -166,7 +166,6 @@ export function AdminOrgMessageReportPage() {
   }
 
   const isPending = detail.data ? statusLabel(detail.data.stats) === 'Pending' : false;
-  const rejectedCount = detail.data?.stats.rejected ?? 0;
 
   return (
     <div>
@@ -193,11 +192,6 @@ export function AdminOrgMessageReportPage() {
               <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : 'Resend to pending recipients'}
             </Button>
           )}
-          {rejectedCount > 0 && (
-            <Button disabled={resendFailed.isPending} onClick={() => resendFailed.mutate()}>
-              <RotateCcw className="h-[15px] w-[15px]" /> {resendFailed.isPending ? 'Resending…' : `Resend to ${rejectedCount} rejected`}
-            </Button>
-          )}
         </div>
       </div>
 
@@ -216,6 +210,8 @@ export function AdminOrgMessageReportPage() {
             detail={detail.data}
             variant="page"
             onExportCsv={exportCsv}
+            onResend={() => resendFailed.mutate()}
+            resending={resendFailed.isPending}
             onResendSkipped={() => resendSkipped.mutate()}
             resendingSkipped={resendSkipped.isPending}
             onResendUndelivered={() => resendUndelivered.mutate()}
