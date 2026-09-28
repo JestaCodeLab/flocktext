@@ -40,7 +40,7 @@ export interface SendMessagePayload {
 
 export interface SendMessageResult {
   id: string;
-  stats: { total: number; delivered: number; failed: number; pending: number; rejected: number };
+  stats: { total: number; delivered: number; failed: number; pending: number; rejected: number; submitted?: number };
   creditCost: number;
   walletBalanceCredits: number;
 }
@@ -168,7 +168,7 @@ export interface MessageRecipientRow {
   // recipient's resolution, since only `deliveredAt` is set for the delivered case.
   updatedAt?: string;
   // Set (to the resend attempt's live status) once this failed/rejected recipient has been
-  // resent via "Resend to N failed" - lets the UI show what actually happened next instead
+  // resent via "Resend to N rejected" or the per-row resend - lets the UI show what actually happened next instead
   // of leaving a bare, seemingly-unresolved "failed" badge. null/undefined = never resent.
   resentStatus?: 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | 'skipped' | null;
 }
@@ -198,6 +198,13 @@ export async function fetchMessageRecipients(id: string) {
 
 export async function resendFailedMessage(id: string) {
   const { data } = await api.post<SendMessageResult>(`/messages/${id}/resend-failed`, { organizationId: activeOrganizationId() });
+  return data;
+}
+
+// Failed = BMS "Not Delivered" (already billed) - a separate bulk action from
+// resendFailedMessage above, which only covers rejected recipients.
+export async function resendUndeliveredMessage(id: string) {
+  const { data } = await api.post<SendMessageResult>(`/messages/${id}/resend-undelivered`, { organizationId: activeOrganizationId() });
   return data;
 }
 

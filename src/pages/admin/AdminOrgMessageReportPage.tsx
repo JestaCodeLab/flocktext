@@ -13,12 +13,14 @@ import {
   resendFailedMessage,
   resendPendingMessage,
   resendSkippedMessage,
+  resendUndeliveredMessage,
   resendOneRecipient,
   deleteMessageRecipient,
   type AdminOrgMessageStats,
 } from '@/api/adminOrgMessages';
 import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
+import { deliveredCount } from '@/lib/messageStatus';
 
 // Mirrors messageStatusBadge's label logic in AdminOrgDeliveryReportPage.tsx - any
 // confirmed success wins first, regardless of other recipients failing/rejected/
@@ -76,7 +78,7 @@ export function AdminOrgMessageReportPage() {
   const resend = useMutation({
     mutationFn: () => resendPendingMessage(orgId, messageId!),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
@@ -88,7 +90,7 @@ export function AdminOrgMessageReportPage() {
   const resendSkipped = useMutation({
     mutationFn: () => resendSkippedMessage(orgId, messageId!),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
@@ -97,12 +99,24 @@ export function AdminOrgMessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  // Mirrors app/MessageReportPage.tsx's own "Resend to N failed" header button -
+  const resendUndelivered = useMutation({
+    mutationFn: () => resendUndeliveredMessage(orgId, messageId!),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-org-message-recipients', orgId, messageId] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  // Mirrors app/MessageReportPage.tsx's own "Resend to N rejected" header button -
   // the org self-service equivalent this page is otherwise parity-matched with.
   const resendFailed = useMutation({
     mutationFn: () => resendFailedMessage(orgId, messageId!),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages', orgId] });
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-summary', orgId] });
       queryClient.invalidateQueries({ queryKey: ['admin-org-messages-chart', orgId] });
@@ -152,7 +166,7 @@ export function AdminOrgMessageReportPage() {
   }
 
   const isPending = detail.data ? statusLabel(detail.data.stats) === 'Pending' : false;
-  const failedCount = (detail.data?.stats.failed ?? 0) + (detail.data?.stats.rejected ?? 0);
+  const rejectedCount = detail.data?.stats.rejected ?? 0;
 
   return (
     <div>
@@ -179,9 +193,9 @@ export function AdminOrgMessageReportPage() {
               <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : 'Resend to pending recipients'}
             </Button>
           )}
-          {failedCount > 0 && (
+          {rejectedCount > 0 && (
             <Button disabled={resendFailed.isPending} onClick={() => resendFailed.mutate()}>
-              <RotateCcw className="h-[15px] w-[15px]" /> {resendFailed.isPending ? 'Resending…' : `Resend to ${failedCount} failed`}
+              <RotateCcw className="h-[15px] w-[15px]" /> {resendFailed.isPending ? 'Resending…' : `Resend to ${rejectedCount} rejected`}
             </Button>
           )}
         </div>
@@ -204,6 +218,8 @@ export function AdminOrgMessageReportPage() {
             onExportCsv={exportCsv}
             onResendSkipped={() => resendSkipped.mutate()}
             resendingSkipped={resendSkipped.isPending}
+            onResendUndelivered={() => resendUndelivered.mutate()}
+            resendingUndelivered={resendUndelivered.isPending}
             onResendOne={(recipientId) => resendOne.mutate(recipientId)}
             resendingOneId={resendOne.isPending ? resendOne.variables : null}
             onRequestDeleteRecipient={(recipientId, recipientName) => setDeleteTarget({ id: recipientId, name: recipientName })}

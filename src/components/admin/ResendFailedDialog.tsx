@@ -16,10 +16,10 @@ export function ResendFailedDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Resend to failed recipients?</DialogTitle>
+          <DialogTitle>Resend to rejected recipients?</DialogTitle>
         </DialogHeader>
         <div className="text-sm text-muted-foreground">
-          This sends a fresh SMS to every recipient who failed or was rejected on this message and bills the
+          This sends a fresh SMS to every recipient who was rejected on this message (never accepted by the SMS provider) and bills the
           organization&apos;s wallet again.
         </div>
         <DialogFooter>

@@ -58,7 +58,7 @@ import { fetchAdminOrganizationDetail } from '@/api/adminOrganizations';
 import { apiErrorMessage } from '@/api/client';
 import type { DateRangeParams } from '@/lib/dateRange';
 import { cn } from '@/lib/utils';
-import { STATUS_META } from '@/lib/messageStatus';
+import { STATUS_META, deliveredCount } from '@/lib/messageStatus';
 
 const PAGE_SIZE = 20;
 
@@ -186,8 +186,10 @@ function MessagesTable({
   onResendPending?: (id: string) => void;
   resendingId?: string | null;
   // Separate from onResendPending above - only ever passed on the Failed tab (a
-  // message shown there has failed/rejected recipients, not pending ones), mirroring
-  // the org self-service Reports page's own Failed/Rejected tab "Resend" action.
+  // message shown there has failed/rejected recipients, not pending ones), and only
+  // rendered for rows that have rejected recipients: resend-failed covers rejected
+  // only (failed = BMS "Not Delivered" was already billed), so a purely-failed row
+  // has nothing for it to send.
   onResendFailed?: (id: string) => void;
   resendingFailedId?: string | null;
   onDelete: (id: string) => void;
@@ -212,7 +214,7 @@ function MessagesTable({
               <RotateCcw className="h-3 w-3" /> Resend
             </DropdownMenuItem>
           )}
-          {onResendFailed && (
+          {onResendFailed && m.stats.rejected > 0 && (
             <DropdownMenuItem className="cursor-pointer" disabled={resendingFailedId === m.id} onClick={() => onResendFailed(m.id)}>
               <RotateCcw className="h-3 w-3" /> Resend
             </DropdownMenuItem>
@@ -255,7 +257,7 @@ function MessagesTable({
                 value={
                   <div className="flex flex-col items-end gap-0.5">
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{m.stats.delivered}/{m.stats.total} delivered</span>
+                    <span className="text-[10px] text-muted-foreground">{deliveredCount(m.stats)}/{m.stats.total} delivered</span>
                     <BmsOutageBadge count={m.providerUnavailableCount} />
                   </div>
                 }
@@ -303,7 +305,7 @@ function MessagesTable({
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {m.stats.delivered}/{m.stats.total} delivered
+                      {deliveredCount(m.stats)}/{m.stats.total} delivered
                     </div>
                     <div className="mt-0.5">
                       <BmsOutageBadge count={m.providerUnavailableCount} />
@@ -507,7 +509,7 @@ export function AdminOrgDeliveryReportPage() {
   const resend = useMutation({
     mutationFn: (messageId: string) => resendPendingMessage(orgId, messageId),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       invalidateAll();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -516,7 +518,7 @@ export function AdminOrgDeliveryReportPage() {
   const resendFailed = useMutation({
     mutationFn: (messageId: string) => resendFailedMessage(orgId, messageId),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       invalidateAll();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
@@ -528,7 +530,7 @@ export function AdminOrgDeliveryReportPage() {
   const resendSkipped = useMutation({
     mutationFn: (messageId: string) => resendSkippedMessage(orgId, messageId),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       invalidateAll();
     },
     onError: (err) => toast.error(apiErrorMessage(err)),
