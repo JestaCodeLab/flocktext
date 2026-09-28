@@ -32,6 +32,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
 import { cn } from '@/lib/utils';
 import { useEntityLabels } from '@/lib/terminology';
+import { deliveredCount } from '@/lib/messageStatus';
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -383,7 +384,7 @@ export function ComposePage() {
     mutationFn: sendMessage,
     onSuccess: (data) => {
       setShowConfirm(false);
-      toast.success(`Sent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Sent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       resetForm();
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });

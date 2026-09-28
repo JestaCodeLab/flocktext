@@ -48,12 +48,13 @@ import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 import type { DateRangeParams } from '@/lib/dateRange';
-import { STATUS_META } from '@/lib/messageStatus';
+import { STATUS_META, deliveredCount } from '@/lib/messageStatus';
 
 // Delivered/Failed/Rejected here refer to the whole send, not one recipient - "Failed"
 // means at least one recipient failed and "Rejected" means at least one was rejected
-// (each matches the tab that row can appear in, and the set eligible for
-// resend-failed). The "Delivered" tab's own backend filter is just "nothing failed
+// (each matches the tab that row can appear in; only the Rejected tab offers a
+// row-level Resend, since resend-failed covers rejected recipients only - failed ones
+// are retried per-recipient from the message's detail page). The "Delivered" tab's own backend filter is just "nothing failed
 // or rejected yet" (see messageController.listMessages), so it also holds messages
 // still resolving - those show "Submitted" here instead of "Delivered" (reusing
 // lib/messageStatus.ts's STATUS_META so the color matches the per-recipient badge).
@@ -515,7 +516,7 @@ function MessagesTable({
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {m.stats.delivered}/{m.stats.total} delivered
+                      {deliveredCount(m.stats)}/{m.stats.total} delivered
                     </div>
                   </TableCell>
                   <TableCell>
@@ -546,7 +547,7 @@ function MessagesTable({
                       {status.label}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
-                      {m.stats.delivered}/{m.stats.total} delivered
+                      {deliveredCount(m.stats)}/{m.stats.total} delivered
                     </span>
                   </div>
                 </div>
@@ -655,7 +656,7 @@ export function ReportsPage() {
   const resend = useMutation({
     mutationFn: resendFailedMessage,
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
@@ -827,9 +828,7 @@ export function ReportsPage() {
                 <MessagesTable
                   rows={failed.data.rows}
                   onView={handleView}
-                  onResend={(messageId) => resend.mutate(messageId)}
                   onSaveTemplate={setTemplateSourceId}
-                  resendingMessageId={resend.isPending ? (resend.variables ?? null) : null}
                 />
                 <PaginationControls page={failedPage} pageSize={PAGE_SIZE} total={failed.data.total} onPageChange={setFailedPage} />
               </>

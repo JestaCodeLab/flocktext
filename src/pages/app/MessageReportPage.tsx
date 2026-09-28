@@ -11,11 +11,13 @@ import {
   fetchMessageRecipients,
   resendFailedMessage,
   resendSkippedMessage,
+  resendUndeliveredMessage,
   resendOneRecipient,
   deleteMessageRecipient,
 } from '@/api/messages';
 import { apiErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/store/authStore';
+import { deliveredCount } from '@/lib/messageStatus';
 
 export function MessageReportPage() {
   const { id } = useParams<{ id: string }>();
@@ -49,7 +51,7 @@ export function MessageReportPage() {
   const resend = useMutation({
     mutationFn: () => resendFailedMessage(id!),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
@@ -59,7 +61,17 @@ export function MessageReportPage() {
   const resendSkipped = useMutation({
     mutationFn: () => resendSkippedMessage(id!),
     onSuccess: (data) => {
-      toast.success(`Resent — ${data.stats.delivered}/${data.stats.total} delivered.`);
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
+      updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
+      queryClient.invalidateQueries({ queryKey: ['messages'] });
+    },
+    onError: (err) => toast.error(apiErrorMessage(err)),
+  });
+
+  const resendUndelivered = useMutation({
+    mutationFn: () => resendUndeliveredMessage(id!),
+    onSuccess: (data) => {
+      toast.success(`Resent — ${deliveredCount(data.stats)}/${data.stats.total} delivered.`);
       updateOrganization({ walletBalanceCredits: data.walletBalanceCredits });
       queryClient.invalidateQueries({ queryKey: ['messages'] });
     },
@@ -88,7 +100,9 @@ export function MessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  const failedCount = (detail.data?.stats.failed ?? 0) + (detail.data?.stats.rejected ?? 0);
+  // Failed (BMS "Not Delivered") recipients aren't part of the bulk resend - they were
+  // already billed, so they're retried one at a time from the Failed tab instead.
+  const rejectedCount = detail.data?.stats.rejected ?? 0;
 
   function exportCsv() {
     if (!detail.data) return;
@@ -119,9 +133,9 @@ export function MessageReportPage() {
             <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
           </div>
         </div>
-        {!!detail.data && failedCount > 0 && (
+        {!!detail.data && rejectedCount > 0 && (
           <Button disabled={resend.isPending} onClick={() => resend.mutate()}>
-            <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : `Resend to ${failedCount} failed`}
+            <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : `Resend to ${rejectedCount} rejected`}
           </Button>
         )}
       </div>
@@ -141,6 +155,8 @@ export function MessageReportPage() {
           onExportCsv={exportCsv}
           onResendSkipped={() => resendSkipped.mutate()}
           resendingSkipped={resendSkipped.isPending}
+          onResendUndelivered={() => resendUndelivered.mutate()}
+          resendingUndelivered={resendUndelivered.isPending}
           onResendOne={(recipientId) => resendOne.mutate(recipientId)}
           resendingOneId={resendOne.isPending ? resendOne.variables : null}
           onRequestDeleteRecipient={(recipientId, recipientName) => setDeleteTarget({ id: recipientId, name: recipientName })}

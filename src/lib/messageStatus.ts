@@ -5,6 +5,15 @@
 // with each other instead of drifting into slightly different wordings/colors.
 export type MessageRecipientStatus = 'pending' | 'submitted' | 'delivered' | 'failed' | 'rejected' | 'skipped';
 
+// The "X/Y delivered" figure shown on list rows and send toasts. Submitted counts as
+// delivered here - BMS has confirmed the network has it and it's on its way to the
+// handset - so it's delivered + submitted, not delivered alone. The per-status stat
+// cards and tabs still show the two separately. `submitted` is optional because a send
+// response's stats can omit it.
+export function deliveredCount(stats: { delivered: number; submitted?: number }): number {
+  return stats.delivered + (stats.submitted ?? 0);
+}
+
 export const STATUS_ORDER: MessageRecipientStatus[] = ['delivered', 'submitted', 'pending', 'rejected', 'failed', 'skipped'];
 
 interface StatusMeta {

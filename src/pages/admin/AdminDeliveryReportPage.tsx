@@ -22,6 +22,7 @@ import {
 } from '@/api/adminMessages';
 import { apiErrorMessage } from '@/api/client';
 import { cn } from '@/lib/utils';
+import { deliveredCount } from '@/lib/messageStatus';
 
 const PAGE_SIZE = 20;
 
@@ -120,7 +121,7 @@ function MessagesTable({
                 value={
                   <div className="flex flex-col items-end gap-0.5">
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
-                    <span className="text-[10px] text-muted-foreground">{m.stats.delivered}/{m.stats.total} delivered</span>
+                    <span className="text-[10px] text-muted-foreground">{deliveredCount(m.stats)}/{m.stats.total} delivered</span>
                   </div>
                 }
               />
@@ -173,7 +174,7 @@ function MessagesTable({
                   <TableCell>
                     <Badge variant={status.variant} className={status.className}>{status.label}</Badge>
                     <div className="mt-1 text-xs text-muted-foreground">
-                      {m.stats.delivered}/{m.stats.total} delivered
+                      {deliveredCount(m.stats)}/{m.stats.total} delivered
                     </div>
                   </TableCell>
                   <TableCell>

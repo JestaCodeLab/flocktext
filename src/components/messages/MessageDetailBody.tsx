@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert, UserPlus, Trash2, BarChart3, ChevronDown, MessageSquare } from 'lucide-react';
+import { Download, RotateCcw, Send, CheckCircle2, XCircle, Clock, CreditCard, Tag, Share2, ChevronLeft, ChevronRight, ArrowRight, TriangleAlert, UserPlus, Trash2, BarChart3, ChevronDown, MessageSquare, Info } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -248,10 +248,11 @@ function ResentStatusNote({ status }: { status: NonNullable<MessageDetail['recip
   );
 }
 
-// Per-row Send/Remove icon buttons - only meaningful on the Skipped tab (see
-// `showActions` in the callers below), where each contact was never attempted at all,
-// so acting on just one of them (rather than the tab-wide "Resend to N skipped") makes
-// sense on its own.
+// Per-row Send/Remove icon buttons - shown on the Skipped tab (each contact was never
+// attempted at all, so acting on just one of them rather than the tab-wide "Resend to N
+// skipped" makes sense on its own) and the Failed tab (BMS "Not Delivered" - there's no
+// bulk resend for these since they were already billed, so a deliberate one-off retry
+// is the only way to resend them). See `showActions` in the callers below.
 function RecipientRowActions({
   recipientId,
   recipientName,
@@ -445,13 +446,51 @@ function SkippedResendNotice({
   );
 }
 
+// Shown atop the Failed tab - spells out what "failed" means (BMS reported "Not
+// Delivered": it reached the network, so it was already billed and isn't refunded) and
+// hosts the explicit, separate bulk resend for these recipients. Unlike rejected
+// recipients (see the page header's "Resend to N rejected"), resending failed ones
+// charges again, hence the cost is declared up front, same as SkippedResendNotice.
+function FailedResendNotice({
+  count,
+  creditsNeeded,
+  onResend,
+  resending,
+}: {
+  count: number;
+  creditsNeeded: number;
+  onResend?: () => void;
+  resending?: boolean;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-chart-3/30 bg-chart-3/10 p-3.5 text-sm">
+      <div className="flex items-start gap-2 text-chart-3">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <b>{count}</b> recipient{count === 1 ? ' was' : 's were'} not delivered. The message was accepted and sent to the mobile
+          network, but the network reported it couldn&apos;t reach {count === 1 ? 'their' : 'the'} phone
+          {count === 1 ? '' : 's'} - for example the phone was switched off or out of coverage until the delivery window expired, or
+          the number is inactive or no longer in service. Credits for these were already used and aren&apos;t refunded, so resending
+          costs <b>{creditsNeeded}</b> credit{creditsNeeded === 1 ? '' : 's'} again and may fail again if the number is still
+          unreachable.
+        </div>
+      </div>
+      {onResend && (
+        <Button size="sm" disabled={resending} onClick={onResend}>
+          <RotateCcw className="h-[15px] w-[15px]" /> {resending ? 'Resending…' : `Resend to ${count} failed`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // Admin-only (see `showProvider` gating below) - shown atop the Rejected tab when some
 // of those rejections happened because the whole BMS call never went through (a
 // platform-side outage/low-balance issue, not a bad number - see
 // services/messageSender.js's dispatch() and services/platformAlert.js's
 // smsProviderUnavailable()). No resend button of its own - the page header's existing
-// "Resend to N failed" button already covers these recipients (rejected is part of
-// that query), this just explains why they need it and that nothing was lost.
+// "Resend to N rejected" button already covers these recipients, this just explains
+// why they need it and that nothing was lost.
 function ProviderUnavailableNotice({ count }: { count: number }) {
   return (
     <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3.5 text-sm text-warning">
@@ -459,7 +498,7 @@ function ProviderUnavailableNotice({ count }: { count: number }) {
       <div>
         <b>{count}</b> recipient{count === 1 ? '' : 's'} never reached BMS Africa - a provider outage or low BMS balance, not a
         bad number. Credits for {count === 1 ? 'it were' : 'them were'} already refunded automatically; resend once BMS is
-        topped up using "Resend to failed" above.
+        topped up using "Resend to rejected" above.
       </div>
     </div>
   );
@@ -473,6 +512,8 @@ export function MessageDetailBody({
   resending,
   onResendSkipped,
   resendingSkipped,
+  onResendUndelivered,
+  resendingUndelivered,
   onResendOne,
   resendingOneId,
   onRequestDeleteRecipient,
@@ -489,7 +530,11 @@ export function MessageDetailBody({
   // distinct action with its own declared credit cost (see SkippedResendNotice).
   onResendSkipped?: () => void;
   resendingSkipped?: boolean;
-  // Per-contact actions, shown only on the Skipped tab (see RecipientsTable's
+  // Bulk resend for the Failed tab (BMS "Not Delivered"), separate from onResend above,
+  // which covers rejected recipients only - see FailedResendNotice.
+  onResendUndelivered?: () => void;
+  resendingUndelivered?: boolean;
+  // Per-contact actions, shown on the Skipped and Failed tabs (see RecipientsTable's
   // `showActions`) - resend to just this one contact, or remove them from the list.
   onResendOne?: (recipientId: string) => void;
   resendingOneId?: string | null;
@@ -499,9 +544,13 @@ export function MessageDetailBody({
   // went out through. Omitted on org self-service surfaces, which share this component.
   showProvider?: boolean;
 }) {
-  const failedCount = detail.recipients.filter((r) => r.status === 'failed' || r.status === 'rejected').length;
+  // Bulk resend covers rejected only - failed (BMS "Not Delivered") was already billed,
+  // so it's retried per-row from the Failed tab instead (see RecipientRowActions).
+  const rejectedCount = detail.recipients.filter((r) => r.status === 'rejected').length;
   const skippedRecipients = detail.recipients.filter((r) => r.status === 'skipped');
   const creditsNeededForSkipped = detail.segments * skippedRecipients.length;
+  const failedRecipients = detail.recipients.filter((r) => r.status === 'failed');
+  const creditsNeededForFailed = detail.segments * failedRecipients.length;
 
   // One tab per status actually present in this message (no "All") - ordered via
   // STATUS_ORDER, which already puts 'delivered' first, so it's also the default tab
@@ -590,6 +639,14 @@ export function MessageDetailBody({
                     resending={resendingSkipped}
                   />
                 )}
+                {tabStatus === 'failed' && (
+                  <FailedResendNotice
+                    count={failedRecipients.length}
+                    creditsNeeded={creditsNeededForFailed}
+                    onResend={onResendUndelivered}
+                    resending={resendingUndelivered}
+                  />
+                )}
                 {tabStatus === 'rejected' && showProvider && !!detail.providerUnavailableCount && (
                   <ProviderUnavailableNotice count={detail.providerUnavailableCount} />
                 )}
@@ -598,7 +655,7 @@ export function MessageDetailBody({
                     recipients={tabRecipients}
                     page={tabPage}
                     showProvider={showProvider}
-                    showActions={tabStatus === 'skipped'}
+                    showActions={tabStatus === 'skipped' || tabStatus === 'failed'}
                     onResendOne={onResendOne}
                     resendingOneId={resendingOneId}
                     onRequestDeleteRecipient={onRequestDeleteRecipient}
@@ -638,9 +695,9 @@ export function MessageDetailBody({
           <Button size="sm" variant="outline" onClick={onExportCsv}>
             <Download className="h-[15px] w-[15px]" /> Export CSV
           </Button>
-          {onResend && failedCount > 0 && (
+          {onResend && rejectedCount > 0 && (
             <Button size="sm" disabled={resending} onClick={onResend}>
-              <RotateCcw className="h-[15px] w-[15px]" /> {resending ? 'Resending…' : `Resend to ${failedCount} failed`}
+              <RotateCcw className="h-[15px] w-[15px]" /> {resending ? 'Resending…' : `Resend to ${rejectedCount} rejected`}
             </Button>
           )}
         </div>
