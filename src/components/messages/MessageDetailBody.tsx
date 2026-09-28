@@ -446,11 +446,47 @@ function SkippedResendNotice({
   );
 }
 
+// Shown atop the Rejected tab - spells out what "rejected" means (the message never
+// went out, so the credits were refunded automatically) and hosts the bulk resend for
+// these recipients. Resending is safe to do in bulk since nothing was delivered or
+// kept, though numbers that are genuinely invalid or blocked can be rejected again.
+function RejectedResendNotice({
+  count,
+  creditsNeeded,
+  onResend,
+  resending,
+}: {
+  count: number;
+  creditsNeeded: number;
+  onResend?: () => void;
+  resending?: boolean;
+}) {
+  return (
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-chart-3/30 bg-chart-3/10 p-3.5 text-sm">
+      <div className="flex items-start gap-2 text-chart-3">
+        <Info className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <b>{count}</b> recipient{count === 1 ? ' was' : 's were'} rejected. {count === 1 ? 'This message was' : 'These messages were'}{' '}
+          never sent - the network operator or SMS provider refused {count === 1 ? 'it' : 'them'} before delivery, for example because
+          of an invalid number, disallowed content, or a temporary provider issue. Credits for {count === 1 ? 'it were' : 'them were'}{' '}
+          refunded automatically, so resending is safe and uses <b>{creditsNeeded}</b> credit{creditsNeeded === 1 ? '' : 's'}. Numbers
+          that are genuinely invalid or blocked may be rejected again.
+        </div>
+      </div>
+      {onResend && (
+        <Button size="sm" disabled={resending} onClick={onResend}>
+          <RotateCcw className="h-[15px] w-[15px]" /> {resending ? 'Resending…' : `Resend to ${count} rejected`}
+        </Button>
+      )}
+    </div>
+  );
+}
+
 // Shown atop the Failed tab - spells out what "failed" means (BMS reported "Not
 // Delivered": it reached the network, so it was already billed and isn't refunded) and
 // hosts the explicit, separate bulk resend for these recipients. Unlike rejected
-// recipients (see the page header's "Resend to N rejected"), resending failed ones
-// charges again, hence the cost is declared up front, same as SkippedResendNotice.
+// recipients (see RejectedResendNotice), resending failed ones charges again, hence
+// the cost is declared up front, same as SkippedResendNotice.
 function FailedResendNotice({
   count,
   creditsNeeded,
@@ -488,9 +524,9 @@ function FailedResendNotice({
 // of those rejections happened because the whole BMS call never went through (a
 // platform-side outage/low-balance issue, not a bad number - see
 // services/messageSender.js's dispatch() and services/platformAlert.js's
-// smsProviderUnavailable()). No resend button of its own - the page header's existing
-// "Resend to N rejected" button already covers these recipients, this just explains
-// why they need it and that nothing was lost.
+// smsProviderUnavailable()). No resend button of its own - RejectedResendNotice right
+// below it already covers these recipients, this just explains why they need it and
+// that nothing was lost.
 function ProviderUnavailableNotice({ count }: { count: number }) {
   return (
     <div className="mb-3 flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 p-3.5 text-sm text-warning">
@@ -498,7 +534,7 @@ function ProviderUnavailableNotice({ count }: { count: number }) {
       <div>
         <b>{count}</b> recipient{count === 1 ? '' : 's'} never reached BMS Africa - a provider outage or low BMS balance, not a
         bad number. Credits for {count === 1 ? 'it were' : 'them were'} already refunded automatically; resend once BMS is
-        topped up using "Resend to rejected" above.
+        topped up.
       </div>
     </div>
   );
@@ -523,6 +559,8 @@ export function MessageDetailBody({
   detail: MessageDetail;
   variant?: 'page' | 'modal';
   onExportCsv: () => void;
+  // Bulk resend for rejected recipients - hosted by RejectedResendNotice atop the
+  // Rejected tab on the page variant, and as the header button on the tab-less modal one.
   onResend?: () => void;
   resending?: boolean;
   // Separate from onResend/resending above - skipped contacts were never attempted at
@@ -549,6 +587,8 @@ export function MessageDetailBody({
   const rejectedCount = detail.recipients.filter((r) => r.status === 'rejected').length;
   const skippedRecipients = detail.recipients.filter((r) => r.status === 'skipped');
   const creditsNeededForSkipped = detail.segments * skippedRecipients.length;
+  const rejectedRecipients = detail.recipients.filter((r) => r.status === 'rejected');
+  const creditsNeededForRejected = detail.segments * rejectedRecipients.length;
   const failedRecipients = detail.recipients.filter((r) => r.status === 'failed');
   const creditsNeededForFailed = detail.segments * failedRecipients.length;
 
@@ -649,6 +689,14 @@ export function MessageDetailBody({
                 )}
                 {tabStatus === 'rejected' && showProvider && !!detail.providerUnavailableCount && (
                   <ProviderUnavailableNotice count={detail.providerUnavailableCount} />
+                )}
+                {tabStatus === 'rejected' && (
+                  <RejectedResendNotice
+                    count={rejectedRecipients.length}
+                    creditsNeeded={creditsNeededForRejected}
+                    onResend={onResend}
+                    resending={resending}
+                  />
                 )}
                 <div className="overflow-hidden rounded-2xl border border-border bg-card">
                   <RecipientsTable

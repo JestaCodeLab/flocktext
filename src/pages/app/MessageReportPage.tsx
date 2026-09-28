@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, RotateCcw, Send } from 'lucide-react';
+import { ArrowLeft, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageDetailBody, downloadCsv } from '@/components/messages/MessageDetailBody';
 import { DeleteRecipientDialog } from '@/components/messages/DeleteRecipientDialog';
@@ -100,9 +99,6 @@ export function MessageReportPage() {
     onError: (err) => toast.error(apiErrorMessage(err)),
   });
 
-  // Failed (BMS "Not Delivered") recipients aren't part of the bulk resend - they were
-  // already billed, so they're retried one at a time from the Failed tab instead.
-  const rejectedCount = detail.data?.stats.rejected ?? 0;
 
   function exportCsv() {
     if (!detail.data) return;
@@ -133,11 +129,6 @@ export function MessageReportPage() {
             <div className="text-sm text-muted-foreground">Per-recipient delivery breakdown for this send.</div>
           </div>
         </div>
-        {!!detail.data && rejectedCount > 0 && (
-          <Button disabled={resend.isPending} onClick={() => resend.mutate()}>
-            <RotateCcw className="h-[15px] w-[15px]" /> {resend.isPending ? 'Resending…' : `Resend to ${rejectedCount} rejected`}
-          </Button>
-        )}
       </div>
 
       {detail.isLoading && (
@@ -153,6 +144,8 @@ export function MessageReportPage() {
           detail={detail.data}
           variant="page"
           onExportCsv={exportCsv}
+          onResend={() => resend.mutate()}
+          resending={resend.isPending}
           onResendSkipped={() => resendSkipped.mutate()}
           resendingSkipped={resendSkipped.isPending}
           onResendUndelivered={() => resendUndelivered.mutate()}
