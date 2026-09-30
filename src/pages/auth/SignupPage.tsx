@@ -7,13 +7,19 @@ import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { AuthLayout } from '@/pages/auth/AuthLayout';
+import { TurnstileWidget } from '@/components/auth/TurnstileWidget';
 import * as authApi from '@/api/auth';
 import { apiErrorMessage } from '@/api/client';
 import { formatPhoneInput, normalizePhone } from '@/lib/phone';
 
+// No widget renders (and the backend skips verification too) when this is unset -
+// see TurnstileWidget's own comment.
+const TURNSTILE_ENABLED = Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined);
+
 export function SignupPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', phone: '', email: '', password: '' });
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [loading, setLoading] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: string) {
@@ -30,9 +36,13 @@ export function SignupPage() {
       toast.error('Password must be at least 8 characters.');
       return;
     }
+    if (TURNSTILE_ENABLED && !turnstileToken) {
+      toast.error('Please complete the verification challenge.');
+      return;
+    }
     setLoading(true);
     try {
-      await authApi.signup({ ...form, phone: normalizePhone(form.phone) });
+      await authApi.signup({ ...form, phone: normalizePhone(form.phone), turnstileToken });
       toast.success('Account created — verify your phone to continue.');
       navigate('/verify-otp', { state: { phone: form.phone } });
     } catch (err) {
@@ -110,11 +120,18 @@ export function SignupPage() {
           />
         </div>
 
+        <TurnstileWidget onVerify={setTurnstileToken} onExpire={() => setTurnstileToken('')} />
+
         <Button
           type="submit"
           className="h-12 w-full rounded-full"
           size="lg"
-          disabled={loading || Object.values(form).some((v) => !v) || form.password.length < 8}
+          disabled={
+            loading ||
+            Object.values(form).some((v) => !v) ||
+            form.password.length < 8 ||
+            (TURNSTILE_ENABLED && !turnstileToken)
+          }
         >
           {loading ? 'Creating account…' : 'Create account'}
         </Button>
