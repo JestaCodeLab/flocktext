@@ -6,6 +6,7 @@ export interface SignupPayload {
   phone: string;
   email: string;
   password: string;
+  turnstileToken?: string;
 }
 
 export interface AuthTokens {
