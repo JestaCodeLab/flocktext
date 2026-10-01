@@ -131,7 +131,13 @@ export function DeveloperSection() {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <Button size="icon-sm" variant="ghost" onClick={() => copyKeyPrefix(k.keyPrefix)}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    title="Copy key prefix (not the full key - FlockText never stores that)"
+                    aria-label="Copy key prefix"
+                    onClick={() => copyKeyPrefix(k.keyPrefix)}
+                  >
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
                   {!k.revoked && (
@@ -283,7 +289,8 @@ export function DeveloperSection() {
           </DialogHeader>
           <div className="text-sm text-muted-foreground">
             Revoke <span className="font-semibold text-foreground">{keyToRevoke?.label}</span>? Any system using this key will
-            immediately lose access. This can't be undone.
+            immediately lose access, and the key record is permanently deleted - this can't be undone, and support won't be able to
+            look it back up later.
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setKeyToRevoke(null)}>

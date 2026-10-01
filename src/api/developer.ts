@@ -24,6 +24,6 @@ export async function createApiKey(label: string) {
 }
 
 export async function revokeApiKey(id: string) {
-  const { data } = await api.delete<ApiKey>(`/developer/api-keys/${id}`);
+  const { data } = await api.delete<{ id: string; deleted: true }>(`/developer/api-keys/${id}`);
   return data;
 }
