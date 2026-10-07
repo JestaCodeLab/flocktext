@@ -23,6 +23,7 @@ import {
   Moon,
   MoreHorizontal,
   LifeBuoy,
+  PlayCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchMe, logout } from '@/api/auth';
@@ -78,6 +79,7 @@ function getMainNavItems(entity: EntityLabels): NavItem[] {
 function getBottomNavItems(role: string | undefined): { to: string; label: string; icon: LucideIcon }[] {
   const items: { to: string; label: string; icon: LucideIcon }[] = [];
   if (role === 'admin') items.push({ to: '/app/activity-log', label: 'Activity Log', icon: History });
+  items.push({ to: '/app/how-to-videos', label: 'How-to videos', icon: PlayCircle });
   items.push({ to: '/app/support', label: 'Support', icon: LifeBuoy });
   items.push({ to: '/app/settings', label: 'Settings', icon: Settings });
   return items;

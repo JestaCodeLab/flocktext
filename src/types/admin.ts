@@ -201,3 +201,17 @@ export interface AdminDashboardChartBucket {
 export interface AdminDashboardChart {
   buckets: AdminDashboardChartBucket[];
 }
+
+export type HowToVideoPlatform = 'mobile' | 'web';
+
+export interface HowToVideo {
+  id: string;
+  title: string;
+  description: string;
+  platform: HowToVideoPlatform;
+  videoUrl: string;
+  thumbnailUrl: string;
+  duration: number;
+  published: boolean;
+  createdAt: string;
+}

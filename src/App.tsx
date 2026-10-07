@@ -38,6 +38,7 @@ import { AdminPackagesPage } from '@/pages/admin/AdminPackagesPage';
 import { AdminSenderIdsPage } from '@/pages/admin/AdminSenderIdsPage';
 import { AdminAddonsPage } from '@/pages/admin/AdminAddonsPage';
 import { AdminAnnouncementsPage } from '@/pages/admin/AdminAnnouncementsPage';
+import { AdminHowToVideosPage } from '@/pages/admin/AdminHowToVideosPage';
 import { AdminActivityLogsPage } from '@/pages/admin/AdminActivityLogsPage';
 import { AdminTicketsPage } from '@/pages/admin/AdminTicketsPage';
 import { AdminAccountPage } from '@/pages/admin/AdminAccountPage';
@@ -53,6 +54,7 @@ import { GroupDetailPage } from '@/pages/app/GroupDetailPage';
 import { BirthdaysPage } from '@/pages/app/BirthdaysPage';
 import { ComposePage } from '@/pages/app/ComposePage';
 import { TemplatesPage } from '@/pages/app/TemplatesPage';
+import { HowToVideosPage } from '@/pages/app/HowToVideosPage';
 import { WalletPage } from '@/pages/app/WalletPage';
 import { ReportsPage } from '@/pages/app/ReportsPage';
 import { MessageReportPage } from '@/pages/app/MessageReportPage';
@@ -114,6 +116,7 @@ function App() {
           <Route path="tickets" element={<AdminTicketsPage />} />
           <Route path="addons" element={<AdminAddonsPage />} />
           <Route path="announcements" element={<AdminAnnouncementsPage />} />
+          <Route path="how-to-videos" element={<AdminHowToVideosPage />} />
           <Route path="activity-logs" element={<AdminActivityLogsPage />} />
           <Route path="account" element={<AdminAccountPage />} />
         </Route>
@@ -141,6 +144,7 @@ function App() {
             <Route path="templates" element={<TemplatesPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="reports/:id" element={<MessageReportPage />} />
+            <Route path="how-to-videos" element={<HowToVideosPage />} />
             <Route path="support" element={<SupportTicketsPage />} />
             <Route path="support/:id" element={<SupportTicketDetailPage />} />
             <Route path="wallet" element={<WalletPage />} />
