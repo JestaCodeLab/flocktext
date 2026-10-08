@@ -259,6 +259,7 @@ export function AdminOrganizationsPage() {
               <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
             </div>
             <MobileListRow label="Members" value={org.memberCount} />
+            <MobileListRow label="Contacts" value={org.contactCount.toLocaleString()} />
             <MobileListRow label="Messages" value={org.messageCount} />
             <MobileListRow label="Wallet" value={`${org.walletBalanceCredits.toLocaleString()} credits`} />
             <MobileListRow label="Joined" value={formatDate(org.createdAt)} />
@@ -315,6 +316,7 @@ export function AdminOrganizationsPage() {
               <TableHead>Church</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Members</TableHead>
+              <TableHead>Contacts</TableHead>
               <TableHead>Messages</TableHead>
               <TableHead>Wallet</TableHead>
               <TableHead>Joined</TableHead>
@@ -365,6 +367,7 @@ export function AdminOrganizationsPage() {
                   <Badge variant={org.status === 'active' ? 'default' : 'destructive'}>{org.status}</Badge>
                 </TableCell>
                 <TableCell className="text-muted-foreground">{org.memberCount}</TableCell>
+                <TableCell className="text-muted-foreground">{org.contactCount.toLocaleString()}</TableCell>
                 <TableCell className="text-muted-foreground">{org.messageCount}</TableCell>
                 <TableCell className="text-muted-foreground">{org.walletBalanceCredits.toLocaleString()} credits</TableCell>
                 <TableCell className="text-muted-foreground">

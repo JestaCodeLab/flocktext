@@ -26,6 +26,7 @@ import { ShareLinkPanel } from '@/components/contacts/ShareLinkPanel';
 import {
   previewImportFile,
   importContacts,
+  type ImportMethod,
   fetchContactPhones,
   fetchImportTemplateFile,
   type ImportResult,
@@ -171,6 +172,7 @@ export function ImportContactsWizard({
   const [format, setFormat] = useState<Format | null>(null);
   const [dragging, setDragging] = useState(false);
   const [fileLabel, setFileLabel] = useState('');
+  const [importMethod, setImportMethod] = useState<ImportMethod>('file_upload');
   const [rawRows, setRawRows] = useState<PreviewRow[] | null>(null);
   const [skippedCount, setSkippedCount] = useState(0);
   const [batches, setBatches] = useState<ImportBatch[] | null>(null);
@@ -219,6 +221,7 @@ export function ImportContactsWizard({
       }
       setFormat('txt');
       setFileLabel('Pasted list');
+      setImportMethod('copy_paste');
       setRawRows(data.rows);
       setSkippedCount(data.errors.length);
       setStage('preview');
@@ -276,7 +279,7 @@ export function ImportContactsWizard({
     for (let i = 0; i < initialBatches.length; i++) {
       setBatches((prev) => prev!.map((b, idx) => (idx === i ? { ...b, status: 'uploading' } : b)));
       try {
-        const data = await importContacts(initialBatches[i].rows, groupId);
+        const data = await importContacts(initialBatches[i].rows, groupId, importMethod);
         setBatches((prev) => prev!.map((b, idx) => (idx === i ? { ...b, status: 'success', result: data } : b)));
       } catch (err) {
         const errorMessage = apiErrorMessage(err, 'Could not import this batch.');
@@ -310,6 +313,7 @@ export function ImportContactsWizard({
     notifiedRef.current = false;
     setGroupPromptDismissed(false);
     setPastedText('');
+    setImportMethod('file_upload');
   }
 
   function chooseFormat(next: Format) {
@@ -319,6 +323,7 @@ export function ImportContactsWizard({
 
   function handleFile(picked: File) {
     setFileLabel(picked.name);
+    setImportMethod('file_upload');
     if (format === 'vcard') {
       picked
         .text()
@@ -360,6 +365,7 @@ export function ImportContactsWizard({
         .filter((r) => r.name || r.phone);
       if (!parsed.length) return;
       setFileLabel('Phone contacts');
+      setImportMethod('phone_contacts');
       setRawRows(parsed);
       setSkippedCount(0);
       setStage('preview');
