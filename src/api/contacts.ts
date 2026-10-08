@@ -103,8 +103,10 @@ export async function previewImportFile(file: File, format: ImportFileFormat) {
   return data;
 }
 
-export async function importContacts(rows: PreviewRow[], groupId?: string) {
-  const { data } = await api.post<ImportResult>('/contacts/import', { rows, groupId });
+export type ImportMethod = 'file_upload' | 'copy_paste' | 'phone_contacts';
+
+export async function importContacts(rows: PreviewRow[], groupId?: string, method: ImportMethod = 'file_upload') {
+  const { data } = await api.post<ImportResult>('/contacts/import', { rows, groupId, method });
   return data;
 }
 
