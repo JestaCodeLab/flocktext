@@ -19,6 +19,7 @@ export interface AdminOrgListItem {
   status: 'active' | 'suspended';
   walletBalanceCredits: number;
   memberCount: number;
+  contactCount: number;
   messageCount: number;
   createdAt: string;
   stage: OrgStage;

@@ -13,7 +13,6 @@ import {
   Wallet,
   Building2,
   Settings,
-  History,
   Home,
   ChevronDown,
   Check,
@@ -76,9 +75,8 @@ function getMainNavItems(entity: EntityLabels): NavItem[] {
   ];
 }
 
-function getBottomNavItems(role: string | undefined): { to: string; label: string; icon: LucideIcon }[] {
+function getBottomNavItems(): { to: string; label: string; icon: LucideIcon }[] {
   const items: { to: string; label: string; icon: LucideIcon }[] = [];
-  if (role === 'admin') items.push({ to: '/app/activity-log', label: 'Activity Log', icon: History });
   items.push({ to: '/app/how-to-videos', label: 'How-to videos', icon: PlayCircle });
   items.push({ to: '/app/support', label: 'Support', icon: LifeBuoy });
   items.push({ to: '/app/settings', label: 'Settings', icon: Settings });
@@ -202,7 +200,7 @@ export function AppShell() {
 
   const mainNavItems = getMainNavItems(entity);
   const { user, organization, membership } = session;
-  const bottomNavItems = getBottomNavItems(membership.role);
+  const bottomNavItems = getBottomNavItems();
   const mobileTabItems = getMobileTabItems(entity);
   const isMoreTabActive = !MOBILE_TAB_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
 
