@@ -31,6 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { DateRangeFilter } from '@/components/filters/DateRangeFilter';
+import { PwaInstallBanner } from '@/components/pwa/PwaInstallBanner';
 import { AddSenderIdDialog } from '@/components/organization/AddSenderIdDialog';
 import { DeleteSenderIdDialog } from '@/components/organization/DeleteSenderIdDialog';
 import { fetchDashboardSummary, fetchRecentActivity, fetchDashboardChart } from '@/api/dashboard';
@@ -474,6 +475,7 @@ export function DashboardPage() {
 
   return (
     <div>
+      <PwaInstallBanner />
       <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="mb-1 text-[20px] font-bold sm:text-[24px]">Dashboard</div>
